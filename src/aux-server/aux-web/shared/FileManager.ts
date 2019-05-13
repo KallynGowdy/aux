@@ -43,7 +43,7 @@ import {
     flatMap,
 } from 'rxjs/operators';
 
-import { AppManager, appManager } from './AppManager';
+import { User } from './User';
 import { SocketManager } from './SocketManager';
 import { CausalTreeManager } from '@casual-simulation/causal-tree-client-socketio';
 import { RealtimeCausalTree } from '@casual-simulation/causal-trees';
@@ -65,7 +65,7 @@ import { Simulation } from './Simulation';
  * to reactively edit files.
  */
 export class FileManager implements Simulation {
-    private _appManager: AppManager;
+    private _user: User;
     private _treeManager: CausalTreeManager;
     private _socketManager: SocketManager;
     private _helper: FileHelper;
@@ -171,11 +171,11 @@ export class FileManager implements Simulation {
     }
 
     constructor(
-        app: AppManager,
+        user: User,
         id: string,
         config: { isBuilder: boolean; isPlayer: boolean }
     ) {
-        this._appManager = app;
+        this._user = user;
         this._originalId = id || 'default';
         this._parsedId = parseSimulationId(this._originalId);
         this._id = this._getTreeName(this._parsedId.channel);
@@ -315,7 +315,7 @@ export class FileManager implements Simulation {
 
             this._helper = new FileHelper(
                 this._aux.tree,
-                appManager.user.id,
+                this._user.id,
                 this._config
             );
             this._selection = new SelectionManager(this._helper);
@@ -389,23 +389,23 @@ export class FileManager implements Simulation {
     private async _initUserFile() {
         this._setStatus('Updating user file...');
         let userFile = this.helper.userFile;
-        const userContext = `_user_${appManager.user.username}_${
+        const userContext = `_user_${this._user.username}_${
             this._aux.tree.site.id
         }`;
-        const userInventoryContext = `_user_${appManager.user.username}_${
+        const userInventoryContext = `_user_${this._user.username}_${
             this._aux.tree.site.id
         }_inventory`;
-        const userMenuContext = `_user_${appManager.user.username}_${
+        const userMenuContext = `_user_${this._user.username}_${
             this._aux.tree.site.id
         }_menu`;
-        const userSimulationsContext = `_user_${appManager.user.username}_${
+        const userSimulationsContext = `_user_${this._user.username}_${
             this._aux.tree.site.id
         }_simulations`;
         if (!userFile) {
-            await this.helper.createFile(this._appManager.user.id, {
+            await this.helper.createFile(this._user.id, {
                 [userContext]: true,
                 [`${userContext}.config`]: true,
-                ['aux._user']: this._appManager.user.username,
+                ['aux._user']: this._user.username,
                 ['aux._userInventoryContext']: userInventoryContext,
                 ['aux._userMenuContext']: userMenuContext,
                 ['aux._userSimulationsContext']: userSimulationsContext,

@@ -1,22 +1,12 @@
 import {
-    FilesState,
-    AuxCausalTree,
     RealtimeAuxTree,
-    File,
-    AuxState,
-    AuxObject,
-    FileEvent,
     UserMode,
-    FileCalculationContext,
-    PartialFile,
     SimulationIdParseSuccess,
 } from '@casual-simulation/aux-common';
 import FileWatcher from './FileWatcher';
 import { RecentFilesManager } from './RecentFilesManager';
 import SelectionManager from './SelectionManager';
 import { FileHelper } from './FileHelper';
-import { Observable } from 'rxjs';
-import { LoadingProgressCallback } from '@casual-simulation/aux-common/LoadingProgress';
 import FilePanelManager from './FilePanelManager';
 import { Initable } from './Initable';
 import { SocketManager } from './SocketManager';

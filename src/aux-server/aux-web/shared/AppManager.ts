@@ -6,7 +6,7 @@ import { BehaviorSubject, Observable, using, SubscriptionLike } from 'rxjs';
 import { FileManager } from './FileManager';
 import { SocketManager } from './SocketManager';
 import { flatMap, map, scan } from 'rxjs/operators';
-import { downloadAuxState, readFileJson } from '../aux-projector/download';
+import { readFileJson, downloadFile, downloadJson } from './download';
 import { CausalTreeManager } from '@casual-simulation/causal-tree-client-socketio';
 import { StoredCausalTree, storedTree } from '@casual-simulation/causal-trees';
 import {
@@ -28,15 +28,9 @@ import {
 import { Simulation } from './Simulation';
 import SimulationManager from './SimulationManager';
 import { copyToClipboard } from './SharedUtils';
-
-export interface User {
-    id: string;
-    email: string;
-    username: string;
-    name: string;
-    isGuest: boolean;
-    channelId: string;
-}
+import { User } from './User';
+import { SimulationHelper } from './worker/Simulation.helper';
+import { AsyncSimulation } from './AsyncSimulation';
 
 /**
  * Defines an interface that contains version information about the app.
@@ -88,10 +82,7 @@ export class AppManager {
     private _db: AppDatabase;
     private _userSubject: BehaviorSubject<User>;
     private _updateAvailable: BehaviorSubject<boolean>;
-    private _simulationManager: SimulationManager<Simulation>;
-    // private _fileManager: FileManager;
-    // private _socketManager: SocketManager;
-    // private _treeManager: CausalTreeManager;
+    private _simulationManager: SimulationManager<AsyncSimulation>;
     private _initPromise: Promise<void>;
     private _user: User;
     private _config: WebConfig;
@@ -101,9 +92,8 @@ export class AppManager {
         this._initSentry();
         this._initOffline();
         this._simulationManager = new SimulationManager(id => {
-            return new FileManager(this, id, this._config);
+            return new SimulationHelper(this.user, id, this._config);
         });
-        // this._fileManager = new FileManager(this, this._treeManager);
         this._userSubject = new BehaviorSubject<User>(null);
         this._db = new AppDatabase();
         this._initPromise = this._init();
@@ -113,17 +103,7 @@ export class AppManager {
         return this._initPromise;
     }
 
-    // get socketManager() {
-    //     return this._socketManager;
-    // }
-
-    // get fileManager(): Simulation {
-    //     if (this.user) {
-    //         return this._fileManager;
-    //     }
-    // }
-
-    get simulationManager(): SimulationManager<Simulation> {
+    get simulationManager(): SimulationManager<AsyncSimulation> {
         return this._simulationManager;
     }
 
@@ -165,10 +145,12 @@ export class AppManager {
     /**
      * Downloads the current local application state to a file.
      */
-    downloadState(): void {
-        downloadAuxState(
-            this.simulationManager.primary.aux.tree,
-            `${this.user.name}-${this.user.channelId || 'default'}`
+    async downloadState() {
+        const exported = await this.simulationManager.primary.exportAux();
+        const json = JSON.stringify(exported);
+        await downloadJson(
+            json,
+            `${this.user.name}-${this.user.channelId || 'default'}.aux`
         );
     }
 
@@ -194,7 +176,8 @@ export class AppManager {
             value = <FilesState>(<unknown>state);
         }
 
-        await this.simulationManager.primary.helper.addState(value);
+        await this.simulationManager.primary.addState(value);
+        // await this.simulationManager.primary.helper.addState(value);
     }
 
     /**
@@ -223,7 +206,7 @@ export class AppManager {
      * @param setup
      */
     whileLoggedIn(
-        setup: (user: User, fileManager: Simulation) => SubscriptionLike[]
+        setup: (user: User, fileManager: AsyncSimulation) => SubscriptionLike[]
     ): SubscriptionLike {
         return this.userObservable
             .pipe(

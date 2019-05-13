@@ -1,12 +1,11 @@
-import { FilesState, AuxCausalTree } from '@casual-simulation/aux-common';
 import download from 'downloadjs';
 
-export function downloadAuxState(tree: AuxCausalTree, name: string) {
+export function downloadJson(json: string, name: string) {
     return downloadFile(
-        new Blob([JSON.stringify(tree.export())], {
+        new Blob([json], {
             type: 'application/json',
         }),
-        `${name}.aux`,
+        name,
         'application/json'
     );
 }

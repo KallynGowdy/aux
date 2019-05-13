@@ -1,7 +1,7 @@
 import Vue, { ComponentOptions } from 'vue';
 import Component from 'vue-class-component';
 import { Provide, Watch } from 'vue-property-decorator';
-import { appManager, User } from '../../shared/AppManager';
+import { appManager } from '../../shared/AppManager';
 import { EventBus } from '../../shared/EventBus';
 import ConfirmDialogOptions from '../../shared/ConfirmDialogOptions';
 import AlertDialogOptions from '../../shared/AlertDialogOptions';
@@ -28,7 +28,8 @@ import QRCode from '@chenfengyuan/vue-qrcode';
 import CubeIcon from '../public/icons/Cube.svg';
 import HexIcon from '../public/icons/Hexagon.svg';
 import { QrcodeStream } from 'vue-qrcode-reader';
-import { Simulation } from '../../shared/Simulation';
+import { AsyncSimulation } from '../../shared/AsyncSimulation';
+import { User } from '../../shared/User';
 
 export interface SidebarItem {
     id: string;
@@ -119,7 +120,10 @@ export default class App extends Vue {
     alertDialogOptions: AlertDialogOptions = new AlertDialogOptions();
 
     private _subs: SubscriptionLike[] = [];
-    private _simulationSubs: Map<Simulation, SubscriptionLike[]> = new Map();
+    private _simulationSubs: Map<
+        AsyncSimulation,
+        SubscriptionLike[]
+    > = new Map();
 
     get version() {
         return appManager.version.latestTaggedVersion;
@@ -194,7 +198,7 @@ export default class App extends Vue {
     }
 
     forcedOffline(info: SimulationInfo) {
-        return info.simulation.socketManager.forcedOffline;
+        return info.forcedOffline;
     }
 
     created() {
@@ -283,11 +287,9 @@ export default class App extends Vue {
         this._subs.forEach(s => s.unsubscribe());
     }
 
-    logout() {
-        const context =
-            appManager.simulationManager.primary.helper.userFile.tags[
-                'aux._userContext'
-            ];
+    async logout() {
+        const userFile = await appManager.simulationManager.primary.getUserFile();
+        const context = userFile.tags['aux._userContext'];
         appManager.logout();
         this.showNavigation = false;
         this.$router.push({
@@ -325,9 +327,10 @@ export default class App extends Vue {
         });
     }
 
-    toggleOnlineOffline(info: SimulationInfo) {
+    async toggleOnlineOffline(info: SimulationInfo) {
         let options = new ConfirmDialogOptions();
-        if (info.simulation.socketManager.forcedOffline) {
+        const offline = await info.simulation.isForcedOffline();
+        if (offline) {
             options.title = 'Enable online?';
             options.body = `Allow ${info.id} to reconnect to the server?`;
             options.okText = 'Go Online';
@@ -339,7 +342,8 @@ export default class App extends Vue {
             options.cancelText = 'Stay Online';
         }
         EventBus.$once(options.okEvent, () => {
-            info.simulation.socketManager.toggleForceOffline();
+            info.simulation.toggleForceOffline();
+            info.forcedOffline = !offline;
             EventBus.$off(options.cancelEvent);
         });
         EventBus.$once(options.cancelEvent, () => {
@@ -367,7 +371,8 @@ export default class App extends Vue {
 
     async finishAddSimulation(id: string) {
         console.log('[App] Add simulation!');
-        await appManager.simulationManager.primary.helper.createSimulation(id);
+        await appManager.simulationManager.primary.createSimulation(id);
+        // await appManager.simulationManager.primary.helper.createSimulation(id);
     }
 
     removeSimulation(info: SimulationInfo) {
@@ -386,17 +391,19 @@ export default class App extends Vue {
         this.removeSimulationById(this.simulationToRemove);
     }
 
-    removeSimulationById(id: string) {
-        appManager.simulationManager.simulations.forEach(sim => {
-            sim.helper.destroySimulations(id);
-        });
+    async removeSimulationById(id: string) {
+        const keys = [...appManager.simulationManager.simulations.keys()];
+        for (let i = 0; i < keys.length; i++) {
+            const sim = appManager.simulationManager.simulations.get(keys[i]);
+            await sim.destroySimulations(id);
+        }
     }
 
     getQRCode(): string {
         return this.qrCode || this.url();
     }
 
-    private _simulationAdded(simulation: Simulation) {
+    private _simulationAdded(simulation: AsyncSimulation) {
         const index = this.simulations.findIndex(s => s.id === simulation.id);
         if (index >= 0) {
             return;
@@ -409,11 +416,12 @@ export default class App extends Vue {
             online: false,
             synced: false,
             lostConnection: false,
+            forcedOffline: false,
             simulation: simulation,
         };
 
         subs.push(
-            simulation.helper.localEvents.subscribe(e => {
+            simulation.localEvents.subscribe(e => {
                 if (e.name === 'show_toast') {
                     this.snackbar = {
                         message: e.message,
@@ -448,28 +456,24 @@ export default class App extends Vue {
                     }
                 }
             }),
-            simulation.aux.channel.connectionStateChanged.subscribe(
-                connected => {
-                    if (!connected) {
-                        this._showConnectionLost(info);
-                        info.online = false;
-                        info.synced = false;
-                        info.lostConnection = true;
-                    } else {
-                        info.online = true;
-                        if (info.lostConnection) {
-                            this._showConnectionRegained(info);
-                        }
-                        info.lostConnection = false;
-                        info.synced = true;
-                        if (
-                            info.id == appManager.simulationManager.primary.id
-                        ) {
-                            appManager.checkForUpdates();
-                        }
+            simulation.connectionStateChanged.subscribe(connected => {
+                if (!connected) {
+                    this._showConnectionLost(info);
+                    info.online = false;
+                    info.synced = false;
+                    info.lostConnection = true;
+                } else {
+                    info.online = true;
+                    if (info.lostConnection) {
+                        this._showConnectionRegained(info);
+                    }
+                    info.lostConnection = false;
+                    info.synced = true;
+                    if (info.id == appManager.simulationManager.primary.id) {
+                        appManager.checkForUpdates();
                     }
                 }
-            )
+            })
         );
 
         this._simulationSubs.set(simulation, subs);
@@ -478,7 +482,7 @@ export default class App extends Vue {
         this._updateQuery();
     }
 
-    private _simulationRemoved(simulation: Simulation) {
+    private _simulationRemoved(simulation: AsyncSimulation) {
         const subs = this._simulationSubs.get(simulation);
 
         if (subs) {
@@ -497,17 +501,16 @@ export default class App extends Vue {
         this._updateQuery();
     }
 
-    private _updateQuery() {
+    private async _updateQuery() {
         if (!appManager.simulationManager.primary) {
             return;
         }
 
-        const channel =
-            appManager.simulationManager.primary.parsedId.channel ||
-            this.$router.currentRoute.params.id;
+        const parsedId = await appManager.simulationManager.primary.getParsedId();
+
+        const channel = parsedId.channel || this.$router.currentRoute.params.id;
         const context =
-            appManager.simulationManager.primary.parsedId.context ||
-            this.$router.currentRoute.params.context;
+            parsedId.context || this.$router.currentRoute.params.context;
         if (channel && context) {
             this.$router.replace({
                 name: 'home',
@@ -535,7 +538,7 @@ export default class App extends Vue {
      */
     private _superAction(eventName: string, arg?: any) {
         appManager.simulationManager.simulations.forEach(sim => {
-            sim.helper.action(eventName, null, arg);
+            sim.action(eventName, null, arg);
         });
     }
 
@@ -651,5 +654,6 @@ export interface SimulationInfo {
     online: boolean;
     synced: boolean;
     lostConnection: boolean;
-    simulation: Simulation;
+    forcedOffline: boolean;
+    simulation: AsyncSimulation;
 }
