@@ -331,7 +331,8 @@ export class BuilderInteractionManager extends BaseInteractionManager {
                 const currentGrid = await simulation.simulation.getBuilderContextGrid(
                     gameObject.file
                 );
-                const defaultHeight = await simulation.simulation.getContextDefaultHeight(
+                // TODO: Ensure these work right
+                const defaultHeight = simulation.simulation.getContextDefaultHeight(
                     gameObject.file
                 );
                 let currentHeight =
