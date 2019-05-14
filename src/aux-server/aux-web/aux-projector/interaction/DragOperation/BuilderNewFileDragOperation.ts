@@ -15,7 +15,6 @@ import {
 import { merge } from '@casual-simulation/aux-common/utils';
 import { AuxFile3D } from '../../../shared/scene/AuxFile3D';
 import { BaseBuilderFileDragOperation } from './BaseBuilderFileDragOperation';
-import GameView from '../../GameView/GameView';
 import { BuilderInteractionManager } from '../BuilderInteractionManager';
 import { Simulation3D } from '../../../shared/scene/Simulation3D';
 
@@ -40,7 +39,10 @@ export class BuilderNewFileDragOperation extends BaseBuilderFileDragOperation {
         super(simulation, interaction, [duplicatedFile], null);
     }
 
-    protected _updateFile(file: File, data: PartialFile): FileEvent {
+    protected async _updateFile(
+        file: File,
+        data: PartialFile
+    ): Promise<FileEvent> {
         if (!this._fileAdded) {
             if (this._initialDragMesh) {
                 this._releaseDragMesh(this._initialDragMesh);
@@ -59,27 +61,27 @@ export class BuilderNewFileDragOperation extends BaseBuilderFileDragOperation {
         }
     }
 
-    protected _onDragReleased(calc: FileCalculationContext): void {
+    protected async _onDragReleased(): Promise<void> {
         if (this._initialDragMesh) {
             this._releaseDragMesh(this._initialDragMesh);
             this._initialDragMesh = null;
 
             if (this._isOverTrashCan()) {
                 // Clear the diff
-                this.simulation.recent.clear();
+                await this.simulation.clearRecents();
             }
         } else if (this._isOnWorkspace) {
-            this.simulation.helper.action(CREATE_ACTION_NAME, this._files);
+            await this.simulation.action(CREATE_ACTION_NAME, this._files);
         }
 
-        super._onDragReleased(calc);
+        await super._onDragReleased();
     }
 
-    protected _dragFilesFree(calc: FileCalculationContext): void {
+    protected async _dragFilesFree(): Promise<void> {
         if (!this._fileAdded) {
             // New file has not been added yet, drag a dummy mesh to drag around until it gets added to a workspace.
             if (!this._initialDragMesh) {
-                this._initialDragMesh = this._createDragMesh(calc, this._file);
+                this._initialDragMesh = this._createDragMesh(this._file);
             }
 
             const mouseDir = Physics.screenPosToRay(
@@ -94,7 +96,7 @@ export class BuilderNewFileDragOperation extends BaseBuilderFileDragOperation {
             this._initialDragMesh.updateMatrixWorld(true);
         } else {
             // New file has been added, just do the base file drag operation.
-            super._dragFilesFree(calc);
+            await super._dragFilesFree();
         }
     }
 

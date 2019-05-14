@@ -5,6 +5,7 @@ import {
     getFileConfigContexts,
     FileCalculationContext,
     Object,
+    File,
 } from '@casual-simulation/aux-common';
 import { ContextGroup3D } from '../../shared/scene/ContextGroup3D';
 
@@ -29,7 +30,7 @@ export class BuilderSimulation3D extends Simulation3D {
         await this.simulation.clearRecents();
     }
 
-    async selectRecentFile(file: AuxObject) {
+    async selectRecentFile(file: File) {
         const selected = await this.simulation.getSelectedRecentFile();
         if (!selected || selected.id !== file.id) {
             await this.simulation.setSelectedRecentFile(file);

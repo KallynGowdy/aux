@@ -18,6 +18,8 @@ import {
     File,
     PartialFile,
     UserMode,
+    SelectionMode,
+    FileDragMode,
 } from '@casual-simulation/aux-common';
 import { Observable } from 'rxjs';
 import { FilesUpdatedEvent } from './FilePanelManager';
@@ -28,6 +30,11 @@ export interface AsyncSimulation extends Initable {
      * The ID of the simulation.
      */
     id: string;
+
+    /**
+     * The ID of the user's file.
+     */
+    userFileId: string;
 
     /**
      * Exports the stored causal tree from the simulation.
@@ -50,6 +57,21 @@ export interface AsyncSimulation extends Initable {
      * Gets the current file state.
      */
     getFilesState(): Promise<AuxState>;
+
+    /**
+     * Calculates the list of file events for the given event running on the given files.
+     * @param eventName The name of the event to run.
+     * @param files The files that should be searched for handlers for the event.
+     * @param arg The argument that should be passed to the event handlers.
+     */
+    actionEvents(
+        eventName: string,
+        files: File[],
+        arg?: any
+    ): Promise<{
+        events: FileEvent[];
+        hasUserDefinedEvents: boolean;
+    }>;
 
     /**
      * Runs the given event on the given files.
@@ -86,6 +108,11 @@ export interface AsyncSimulation extends Initable {
      * Gets the list of files that the current user has selected.
      */
     getSelectedFilesForUser(): Promise<AuxObject[]>;
+
+    /**
+     * Gets the current user's selection mode.
+     */
+    getSelectionMode(): Promise<SelectionMode>;
 
     /**
      * Clears the user's current selection.
@@ -129,17 +156,17 @@ export interface AsyncSimulation extends Initable {
      * Sets the recent file that is currently selected.
      * @param file The file to select.
      */
-    setSelectedRecentFile(file: AuxObject): Promise<void>;
+    setSelectedRecentFile(file: File): Promise<void>;
 
     /**
      * Gets the currently selected recent file.
      */
-    getSelectedRecentFile(): Promise<AuxObject>;
+    getSelectedRecentFile(): Promise<File>;
 
     /**
      * Gets the list of recent files.
      */
-    getRecentFiles(): Promise<AuxObject[]>;
+    getRecentFiles(): Promise<File[]>;
 
     /**
      * Calculates the nicely formatted value for the given file and tag.
@@ -156,10 +183,23 @@ export interface AsyncSimulation extends Initable {
     updateFile(file: AuxFile, newData: PartialFile): Promise<void>;
 
     /**
+     * Calculates a FileUpdatedEvent for the given file and new data.
+     * @param file The file to update.
+     * @param newData The new data to include.
+     */
+    updateFileEvent(file: File, newData: Partial<File>): Promise<FileEvent>;
+
+    /**
      * Destroys the given file.
      * @param file The file to destroy.
      */
     destroyFile(file: AuxObject): Promise<void>;
+
+    /**
+     * Calculates the list of file events needed to destroy the given file.
+     * @param file The file to destroy.
+     */
+    calculateDestroyFileEvents(file: File): Promise<FileEvent[]>;
 
     /**
      * Destroys every file in the simulation except the globals file and user files.
@@ -320,4 +360,75 @@ export interface AsyncSimulation extends Initable {
      * @param z The Z position that the worksurface should be placed at.
      */
     pasteState(state: AuxState, x: number, y: number, z: number): Promise<void>;
+
+    // ----- File Calculation Wrappers -----
+    // TODO: Move a bunch of this to a wrapper that can handle things like caching.
+
+    /**
+     * Calculates the file drag mode for the given file.
+     * @param file The file.
+     */
+    getFileDragMode(file: File): Promise<FileDragMode>;
+
+    /**
+     * Gets the position of the given file within the given context.
+     * @param file The file.
+     * @param context The context.
+     */
+    getFilePosition(
+        file: File,
+        context: string
+    ): Promise<{ x: number; y: number; z: number }>;
+
+    /**
+     * Gets the list of files that are at the given position in the given context.
+     * @param context The context.
+     * @param position The position.
+     */
+    objectsAtContextGridPosition(
+        context: string,
+        position: { x: number; y: number; z: number }
+    ): Promise<File[]>;
+
+    /**
+     * Determines if the given file is a context that is currently minimized.
+     * @param file The file to check.
+     */
+    isMinimized(file: File): Promise<boolean>;
+
+    /**
+     * Determines if the given file is a context that is movable.
+     * @param file The file to check.
+     */
+    isContextMovable(file: File): Promise<boolean>;
+
+    /**
+     * Determines if the given file is movable.
+     * @param file The file.
+     */
+    isFileMovable(file: File): Promise<boolean>;
+
+    /**
+     * Gets the list of contexts that the given file is the config for.
+     * @param file The file.
+     */
+    getFileConfigContexts(file: File): Promise<string[]>;
+
+    /**
+     * Gets the grid object for the given file.
+     * @param file
+     */
+    getBuilderContextGrid(
+        file: AuxObject
+    ): Promise<File['tags']['aux.builder.context.grid']>;
+
+    /**
+     * Gets the default height of the context.
+     * @param file
+     */
+    getContextDefaultHeight(file: AuxObject): Promise<number>;
+
+    getContextSize(file: AuxObject): Promise<number>;
+
+    filesInContext(context: string): Promise<File[]>;
 }

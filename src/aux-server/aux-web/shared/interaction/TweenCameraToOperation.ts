@@ -8,6 +8,7 @@ import { IGameView } from '../../shared/IGameView';
 import { appManager } from '../../shared/AppManager';
 import { differenceBy, maxBy } from 'lodash';
 import { Simulation } from '../Simulation';
+import { AsyncSimulation } from '../AsyncSimulation';
 
 /**
  * Class that is able to tween the main camera to a given location.
@@ -19,7 +20,7 @@ export class TweenCameraToOperation implements IOperation {
     private _finished: boolean;
     private zoomNum: number = 0;
 
-    get simulation(): Simulation {
+    get simulation(): AsyncSimulation {
         return null;
     }
 
@@ -52,7 +53,7 @@ export class TweenCameraToOperation implements IOperation {
         this._target = finalPosition;
     }
 
-    update(calc: FileCalculationContext): void {
+    update(): void {
         if (this._finished) return;
 
         const cam = this._gameView.getMainCamera();

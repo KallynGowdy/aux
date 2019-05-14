@@ -80,21 +80,20 @@ export abstract class BaseFileDragOperation implements IOperation {
         this._inContext = true;
     }
 
-    update(calc: FileCalculationContext): void {
+    async update(): Promise<void> {
         if (this._finished) return;
 
         if (this.gameView.getInput().getMouseButtonHeld(0)) {
             const curScreenPos = this.gameView.getInput().getMouseScreenPos();
 
             if (!curScreenPos.equals(this._lastScreenPos)) {
-                this._onDrag(calc);
+                await this._onDrag();
 
                 this._lastScreenPos = curScreenPos;
             }
         } else {
-            this._onDragReleased(calc);
-
             // This drag operation is finished.
+            await this._onDragReleased();
             this._finished = true;
         }
     }
@@ -114,17 +113,17 @@ export abstract class BaseFileDragOperation implements IOperation {
         // Combine files.
         if (this._merge && this._other) {
             const update = getDiffUpdate(this._file);
-            this.simulation.helper.transaction(
+            this.simulation.transaction(
                 fileUpdated(this._other.id, update),
                 fileRemoved(this._file.id)
             );
         } else if (this._combine && this._other) {
-            this.simulation.helper.action(COMBINE_ACTION_NAME, [
+            this.simulation.action(COMBINE_ACTION_NAME, [
                 this._file,
                 this._other,
             ]);
         } else if (isDiff(this._file)) {
-            this.simulation.helper.transaction(
+            this.simulation.transaction(
                 fileUpdated(this._file.id, {
                     tags: {
                         'aux._diff': null,
@@ -142,7 +141,7 @@ export abstract class BaseFileDragOperation implements IOperation {
         }
     }
 
-    protected _updateFilesPositions(
+    protected async _updateFilesPositions(
         files: File[],
         gridPosition: Vector2,
         index: number
@@ -161,13 +160,13 @@ export abstract class BaseFileDragOperation implements IOperation {
             if (this._previousContext) {
                 tags.tags[this._previousContext] = null;
             }
-            events.push(this._updateFile(files[i], tags));
+            events.push(await this._updateFile(files[i], tags));
         }
 
-        this.simulation.helper.transaction(...events);
+        await this.simulation.transaction(...events);
     }
 
-    protected _updateFileContexts(files: File[], inContext: boolean) {
+    protected async _updateFileContexts(files: File[], inContext: boolean) {
         this._inContext = inContext;
         let events: FileEvent[] = [];
         for (let i = 0; i < files.length; i++) {
@@ -176,18 +175,15 @@ export abstract class BaseFileDragOperation implements IOperation {
                     [this._context]: inContext,
                 },
             };
-            events.push(this._updateFile(files[i], tags));
+            events.push(await this._updateFile(files[i], tags));
         }
 
-        this.simulation.helper.transaction(...events);
+        await this.simulation.transaction(...events);
     }
 
-    protected _updateFile(file: File, data: PartialFile): FileEvent {
-        this.simulation.recent.addFileDiff(file);
-        updateFile(file, this.simulation.helper.userFile.id, data, () =>
-            this.simulation.helper.createContext()
-        );
-        return fileUpdated(file.id, data);
+    protected _updateFile(file: File, data: PartialFile): Promise<FileEvent> {
+        this.simulation.addFileDiff(file);
+        return this.simulation.updateFileEvent(file, data);
     }
 
     /**
@@ -199,54 +195,49 @@ export abstract class BaseFileDragOperation implements IOperation {
      * @param file The file that is being dragged.
      */
     protected _calculateFileDragStackPosition(
-        calc: FileCalculationContext,
         context: string,
         gridPosition: Vector2,
         ...files: File[]
-    ) {
-        const objs = differenceBy(
-            objectsAtContextGridPosition(calc, context, gridPosition),
-            files,
-            f => f.id
-        );
-
-        const canMerge =
-            objs.length >= 1 &&
-            files.length === 1 &&
-            isDiff(files[0]) &&
-            isMergeable(calc, files[0]) &&
-            isMergeable(calc, objs[0]);
-
-        const canCombine =
-            this._allowCombine() &&
-            !canMerge &&
-            objs.length === 1 &&
-            files.length === 1 &&
-            this._interaction.canCombineFiles(calc, files[0], objs[0]);
-
-        // Can stack if we're dragging more than one file,
-        // or (if the single file we're dragging is stackable and
-        // the stack we're dragging onto is stackable)
-        const canStack =
-            files.length !== 1 ||
-            (isFileStackable(calc, files[0]) &&
-                (objs.length === 0 || isFileStackable(calc, objs[0])));
-
-        const index = this._nextAvailableObjectIndex(
-            calc,
-            context,
-            gridPosition,
-            files,
-            objs
-        );
-
-        return {
-            combine: canCombine,
-            merge: canMerge,
-            stackable: canStack,
-            other: canCombine ? objs[0] : canMerge ? objs[0] : null,
-            index: index,
-        };
+    ): any {
+        // TODO: Fix
+        // const objs = differenceBy(
+        //     objectsAtContextGridPosition(context, gridPosition),
+        //     files,
+        //     f => f.id
+        // );
+        // const canMerge =
+        //     objs.length >= 1 &&
+        //     files.length === 1 &&
+        //     isDiff(files[0]) &&
+        //     isMergeable(calc, files[0]) &&
+        //     isMergeable(calc, objs[0]);
+        // const canCombine =
+        //     this._allowCombine() &&
+        //     !canMerge &&
+        //     objs.length === 1 &&
+        //     files.length === 1 &&
+        //     this._interaction.canCombineFiles(calc, files[0], objs[0]);
+        // // Can stack if we're dragging more than one file,
+        // // or (if the single file we're dragging is stackable and
+        // // the stack we're dragging onto is stackable)
+        // const canStack =
+        //     files.length !== 1 ||
+        //     (isFileStackable(calc, files[0]) &&
+        //         (objs.length === 0 || isFileStackable(calc, objs[0])));
+        // const index = this._nextAvailableObjectIndex(
+        //     calc,
+        //     context,
+        //     gridPosition,
+        //     files,
+        //     objs
+        // );
+        // return {
+        //     combine: canCombine,
+        //     merge: canMerge,
+        //     stackable: canStack,
+        //     other: canCombine ? objs[0] : canMerge ? objs[0] : null,
+        //     index: index,
+        // };
     }
 
     /**
@@ -285,19 +276,19 @@ export abstract class BaseFileDragOperation implements IOperation {
         return nextIndex;
     }
 
-    protected _onDragReleased(calc: FileCalculationContext): void {
+    protected async _onDragReleased(): Promise<void> {
         if (this._context !== this._originalContext) {
             let events: FileEvent[] = [];
             if (this._originalContext) {
                 // trigger drag out of context
-                let result = this.simulation.helper.actionEvents(
+                let result = await this.simulation.actionEvents(
                     DRAG_OUT_OF_CONTEXT_ACTION_NAME,
                     this._files,
                     this._originalContext
                 );
                 events.push(...result.events);
 
-                result = this.simulation.helper.actionEvents(
+                result = await this.simulation.actionEvents(
                     DRAG_ANY_OUT_OF_CONTEXT_ACTION_NAME,
                     null,
                     {
@@ -310,14 +301,14 @@ export abstract class BaseFileDragOperation implements IOperation {
 
             if (this._inContext) {
                 // Trigger drag into context
-                let result = this.simulation.helper.actionEvents(
+                let result = await this.simulation.actionEvents(
                     DROP_IN_CONTEXT_ACTION_NAME,
                     this._files,
                     this._context
                 );
                 events.push(...result.events);
 
-                result = this.simulation.helper.actionEvents(
+                result = await this.simulation.actionEvents(
                     DROP_ANY_IN_CONTEXT_ACTION_NAME,
                     null,
                     {
@@ -328,7 +319,7 @@ export abstract class BaseFileDragOperation implements IOperation {
                 events.push(...result.events);
             }
 
-            this.simulation.helper.transaction(...events);
+            await this.simulation.transaction(...events);
         }
     }
 
@@ -341,5 +332,5 @@ export abstract class BaseFileDragOperation implements IOperation {
         return true;
     }
 
-    protected abstract _onDrag(calc: FileCalculationContext): void;
+    protected abstract _onDrag(): Promise<void>;
 }

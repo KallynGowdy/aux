@@ -29,11 +29,11 @@ export class BuilderNewFileClickOperation extends BaseFileClickOperation {
         super(simulation, interaction, file, null);
     }
 
-    protected _performClick(): void {
+    protected async _performClick(): Promise<void> {
         // Do nothing by default.
     }
 
-    protected _createDragOperation(): BaseFileDragOperation {
+    protected async _createDragOperation(): Promise<BaseFileDragOperation> {
         let duplicatedFile = duplicateFile(<Object>this._file);
         return new BuilderNewFileDragOperation(
             this._simulation3D,
@@ -43,7 +43,7 @@ export class BuilderNewFileClickOperation extends BaseFileClickOperation {
         );
     }
 
-    protected _canDragFile(calc: FileCalculationContext, file: File) {
+    protected async _canDragFile(file: File): Promise<boolean> {
         return true;
     }
 }

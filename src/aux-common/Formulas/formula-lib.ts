@@ -561,7 +561,7 @@ export function addToContextDiff(
  * @param context The context.
  */
 export function removeFromContextDiff(context: string) {
-    return calcRemoveFromContextDiff(calc, context);
+    return calcRemoveFromContextDiff(context);
 }
 
 /**

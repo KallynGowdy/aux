@@ -33,7 +33,7 @@ export class BuilderEmptyClickOperation implements IOperation {
         this._startScreenPos = this._gameView.getInput().getMouseScreenPos();
     }
 
-    public update(): void {
+    public async update(): Promise<void> {
         if (this._finished) return;
 
         if (!this._gameView.getInput().getMouseButtonHeld(0)) {
@@ -58,10 +58,13 @@ export class BuilderEmptyClickOperation implements IOperation {
                         }
                     }
                 } else if (this._interaction.mode === 'files') {
-                    if (this._interaction.selectionMode === 'single') {
+                    const selectionMode = await this.simulation.getSelectionMode();
+                    if (selectionMode === 'single') {
                         this._interaction.clearSelection();
                     }
-                    appManager.simulationManager.primary.recent.selectedRecentFile = null;
+                    appManager.simulationManager.primary.setSelectedRecentFile(
+                        null
+                    );
                 }
             }
 
@@ -84,20 +87,16 @@ export class BuilderEmptyClickOperation implements IOperation {
     /**
      * Opens up the color picker and allows you to change the scene's background color.
      */
-    public sceneBackgroundColorPicker(pagePos: Vector2) {
-        let globalsFile =
-            appManager.simulationManager.primary.helper.globalsFile;
+    public async sceneBackgroundColorPicker(pagePos: Vector2) {
+        let globalsFile = await appManager.simulationManager.primary.globalsFile();
 
         // This function is invoked as the color picker changes the color value.
         let colorUpdated = (hexColor: string) => {
-            appManager.simulationManager.primary.helper.updateFile(
-                globalsFile,
-                {
-                    tags: {
-                        'aux.scene.color': hexColor,
-                    },
-                }
-            );
+            appManager.simulationManager.primary.updateFile(globalsFile, {
+                tags: {
+                    'aux.scene.color': hexColor,
+                },
+            });
         };
 
         // This function is invoked when the color picker is closed.

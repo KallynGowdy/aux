@@ -1,4 +1,3 @@
-import { IOperation } from './IOperation';
 import {
     PerspectiveCamera,
     Vector3,
@@ -10,7 +9,6 @@ import {
     InterpolationEndingModes,
     OrthographicCamera,
 } from 'three';
-import { BaseInteractionManager } from './BaseInteractionManager';
 import { InputType, MouseButtonId } from '../../shared/scene/Input';
 import { IGameView } from '../../shared/IGameView';
 import { lerp } from '@casual-simulation/aux-common';

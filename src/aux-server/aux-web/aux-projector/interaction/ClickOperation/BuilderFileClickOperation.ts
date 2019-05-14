@@ -4,7 +4,6 @@ import {
     UserMode,
     File,
     duplicateFile,
-    FileCalculationContext,
     getFileIndex,
     getFilePosition,
     objectsAtContextGridPosition,
@@ -51,10 +50,8 @@ export class BuilderFileClickOperation extends BaseFileClickOperation {
         return this._file3D instanceof BuilderGroup3D ? this._file3D : null;
     }
 
-    protected _createDragOperation(
-        calc: FileCalculationContext
-    ): BaseFileDragOperation {
-        const mode = getFileDragMode(calc, this._file);
+    protected async _createDragOperation(): Promise<BaseFileDragOperation> {
+        const mode = await this.simulation.getFileDragMode(this._file);
         if (mode === 'clone') {
             return this._createCloneDragOperation();
         }
@@ -66,10 +63,12 @@ export class BuilderFileClickOperation extends BaseFileClickOperation {
             const fileWorkspace = this._interaction.findWorkspaceForMesh(
                 this._file3D
             );
-            const position = getFilePosition(calc, file3D.file, context);
+            const position = await this.simulation.getFilePosition(
+                file3D.file,
+                context
+            );
             if (fileWorkspace && position) {
-                const objects = objectsAtContextGridPosition(
-                    calc,
+                const objects = await this.simulation.objectsAtContextGridPosition(
                     context,
                     position
                 );
@@ -113,7 +112,7 @@ export class BuilderFileClickOperation extends BaseFileClickOperation {
         );
     }
 
-    protected _performClick(calc: FileCalculationContext): void {
+    protected async _performClick(): Promise<void> {
         const workspace = this._getWorkspace();
         // If we let go of the mouse button without starting a drag operation, this constitues a 'click'.
         if (!workspace) {
@@ -124,9 +123,10 @@ export class BuilderFileClickOperation extends BaseFileClickOperation {
 
             // If we're clicking on a workspace show the context menu for it.
         } else if (workspace) {
+            const selectedRecentFile = await this.simulation.getSelectedRecentFile();
             if (
                 !this._interaction.isInCorrectMode(this._file3D) &&
-                this.simulation.recent.selectedRecentFile
+                selectedRecentFile
             ) {
                 // Create file at clicked workspace position.
                 let workspaceMesh = workspace.surface;
@@ -136,48 +136,34 @@ export class BuilderFileClickOperation extends BaseFileClickOperation {
                     const context = this._interaction.firstContextInWorkspace(
                         workspace
                     );
-                    let newFile = duplicateFile(
-                        this.simulation.recent.selectedRecentFile,
-                        {
-                            tags: {
-                                [context]: true,
-                                [`${context}.x`]: closest.tile.gridPosition.x,
-                                [`${context}.y`]: closest.tile.gridPosition.y,
-                                [`${context}.z`]: closest.tile.localPosition.y,
-                                [`${context}.index`]: 0,
-                            },
-                        }
-                    );
+                    let newFile = duplicateFile(selectedRecentFile, {
+                        tags: {
+                            [context]: true,
+                            [`${context}.x`]: closest.tile.gridPosition.x,
+                            [`${context}.y`]: closest.tile.gridPosition.y,
+                            [`${context}.z`]: closest.tile.localPosition.y,
+                            [`${context}.index`]: 0,
+                        },
+                    });
 
-                    this.simulation.helper.createFile(newFile.id, newFile.tags);
+                    await this.simulation.createFile(newFile.id, newFile.tags);
                 }
             } else {
-                this._interaction.showContextMenu(calc);
+                await this._interaction.showContextMenu(this._simulation3D);
             }
         }
     }
 
-    protected _canDragFile(calc: FileCalculationContext, file: File): boolean {
+    protected async _canDragFile(file: File): Promise<boolean> {
         if (this._file3D instanceof ContextGroup3D) {
-            let tags = getFileConfigContexts(calc, file);
+            let tags = await this.simulation.getFileConfigContexts(file);
             return (
-                isContextMovable(calc, file) &&
-                isMinimized(calc, file) &&
+                (await this.simulation.isContextMovable(file)) &&
+                (await this.simulation.isMinimized(file)) &&
                 tags.length > 0
             );
         } else {
-            return isFileMovable(calc, file);
+            return await this.simulation.isFileMovable(file);
         }
-        // if (this._interaction.isInCorrectMode(this._file3D)) {
-        //     if (this._interaction.isInWorksurfacesMode()) {
-        //         let tags = getFileConfigContexts(calc, file);
-        //         if (tags.length > 0) {
-        //             // Workspaces are always movable.
-        //             return true;
-        //         }
-        //     }
-        //     return isFileMovable(calc, file);
-        // }
-        // return false;
     }
 }

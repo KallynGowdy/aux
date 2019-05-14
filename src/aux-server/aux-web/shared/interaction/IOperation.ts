@@ -4,6 +4,6 @@ import { AsyncSimulation } from '../AsyncSimulation';
 export interface IOperation {
     simulation: AsyncSimulation;
     isFinished(): boolean;
-    update(): void;
+    update(): Promise<void>;
     dispose(): void;
 }

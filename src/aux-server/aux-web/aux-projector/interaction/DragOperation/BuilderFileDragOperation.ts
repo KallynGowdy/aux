@@ -68,17 +68,17 @@ export class BuilderFileDragOperation extends BaseBuilderFileDragOperation {
         super._disposeCore();
     }
 
-    protected _onDrag(calc: FileCalculationContext) {
+    protected async _onDrag() {
         if (this._workspace) {
-            if (isMinimized(calc, this._workspace.file)) {
-                this._onDragWorkspace(calc);
+            if (await this.simulation.isMinimized(this._workspace.file)) {
+                await this._onDragWorkspace();
             }
         } else {
-            super._onDrag(calc);
+            await super._onDrag();
         }
     }
 
-    protected _onDragWorkspace(calc: FileCalculationContext) {
+    protected async _onDragWorkspace() {
         const mouseDir = Physics.screenPosToRay(
             this.gameView.getInput().getMouseScreenPos(),
             this.gameView.getMainCamera()
@@ -92,7 +92,7 @@ export class BuilderFileDragOperation extends BaseBuilderFileDragOperation {
             // move the center of the workspace to the point
             let final = new Vector3().copy(point);
 
-            this.simulation.helper.updateFile(this._workspace.file, {
+            await this.simulation.updateFile(this._workspace.file, {
                 tags: {
                     [`aux.context.x`]: final.x,
                     [`aux.context.y`]: final.z,

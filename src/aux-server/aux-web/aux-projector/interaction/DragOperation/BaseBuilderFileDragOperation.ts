@@ -67,29 +67,28 @@ export abstract class BaseBuilderFileDragOperation extends BaseFileDragOperation
         this.gameView.showTrashCan = true;
     }
 
-    protected _onDrag(calc: FileCalculationContext) {
+    protected async _onDrag(): Promise<void> {
         const mouseScreenPos = this.gameView.getInput().getMouseScreenPos();
         const {
             good,
             gridPosition,
             workspace,
-        } = this._interaction.pointOnWorkspaceGrid(
-            calc,
+        } = await this._interaction.pointOnWorkspaceGrid(
             mouseScreenPos,
             this.gameView.getMainCamera()
         );
 
         if (this._files.length > 0) {
             if (good) {
-                this._dragFilesOnWorkspace(calc, workspace, gridPosition);
+                await this._dragFilesOnWorkspace(workspace, gridPosition);
             } else {
-                this._dragFilesFree(calc);
+                await this._dragFilesFree();
             }
         }
     }
 
-    protected _onDragReleased(calc: FileCalculationContext): void {
-        super._onDragReleased(calc);
+    protected async _onDragReleased(): Promise<void> {
+        await super._onDragReleased();
 
         // Button has been released.
         if (this._freeDragGroup) {
@@ -97,16 +96,15 @@ export abstract class BaseBuilderFileDragOperation extends BaseFileDragOperation
             this._freeDragGroup = null;
 
             // Destroy files if free dragging them (trash can)!
-            this._destroyOrRemoveFiles(calc, this._files);
+            await this._destroyOrRemoveFiles(this._files);
         }
         this.gameView.showTrashCan = false;
     }
 
-    protected _dragFilesOnWorkspace(
-        calc: FileCalculationContext,
+    protected async _dragFilesOnWorkspace(
         workspace: BuilderGroup3D,
         gridPosition: Vector2
-    ): void {
+    ): Promise<void> {
         if (this._freeDragGroup) {
             this._releaseFreeDragGroup(this._freeDragGroup);
             this._freeDragGroup = null;
@@ -122,7 +120,7 @@ export abstract class BaseBuilderFileDragOperation extends BaseFileDragOperation
         }
 
         // calculate index for file
-        const result = this._calcWorkspaceDragPosition(calc, gridPosition);
+        const result = this._calcWorkspaceDragPosition(gridPosition);
 
         this._combine = result.combine;
         this._merge = result.merge;
@@ -133,7 +131,7 @@ export abstract class BaseBuilderFileDragOperation extends BaseFileDragOperation
         }
     }
 
-    protected _dragFilesFree(calc: FileCalculationContext): void {
+    protected _dragFilesFree(): void {
         const mouseDir = Physics.screenPosToRay(
             this.gameView.getInput().getMouseScreenPos(),
             this.gameView.getMainCamera()
@@ -144,7 +142,7 @@ export abstract class BaseBuilderFileDragOperation extends BaseFileDragOperation
             // Move the file freely in space at the distance the file is currently from the camera.
             if (!this._freeDragGroup) {
                 this._freeDragMeshes = this._files.map(f =>
-                    this._createDragMesh(calc, f)
+                    this._createDragMesh(f)
                 );
                 this._freeDragGroup = this._createFreeDragGroup(
                     this._freeDragMeshes
@@ -165,8 +163,8 @@ export abstract class BaseBuilderFileDragOperation extends BaseFileDragOperation
             }
 
             this._freeDragMeshes.forEach(m => {
-                m.fileUpdated(m.file, [], calc);
-                // m.frameUpdate(calc);
+                // TODO: Fix
+                // m.fileUpdated(m.file, []);
             });
 
             let worldPos = Physics.pointOnRay(mouseDir, this._freeDragDistance);
@@ -175,16 +173,13 @@ export abstract class BaseBuilderFileDragOperation extends BaseFileDragOperation
         }
     }
 
-    protected _destroyOrRemoveFiles(
-        calc: FileCalculationContext,
-        files: File[]
-    ) {
+    protected _destroyOrRemoveFiles(files: File[]) {
         if (this._isOverTrashCan()) {
-            this._destroyFiles(calc, files);
+            this._destroyFiles(files);
             return;
         }
 
-        this._removeFromContext(calc, files);
+        this._removeFromContext(files);
     }
 
     /**
@@ -200,9 +195,9 @@ export abstract class BaseBuilderFileDragOperation extends BaseFileDragOperation
         return false;
     }
 
-    private _destroyFiles(calc: FileCalculationContext, files: File[]) {
+    private async _destroyFiles(files: File[]) {
         let events: FileEvent[] = [];
-        const state = this.simulation.helper.filesState;
+        const state = await this.simulation.getFilesState();
 
         // Remove the files from the context
         for (let i = 0; i < files.length; i++) {
@@ -210,35 +205,33 @@ export abstract class BaseBuilderFileDragOperation extends BaseFileDragOperation
             const actionData = action(
                 DESTROY_ACTION_NAME,
                 [file.id],
-                this.simulation.helper.userFile.id
+                this.simulation.userFileId
             );
             const result = calculateActionEvents(state, actionData);
 
             events.push(...result.events);
-            events.push(...calculateDestroyFileEvents(calc, files[i]));
+            events.push(
+                ...(await this.simulation.calculateDestroyFileEvents(files[i]))
+            );
         }
-        this.simulation.helper.transaction(...events);
+        await this.simulation.transaction(...events);
     }
 
-    private _removeFromContext(calc: FileCalculationContext, files: File[]) {
+    private async _removeFromContext(files: File[]) {
         let events: FileEvent[] = [];
         // Remove the files from the context
         for (let i = 0; i < files.length; i++) {
             events.push(
                 fileUpdated(files[i].id, {
-                    tags: removeFromContextDiff(calc, this._context),
+                    tags: removeFromContextDiff(this._context),
                 })
             );
         }
-        this.simulation.helper.transaction(...events);
+        await this.simulation.transaction(...events);
     }
 
-    protected _calcWorkspaceDragPosition(
-        calc: FileCalculationContext,
-        gridPosition: Vector2
-    ) {
+    protected _calcWorkspaceDragPosition(gridPosition: Vector2) {
         return this._calculateFileDragStackPosition(
-            calc,
             this._context,
             gridPosition,
             ...this._files
@@ -293,10 +286,7 @@ export abstract class BaseBuilderFileDragOperation extends BaseFileDragOperation
      * @param calc The file calculation context.
      * @param file The file.
      */
-    protected _createDragMesh(
-        calc: FileCalculationContext,
-        file: File
-    ): AuxFile3D {
+    protected _createDragMesh(file: File): AuxFile3D {
         // Instance a file mesh to represent the file in its intial drag state before being added to the world.
         let mesh = new AuxFile3D(
             file,
@@ -307,7 +297,8 @@ export abstract class BaseBuilderFileDragOperation extends BaseFileDragOperation
             new AuxFile3DDecoratorFactory(this.gameView)
         );
 
-        mesh.fileUpdated(file, [], calc);
+        // TODO: Fix
+        // mesh.fileUpdated(file, [], calc);
 
         if (!mesh.parent) {
             this.gameView.getScene().add(mesh);

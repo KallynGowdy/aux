@@ -32,6 +32,7 @@ import {
 } from '../scene/CameraRigFactory';
 import { TapCodeManager } from './TapCodeManager';
 import { AsyncSimulation } from '../AsyncSimulation';
+import { Simulation3D } from '../scene/Simulation3D';
 
 export abstract class BaseInteractionManager {
     protected _gameView: IGameView;
@@ -103,7 +104,7 @@ export abstract class BaseInteractionManager {
         }
     }
 
-    update(): void {
+    async update(): Promise<void> {
         // const calc = appManager.simulationManager.primary.helper.createContext();
         // Update active operations and dispose of any that are finished.
         this._operations = this._operations.filter(o => {
@@ -329,7 +330,7 @@ export abstract class BaseInteractionManager {
         }
     }
 
-    showContextMenu(calc: FileCalculationContext) {
+    async showContextMenu(simulation: Simulation3D) {
         const input = this._gameView.getInput();
         const pagePos = input.getMousePagePos();
         const screenPos = input.getMouseScreenPos();
@@ -343,8 +344,8 @@ export abstract class BaseInteractionManager {
 
         this._cameraControls.enabled = false;
         const gameObject = this.findGameObjectObjectForHit(hit);
-        const actions = this._contextMenuActions(
-            calc,
+        const actions = await this._contextMenuActions(
+            simulation,
             gameObject,
             hit.point,
             pagePos
@@ -520,9 +521,9 @@ export abstract class BaseInteractionManager {
     ): IOperation;
 
     protected abstract _contextMenuActions(
-        calc: FileCalculationContext,
+        simulation: Simulation3D,
         gameObject: GameObject,
         point: Vector3,
         pagePos: Vector2
-    ): ContextMenuAction[];
+    ): Promise<ContextMenuAction[]>;
 }

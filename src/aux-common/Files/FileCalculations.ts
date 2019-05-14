@@ -724,10 +724,7 @@ export function addToContextDiff(
  * @param calc The file calculation context.
  * @param context The context that the file should be removed from.
  */
-export function removeFromContextDiff(
-    calc: FileCalculationContext,
-    context: string
-): FileTags {
+export function removeFromContextDiff(context: string): FileTags {
     return {
         [context]: null,
         [`${context}.x`]: null,

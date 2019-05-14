@@ -61,7 +61,7 @@ export abstract class BaseFileClickOperation implements IOperation {
         this.heldTime = 0;
     }
 
-    public update(calc: FileCalculationContext): void {
+    public async update(): Promise<void> {
         if (this._finished) return;
 
         // Update drag operation if one is active.
@@ -70,7 +70,7 @@ export abstract class BaseFileClickOperation implements IOperation {
                 this._dragOperation.dispose();
                 this._dragOperation = null;
             } else {
-                this._dragOperation.update(calc);
+                await this._dragOperation.update();
             }
         }
 
@@ -96,8 +96,8 @@ export abstract class BaseFileClickOperation implements IOperation {
                     this._triedDragging = true;
 
                     //returns true (can drag) if either aux.movable or aux.pickupable are true
-                    if (this._canDragFile(calc, this._file)) {
-                        this._dragOperation = this._createDragOperation(calc);
+                    if (await this._canDragFile(this._file)) {
+                        this._dragOperation = await this._createDragOperation();
                     } else {
                         // Finish the click operation because we tried dragging but could not
                         // actually drag anything.
@@ -109,7 +109,7 @@ export abstract class BaseFileClickOperation implements IOperation {
             if (!this._dragOperation && !this._triedDragging) {
                 // If not mobile, allow click no matter how long you've held on file, if mobile stop click if held too long
                 if (!this.isMobile || this.heldTime < 30) {
-                    this._performClick(calc);
+                    await this._performClick();
                 }
             }
 
@@ -130,12 +130,12 @@ export abstract class BaseFileClickOperation implements IOperation {
         }
     }
 
-    protected _canDragFile(calc: FileCalculationContext, file: File): boolean {
-        return isFileMovable(calc, file);
+    protected async _canDragFile(file: File): Promise<boolean> {
+        // TODO: Fix
+        return true;
+        // return isFileMovable(calc, file);
     }
 
-    protected abstract _performClick(calc: FileCalculationContext): void;
-    protected abstract _createDragOperation(
-        calc: FileCalculationContext
-    ): BaseFileDragOperation;
+    protected abstract _performClick(): Promise<void>;
+    protected abstract _createDragOperation(): Promise<BaseFileDragOperation>;
 }
