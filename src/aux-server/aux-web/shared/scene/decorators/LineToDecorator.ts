@@ -1,13 +1,13 @@
 import { AuxFile3DDecorator } from '../AuxFile3DDecorator';
 import { AuxFile3D } from '../AuxFile3D';
 import {
-    FileCalculationContext,
     AuxFile,
     isFormula,
     calculateFormattedFileValue,
     calculateFileValue,
     isArray,
     parseArray,
+    AsyncCalculationContext,
 } from '@casual-simulation/aux-common';
 import { Arrow3D } from '../Arrow3D';
 import { Color } from 'three';
@@ -27,9 +27,9 @@ export class LineToDecorator extends AuxFile3DDecorator {
         this._finder = fileFinder;
     }
 
-    fileUpdated(calc: FileCalculationContext): void {}
+    fileUpdated(calc: AsyncCalculationContext): void {}
 
-    frameUpdate(calc: FileCalculationContext): void {
+    frameUpdate(calc: AsyncCalculationContext): void {
         this._tagUpdateLine(calc);
     }
 
@@ -41,7 +41,7 @@ export class LineToDecorator extends AuxFile3DDecorator {
         }
     }
 
-    private _tagUpdateLine(calc: FileCalculationContext): void {
+    private _tagUpdateLine(calc: AsyncCalculationContext): void {
         if (!this._finder) {
             return;
         }
@@ -141,7 +141,7 @@ export class LineToDecorator extends AuxFile3DDecorator {
     }
 
     private _trySetupLines(
-        calc: FileCalculationContext,
+        calc: AsyncCalculationContext,
         targetFileId: string,
         validLineIds: number[],
         color?: Color
@@ -158,7 +158,7 @@ export class LineToDecorator extends AuxFile3DDecorator {
     }
 
     private _trySetupLine(
-        calc: FileCalculationContext,
+        calc: AsyncCalculationContext,
         targetFile: AuxFile3D,
         validLineIds: number[],
         color?: Color

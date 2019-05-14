@@ -2,13 +2,13 @@ import { AuxFile } from '@casual-simulation/aux-common/aux-format';
 import { WorkspaceMesh } from './WorkspaceMesh';
 import { GameObject } from './GameObject';
 import {
-    FileCalculationContext,
     TagUpdatedEvent,
     hasValue,
     calculateFileValue,
     AuxDomain,
     getContextPosition,
     getFileConfigContexts,
+    AsyncCalculationContext,
 } from '@casual-simulation/aux-common';
 import { difference, flatMap } from 'lodash';
 import { Context3D } from './Context3D';
@@ -103,7 +103,7 @@ export class ContextGroup3D extends GameObject {
         return flatMap([...this.contexts.values()], c => [...c.files.values()]);
     }
 
-    frameUpdate(calc: FileCalculationContext) {
+    frameUpdate(calc: AsyncCalculationContext) {
         this.contexts.forEach(context => {
             context.frameUpdate(calc);
         });
@@ -114,15 +114,15 @@ export class ContextGroup3D extends GameObject {
      * @param file The file that was added.
      * @param calc The file calculation context that should be used.
      */
-    async fileAdded(file: AuxFile, calc: FileCalculationContext) {
+    async fileAdded(calc: AsyncCalculationContext, file: AuxFile) {
         if (file.id === this.file.id) {
             this.file = file;
-            await this._updateThis(file, [], calc);
-            this._updateContexts(file, calc);
+            await this._updateThis(file, []);
+            this._updateContexts(file);
         }
 
         this.contexts.forEach(context => {
-            context.fileAdded(file, calc);
+            context.fileAdded(calc, file);
         });
     }
 
@@ -133,29 +133,29 @@ export class ContextGroup3D extends GameObject {
      * @param calc The file calculation context that should be used.
      */
     async fileUpdated(
+        calc: AsyncCalculationContext,
         file: AuxFile,
-        updates: TagUpdatedEvent[],
-        calc: FileCalculationContext
+        updates: TagUpdatedEvent[]
     ) {
         if (file.id === this.file.id) {
             this.file = file;
-            await this._updateThis(file, updates, calc);
-            this._updateContexts(file, calc);
+            await this._updateThis(file, updates);
+            this._updateContexts(file);
         }
 
         this.contexts.forEach(context => {
-            context.fileUpdated(file, updates, calc);
+            context.fileUpdated(calc, file, updates);
         });
     }
 
     /**
      * Notifies the builder context that the given file was removed from the state.
-     * @param id The ID of the file that was removed.
      * @param calc The file calculation context that should be used.
+     * @param id The ID of the file that was removed.
      */
-    fileRemoved(id: string, calc: FileCalculationContext) {
+    fileRemoved(calc: AsyncCalculationContext, id: string) {
         this.contexts.forEach(context => {
-            context.fileRemoved(id, calc);
+            context.fileRemoved(calc, id);
         });
     }
 
@@ -170,24 +170,20 @@ export class ContextGroup3D extends GameObject {
      * @param file The context file.
      * @param calc The file calculation context that should be used.
      */
-    private _updateContexts(file: AuxFile, calc: FileCalculationContext) {
+    private _updateContexts(calc: AsyncCalculationContext, file: AuxFile) {
         const contexts = getFileConfigContexts(calc, file);
         // TODO: Handle scenarios where builder.context is empty or null
         if (contexts) {
-            this._addContexts(file, contexts, calc);
+            this._addContexts(file, contexts);
         }
     }
 
-    protected async _updateThis(
-        file: AuxFile,
-        updates: TagUpdatedEvent[],
-        calc: FileCalculationContext
-    ) {}
+    protected async _updateThis(file: AuxFile, updates: TagUpdatedEvent[]) {}
 
     private _addContexts(
+        calc: AsyncCalculationContext,
         file: AuxFile,
-        newContexts: string | string[],
-        calc: FileCalculationContext
+        newContexts: string | string[]
     ) {
         let contexts: string[];
         if (Array.isArray(newContexts)) {

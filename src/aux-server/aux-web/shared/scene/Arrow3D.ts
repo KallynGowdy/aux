@@ -21,7 +21,7 @@ import {
     Object,
     Workspace,
     isMinimized,
-    FileCalculationContext,
+    AsyncCalculationContext,
 } from '@casual-simulation/aux-common';
 import { WorkspaceMesh } from './WorkspaceMesh';
 import { IGameView } from '../IGameView';
@@ -102,7 +102,7 @@ export class Arrow3D extends Object3D {
         );
     }
 
-    public update(calc: FileCalculationContext) {
+    public update(calc: AsyncCalculationContext) {
         if (!this._arrowHelper) return;
 
         let sourceFile = <Object>this._sourceFile3d.file;

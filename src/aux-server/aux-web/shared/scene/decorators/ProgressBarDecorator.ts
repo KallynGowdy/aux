@@ -1,7 +1,7 @@
 import { AuxFile3DDecorator } from '../AuxFile3DDecorator';
 import { AuxFile3D } from '../AuxFile3D';
 import {
-    FileCalculationContext,
+    AsyncCalculationContext,
     calculateNumericalTagValue,
     calculateFileValue,
     getFileShape,
@@ -57,7 +57,7 @@ export class ProgressBarDecorator extends AuxFile3DDecorator
         this._rebuildBar();
     }
 
-    fileUpdated(calc: FileCalculationContext): void {
+    fileUpdated(calc: AsyncCalculationContext): void {
         if (this.mesh) {
             this.dispose();
         }
@@ -95,7 +95,7 @@ export class ProgressBarDecorator extends AuxFile3DDecorator
         // this.file3D.display.updateMatrixWorld(false);
     }
 
-    frameUpdate(calc: FileCalculationContext): void {}
+    frameUpdate(calc: AsyncCalculationContext): void {}
 
     dispose(): void {
         const index = this.file3D.colliders.indexOf(this.mesh);
@@ -110,7 +110,7 @@ export class ProgressBarDecorator extends AuxFile3DDecorator
         this.container = null;
     }
 
-    private _updateColor(calc: FileCalculationContext) {
+    private _updateColor(calc: AsyncCalculationContext) {
         let color: any = null;
         if (this.file3D.file.tags['aux.progressBar.color']) {
             color = calculateFileValue(
@@ -132,7 +132,7 @@ export class ProgressBarDecorator extends AuxFile3DDecorator
         this._setColor(color, colorBackground);
     }
 
-    private _updateFill(calc: FileCalculationContext) {
+    private _updateFill(calc: AsyncCalculationContext) {
         // width, height. unused depth
 
         this.mesh.scale.set(this.progressNum, this.progressBarHeight, 1);

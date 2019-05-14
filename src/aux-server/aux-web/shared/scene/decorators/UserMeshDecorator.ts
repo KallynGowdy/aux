@@ -1,8 +1,8 @@
 import { Vector3, Group, Mesh, Math as ThreeMath } from 'three';
 import { Text3D } from '../Text3D';
 import {
-    FileCalculationContext,
     AuxObject,
+    AsyncCalculationContext,
 } from '@casual-simulation/aux-common';
 import { setLayer, disposeMesh, createUserCone } from '../SceneUtils';
 import { LayersHelper } from '../LayersHelper';
@@ -65,11 +65,11 @@ export class UserMeshDecorator extends AuxFile3DDecorator
         this.onMeshUpdated.invoke(this);
     }
 
-    fileUpdated(calc: FileCalculationContext): void {
+    fileUpdated(calc: AsyncCalculationContext): void {
         this.file3D.display.updateMatrixWorld(false);
     }
 
-    frameUpdate(calc: FileCalculationContext) {
+    frameUpdate(calc: AsyncCalculationContext) {
         let file = <AuxObject>this.file3D.file;
 
         // visible if not destroyed, and was active in the last minute

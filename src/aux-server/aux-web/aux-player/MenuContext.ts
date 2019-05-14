@@ -1,13 +1,13 @@
 import {
     AuxFile,
     calculateFileValue,
-    FileCalculationContext,
     TagUpdatedEvent,
     isFileInContext,
     getContextPosition,
     getFilePosition,
     getFileIndex,
     fileContextSortOrder,
+    AsyncCalculationContext,
 } from '@casual-simulation/aux-common';
 import { remove, sortBy } from 'lodash';
 import { getOptionalValue } from '../shared/SharedUtils';
@@ -63,7 +63,7 @@ export class MenuContext {
      * @param file The file.
      * @param calc The calculation context that should be used.
      */
-    async fileAdded(file: AuxFile, calc: FileCalculationContext) {
+    async fileAdded(file: AuxFile, calc: AsyncCalculationContext) {
         const isInContext = !!this.files.find(f => f.id == file.id);
         const shouldBeInContext = isFileInContext(calc, file, this.context);
 
@@ -81,7 +81,7 @@ export class MenuContext {
     async fileUpdated(
         file: AuxFile,
         updates: TagUpdatedEvent[],
-        calc: FileCalculationContext
+        calc: AsyncCalculationContext
     ) {
         const isInContext = !!this.files.find(f => f.id == file.id);
         const shouldBeInContext = isFileInContext(calc, file, this.context);
@@ -100,11 +100,11 @@ export class MenuContext {
      * @param file The ID of the file that was removed.
      * @param calc The calculation context.
      */
-    fileRemoved(id: string, calc: FileCalculationContext) {
+    fileRemoved(id: string, calc: AsyncCalculationContext) {
         this._removeFile(id);
     }
 
-    frameUpdate(calc: FileCalculationContext): void {
+    frameUpdate(calc: AsyncCalculationContext): void {
         if (this._itemsDirty) {
             this._resortItems(calc);
             this._itemsDirty = false;
@@ -113,7 +113,7 @@ export class MenuContext {
 
     dispose(): void {}
 
-    private _addFile(file: AuxFile, calc: FileCalculationContext) {
+    private _addFile(file: AuxFile, calc: AsyncCalculationContext) {
         this.files.push(file);
         this._itemsDirty = true;
     }
@@ -126,7 +126,7 @@ export class MenuContext {
     private _updateFile(
         file: AuxFile,
         updates: TagUpdatedEvent[],
-        calc: FileCalculationContext
+        calc: AsyncCalculationContext
     ) {
         let fileIndex = this.files.findIndex(f => f.id == file.id);
         if (fileIndex >= 0) {
@@ -135,7 +135,7 @@ export class MenuContext {
         }
     }
 
-    private _resortItems(calc: FileCalculationContext): void {
+    private _resortItems(calc: AsyncCalculationContext): void {
         this.items = sortBy(this.files, f =>
             fileContextSortOrder(calc, f, this.context)
         ).map(f => {

@@ -1,9 +1,9 @@
 import {
     Object,
     AuxObject,
-    FileCalculationContext,
     hasValue,
     DEFAULT_SCENE_BACKGROUND_COLOR,
+    AsyncCalculationContext,
 } from '@casual-simulation/aux-common';
 import { Simulation3D } from '../../shared/scene/Simulation3D';
 import { IGameView } from '../../shared/IGameView';
@@ -151,14 +151,14 @@ export class PlayerSimulation3D extends Simulation3D {
         );
     }
 
-    protected _frameUpdateCore(calc: FileCalculationContext) {
+    protected _frameUpdateCore(calc: AsyncCalculationContext) {
         super._frameUpdateCore(calc);
         this.inventoryContext.frameUpdate(calc);
         this.menuContext.frameUpdate(calc);
         this.simulationContext.frameUpdate(calc);
     }
 
-    protected _createContext(calc: FileCalculationContext, file: AuxObject) {
+    protected _createContext(calc: AsyncCalculationContext, file: AuxObject) {
         if (this._contextGroup) {
             return null;
         }
@@ -206,7 +206,7 @@ export class PlayerSimulation3D extends Simulation3D {
         }
     }
 
-    // protected _fileRemovedCore(calc: FileCalculationContext, id: string) {
+    // protected _fileRemovedCore(calc: AsyncCalculationContext, id: string) {
     //     super._fileRemovedCore(calc, id);
 
     //     if (this._contextGroup) {
@@ -221,18 +221,18 @@ export class PlayerSimulation3D extends Simulation3D {
     // }
 
     protected async _fileAddedCore(
-        calc: FileCalculationContext,
+        calc: AsyncCalculationContext,
         file: AuxObject
     ): Promise<void> {
         await Promise.all(
             this.contexts.map(async c => {
-                await c.fileAdded(file, calc);
+                await c.fileAdded(calc, file);
 
                 if (c === this._contextGroup) {
                     // Apply back buffer of files to the newly created context group.
                     for (let entry of this._fileBackBuffer) {
                         if (entry[0] !== file.id) {
-                            await this._contextGroup.fileAdded(entry[1], calc);
+                            await this._contextGroup.fileAdded(calc, entry[1]);
                         }
                     }
 
@@ -261,7 +261,7 @@ export class PlayerSimulation3D extends Simulation3D {
     }
 
     protected async _fileUpdatedCore(
-        calc: FileCalculationContext,
+        calc: AsyncCalculationContext,
         file: AuxObject
     ) {
         await super._fileUpdatedCore(calc, file);
@@ -270,7 +270,7 @@ export class PlayerSimulation3D extends Simulation3D {
         await this.simulationContext.fileUpdated(file, [], calc);
     }
 
-    protected _fileRemovedCore(calc: FileCalculationContext, file: string) {
+    protected _fileRemovedCore(calc: AsyncCalculationContext, file: string) {
         super._fileRemovedCore(calc, file);
         this.inventoryContext.fileRemoved(file, calc);
         this.menuContext.fileRemoved(file, calc);

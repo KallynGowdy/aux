@@ -1,5 +1,5 @@
 import { AuxFile3D } from './AuxFile3D';
-import { FileCalculationContext } from '@casual-simulation/aux-common';
+import { AsyncCalculationContext } from '@casual-simulation/aux-common';
 
 export abstract class AuxFile3DDecorator {
     /**
@@ -11,7 +11,7 @@ export abstract class AuxFile3DDecorator {
         this.file3D = file3D;
     }
 
-    abstract fileUpdated(calc: FileCalculationContext): void;
-    abstract frameUpdate(calc: FileCalculationContext): void;
+    abstract fileUpdated(calc: AsyncCalculationContext): void;
+    abstract frameUpdate(calc: AsyncCalculationContext): void;
     abstract dispose(): void;
 }

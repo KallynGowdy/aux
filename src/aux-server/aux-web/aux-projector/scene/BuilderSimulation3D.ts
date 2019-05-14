@@ -3,9 +3,9 @@ import { BuilderGroup3D } from '../../shared/scene/BuilderGroup3D';
 import {
     AuxObject,
     getFileConfigContexts,
-    FileCalculationContext,
     Object,
     File,
+    AsyncCalculationContext,
 } from '@casual-simulation/aux-common';
 import { ContextGroup3D } from '../../shared/scene/ContextGroup3D';
 
@@ -41,7 +41,7 @@ export class BuilderSimulation3D extends Simulation3D {
     }
 
     protected _createContext(
-        calc: FileCalculationContext,
+        calc: AsyncCalculationContext,
         file: AuxObject
     ): ContextGroup3D {
         const context = new BuilderGroup3D(
@@ -54,7 +54,7 @@ export class BuilderSimulation3D extends Simulation3D {
     }
 
     protected async _shouldRemoveUpdatedFile(
-        calc: FileCalculationContext,
+        calc: AsyncCalculationContext,
         file: AuxObject,
         initialUpdate: boolean
     ) {

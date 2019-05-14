@@ -1,12 +1,12 @@
 import { Vector3, Euler, PerspectiveCamera, OrthographicCamera } from 'three';
 import {
-    FileCalculationContext,
     AuxObject,
     calculateGridScale,
     getFileRotation,
     getFilePosition,
     normalize,
     lerp,
+    AsyncCalculationContext,
 } from '@casual-simulation/aux-common';
 import { AuxFile3DDecorator } from '../AuxFile3DDecorator';
 import { AuxFile3D } from '../AuxFile3D';
@@ -62,11 +62,11 @@ export class UserControlsDecorator extends AuxFile3DDecorator {
         this._gameView = gameView;
     }
 
-    fileUpdated(calc: FileCalculationContext): void {
+    fileUpdated(calc: AsyncCalculationContext): void {
         // Do nothing.
     }
 
-    frameUpdate(calc: FileCalculationContext) {
+    frameUpdate(calc: AsyncCalculationContext) {
         let file = <AuxObject>this.file3D.file;
         const time = Date.now();
 
@@ -164,7 +164,7 @@ export class UserControlsDecorator extends AuxFile3DDecorator {
             ) {
                 this._lastPositionUpdateTime = time;
 
-                this.file3D.contextGroup.simulation.simulation.helper.updateFile(
+                this.file3D.contextGroup.simulation.simulation.updateFile(
                     file,
                     {
                         tags: {
@@ -203,7 +203,7 @@ export class UserControlsDecorator extends AuxFile3DDecorator {
             timeBetweenChecks > DEFAULT_USER_ACTIVE_CHECK_INTERVAL
         ) {
             this._lastActiveCheckTime = Date.now();
-            this.file3D.contextGroup.simulation.simulation.helper.updateFile(
+            this.file3D.contextGroup.simulation.simulation.updateFile(
                 <AuxObject>this.file3D.file,
                 {
                     tags: {

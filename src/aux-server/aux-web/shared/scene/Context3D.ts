@@ -1,13 +1,11 @@
 import { GameObject } from './GameObject';
 import { AuxFile } from '@casual-simulation/aux-common/aux-format';
 import {
-    FileCalculationContext,
-    calculateFileValue,
     TagUpdatedEvent,
     AuxDomain,
     isFileInContext,
-    getFileConfigContexts,
     isConfigForContext,
+    AsyncCalculationContext,
 } from '@casual-simulation/aux-common';
 import { Object3D, SceneUtils } from 'three';
 import { AuxFile3D } from './AuxFile3D';
@@ -66,14 +64,13 @@ export class Context3D extends GameObject {
     /**
      * Notifies this context that the given file was added to the state.
      * @param file The file.
-     * @param calc The calculation context that should be used.
      */
-    fileAdded(file: AuxFile, calc: FileCalculationContext) {
+    fileAdded(calc: AsyncCalculationContext, file: AuxFile) {
         const isInContext3D = typeof this.files.get(file.id) !== 'undefined';
         const isInContext = isFileInContext(calc, file, this.context);
 
         if (!isInContext3D && isInContext) {
-            this._addFile(file, calc);
+            this._addFile(calc, file);
         }
     }
 
@@ -81,23 +78,22 @@ export class Context3D extends GameObject {
      * Notifies this context that the given file was updated.
      * @param file The file.
      * @param updates The changes made to the file.
-     * @param calc The calculation context that should be used.
      */
     fileUpdated(
+        calc: AsyncCalculationContext,
         file: AuxFile,
-        updates: TagUpdatedEvent[],
-        calc: FileCalculationContext
+        updates: TagUpdatedEvent[]
     ) {
         const isInContext3D = typeof this.files.get(file.id) !== 'undefined';
-        const isInContext = isFileInContext(calc, file, this.context);
-        const isForContext = isConfigForContext(calc, file, this.context);
+        const isInContext = isFileInContext(file, this.context);
+        const isForContext = isConfigForContext(file, this.context);
 
         if (!isInContext3D && isInContext) {
-            this._addFile(file, calc);
+            this._addFile(calc, file);
         } else if (isInContext3D && !isInContext) {
-            this._removeFile(file.id);
+            this._removeFile(calc, file.id);
         } else if ((isInContext3D && isInContext) || isForContext) {
-            this._updateFile(file, updates, calc);
+            this._updateFile(calc, file, updates);
         }
     }
 
@@ -106,11 +102,11 @@ export class Context3D extends GameObject {
      * @param file The ID of the file that was removed.
      * @param calc The calculation context.
      */
-    fileRemoved(id: string, calc: FileCalculationContext) {
-        this._removeFile(id);
+    fileRemoved(calc: AsyncCalculationContext, id: string) {
+        this._removeFile(calc, id);
     }
 
-    frameUpdate(calc: FileCalculationContext): void {
+    frameUpdate(calc: AsyncCalculationContext): void {
         if (this.files) {
             this.files.forEach(f => f.frameUpdate(calc));
         }
@@ -124,7 +120,7 @@ export class Context3D extends GameObject {
         }
     }
 
-    private _addFile(file: AuxFile, calc: FileCalculationContext) {
+    private _addFile(calc: AsyncCalculationContext, file: AuxFile) {
         if (Context3D.debug) {
             console.log('[Context3D] Add', file.id, 'to context', this.context);
         }
@@ -139,10 +135,10 @@ export class Context3D extends GameObject {
         this.files.set(file.id, mesh);
         this.add(mesh);
 
-        mesh.fileUpdated(file, [], calc);
+        mesh.fileUpdated(calc, file, []);
     }
 
-    private _removeFile(id: string) {
+    private _removeFile(calc: AsyncCalculationContext, id: string) {
         if (Context3D.debug) {
             console.log('[Context3D] Remove', id, 'from context', this.context);
         }
@@ -155,12 +151,12 @@ export class Context3D extends GameObject {
     }
 
     private _updateFile(
+        calc: AsyncCalculationContext,
         file: AuxFile,
-        updates: TagUpdatedEvent[],
-        calc: FileCalculationContext
+        updates: TagUpdatedEvent[]
     ) {
         this.files.forEach(mesh => {
-            mesh.fileUpdated(file, updates, calc);
+            mesh.fileUpdated(calc, file, updates);
         });
     }
 }

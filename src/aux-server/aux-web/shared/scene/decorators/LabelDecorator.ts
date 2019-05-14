@@ -1,7 +1,6 @@
 import { AuxFile3DDecorator } from '../AuxFile3DDecorator';
 import { AuxFile3D } from '../AuxFile3D';
 import {
-    FileCalculationContext,
     AuxFile,
     calculateFileValue,
     isFormula,
@@ -9,6 +8,7 @@ import {
     calculateNumericalTagValue,
     hasValue,
     getFileLabelAnchor,
+    AsyncCalculationContext,
 } from '@casual-simulation/aux-common';
 import { Text3D } from '../Text3D';
 import { setLayer, findParentScene } from '../SceneUtils';
@@ -41,7 +41,7 @@ export class LabelDecorator extends AuxFile3DDecorator
         this.file3D.add(this.label);
     }
 
-    fileUpdated(calc: FileCalculationContext): void {
+    fileUpdated(calc: AsyncCalculationContext): void {
         let label = this.file3D.file.tags['aux.label'];
 
         if (label) {
@@ -67,7 +67,7 @@ export class LabelDecorator extends AuxFile3DDecorator
         }
     }
 
-    frameUpdate(calc: FileCalculationContext): void {
+    frameUpdate(calc: AsyncCalculationContext): void {
         if (this.label) {
             // update label scale
             let labelMode = calculateFileValue(
@@ -97,11 +97,9 @@ export class LabelDecorator extends AuxFile3DDecorator
         return this._isInAutoSizeMode();
     }
 
-    private _isInAutoSizeMode(calc?: FileCalculationContext): boolean {
+    private _isInAutoSizeMode(calc?: AsyncCalculationContext): boolean {
         if (this.file3D.file.tags['aux.label.size.mode']) {
-            let fileCalc = calc
-                ? calc
-                : appManager.simulationManager.primary.helper.createContext();
+            let fileCalc = calc ? calc : appManager.simulationManager.primary;
             let mode = calculateFileValue(
                 fileCalc,
                 this.file3D.file,
@@ -112,7 +110,7 @@ export class LabelDecorator extends AuxFile3DDecorator
         return false;
     }
 
-    private _updateLabelSize(calc: FileCalculationContext) {
+    private _updateLabelSize(calc: AsyncCalculationContext) {
         let labelSize =
             calculateNumericalTagValue(
                 calc,
@@ -151,7 +149,7 @@ export class LabelDecorator extends AuxFile3DDecorator
         }
     }
 
-    private _updateLabelAnchor(calc: FileCalculationContext) {
+    private _updateLabelAnchor(calc: AsyncCalculationContext) {
         let anchor = getFileLabelAnchor(calc, this.file3D.file);
         this.label.setAnchor(anchor);
     }

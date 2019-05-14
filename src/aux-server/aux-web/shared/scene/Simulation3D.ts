@@ -4,7 +4,7 @@ import { Simulation } from '../Simulation';
 import {
     AuxObject,
     AuxFile,
-    FileCalculationContext,
+    AsyncCalculationContext,
 } from '@casual-simulation/aux-common';
 import { SubscriptionLike } from 'rxjs';
 import { IGameView } from '../IGameView';
@@ -110,43 +110,39 @@ export abstract class Simulation3D extends Object3D
         // this._frameUpdateCore(calc);
     }
 
-    protected _frameUpdateCore(calc: FileCalculationContext) {
+    protected _frameUpdateCore(calc: AsyncCalculationContext) {
         this.contexts.forEach(context => {
             context.frameUpdate(calc);
         });
     }
 
     protected async _fileAdded(file: AuxObject): Promise<void> {
-        // TODO: Fix
-        // let calc = this.simulation.helper.createContext();
-        // let context = this._createContext(calc, file);
-        // if (context) {
-        //     this.contexts.push(context);
-        //     this.add(context);
-        // }
-        // await this._fileAddedCore(calc, file);
-        // await this._fileUpdated(file, true);
-        // this.onFileAdded.invoke(file);
+        let context = this._createContext(this.simulation, file);
+        if (context) {
+            this.contexts.push(context);
+            this.add(context);
+        }
+        await this._fileAddedCore(this.simulation, file);
+        await this._fileUpdated(file, true);
+        this.onFileAdded.invoke(file);
     }
 
     protected async _fileAddedCore(
-        calc: FileCalculationContext,
+        calc: AsyncCalculationContext,
         file: AuxObject
     ): Promise<void> {
-        await Promise.all(this.contexts.map(c => c.fileAdded(file, calc)));
+        await Promise.all(this.contexts.map(c => c.fileAdded(calc, file)));
     }
 
     protected async _fileRemoved(id: string): Promise<void> {
-        // TODO: Fix
-        // const calc = this.simulation.helper.createContext();
-        // this._fileRemovedCore(calc, id);
-        // this.onFileRemoved.invoke(null);
+        this._fileRemovedCore(this.simulation, id);
+        this.onFileRemoved.invoke(null);
     }
 
-    protected _fileRemovedCore(calc: FileCalculationContext, id: string) {
+    protected _fileRemovedCore(calc: AsyncCalculationContext, id: string) {
         let removedIndex: number = -1;
         this.contexts.forEach((context, index) => {
-            context.fileRemoved(id, calc);
+            context.fileRemoved(calc, id);
             if (context.file.id === id) {
                 removedIndex = index;
             }
@@ -168,31 +164,29 @@ export abstract class Simulation3D extends Object3D
         file: AuxObject,
         initialUpdate: boolean
     ): Promise<void> {
-        // TODO: Fix
-        // const calc = this.simulation.helper.createContext();
-        // let { shouldRemove } = this._shouldRemoveUpdatedFile(
-        //     calc,
-        //     file,
-        //     initialUpdate
-        // );
-        // await this._fileUpdatedCore(calc, file);
-        // this.onFileUpdated.invoke(file);
-        // if (shouldRemove) {
-        //     this._fileRemoved(file.id);
-        // }
+        let { shouldRemove } = this._shouldRemoveUpdatedFile(
+            this.simulation,
+            file,
+            initialUpdate
+        );
+        await this._fileUpdatedCore(this.simulation, file);
+        this.onFileUpdated.invoke(file);
+        if (shouldRemove) {
+            this._fileRemoved(file.id);
+        }
     }
 
     protected async _fileUpdatedCore(
-        calc: FileCalculationContext,
+        calc: AsyncCalculationContext,
         file: AuxObject
     ) {
         await Promise.all(
-            this.contexts.map(c => c.fileUpdated(file, [], calc))
+            this.contexts.map(c => c.fileUpdated(calc, file, []))
         );
     }
 
     protected async _shouldRemoveUpdatedFile(
-        calc: FileCalculationContext,
+        calc: AsyncCalculationContext,
         file: AuxObject,
         initialUpdate: boolean
     ): Promise<{ shouldRemove: boolean }> {
@@ -212,7 +206,7 @@ export abstract class Simulation3D extends Object3D
      * @param file The file to create the context group for.
      */
     protected abstract _createContext(
-        calc: FileCalculationContext,
+        calc: AsyncCalculationContext,
         file: AuxObject
     ): ContextGroup3D;
 }

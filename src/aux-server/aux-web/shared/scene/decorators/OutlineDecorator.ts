@@ -7,9 +7,9 @@ import {
     BackSide,
 } from 'three';
 import {
-    FileCalculationContext,
     calculateFileValue,
     hasValue,
+    AsyncCalculationContext,
 } from '@casual-simulation/aux-common';
 import { disposeMesh, isTransparent } from '../SceneUtils';
 import { AuxFile3DDecorator } from '../AuxFile3DDecorator';
@@ -68,7 +68,7 @@ export class OutlineDecorator extends AuxFile3DDecorator
         );
     }
 
-    fileUpdated(calc: FileCalculationContext): void {
+    fileUpdated(calc: AsyncCalculationContext): void {
         // Color
         const colorValue = calculateFileValue(
             calc,
@@ -96,7 +96,7 @@ export class OutlineDecorator extends AuxFile3DDecorator
         this._updateOutlineMesh();
     }
 
-    frameUpdate(calc: FileCalculationContext) {}
+    frameUpdate(calc: AsyncCalculationContext) {}
 
     dispose() {
         if (this._targetMeshDecorator) {

@@ -12,12 +12,12 @@ import {
     Euler,
 } from 'three';
 import {
-    FileCalculationContext,
     calculateFileValue,
     hasValue,
     FileLabelAnchor,
     getFileLabelAnchor,
     calculateNumericalTagValue,
+    AsyncCalculationContext,
 } from '@casual-simulation/aux-common';
 import { AuxFile3DDecorator } from '../AuxFile3DDecorator';
 import { AuxFile3D } from '../AuxFile3D';
@@ -55,7 +55,7 @@ export class HtmlMixerPlaneDecorator extends AuxFile3DDecorator {
         this._gameView = gameView;
     }
 
-    fileUpdated(calc: FileCalculationContext): void {
+    fileUpdated(calc: AsyncCalculationContext): void {
         // Get value of iframe plane position.
         this._localPosition = new Vector3(
             calculateNumericalTagValue(
@@ -241,7 +241,7 @@ export class HtmlMixerPlaneDecorator extends AuxFile3DDecorator {
         );
     }
 
-    frameUpdate(calc: FileCalculationContext) {}
+    frameUpdate(calc: AsyncCalculationContext) {}
 
     dispose() {
         this._destroyMixerPlane();

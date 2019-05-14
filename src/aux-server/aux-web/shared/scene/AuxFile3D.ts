@@ -14,11 +14,11 @@ import {
 import {
     File,
     TagUpdatedEvent,
-    FileCalculationContext,
     AuxDomain,
     isFileInContext,
     getBuilderContextGrid,
     calculateGridScale,
+    AsyncCalculationContext,
 } from '@casual-simulation/aux-common';
 import { createCube, calculateScale, findParentScene } from './SceneUtils';
 import { AuxFile3DDecorator } from './AuxFile3DDecorator';
@@ -127,7 +127,7 @@ export class AuxFile3D extends GameObject {
      * @param file The file.
      * @param calc The calculation context.
      */
-    fileAdded(file: AuxFile, calc: FileCalculationContext) {
+    fileAdded(file: AuxFile) {
         // TODO:
         // (probably don't need to do anything here cause formulas updates will propogate to fileUpdated())
     }
@@ -139,9 +139,9 @@ export class AuxFile3D extends GameObject {
      * @param calc The calculation context.
      */
     fileUpdated(
+        calc: AsyncCalculationContext,
         file: File,
-        updates: TagUpdatedEvent[],
-        calc: FileCalculationContext
+        updates: TagUpdatedEvent[]
     ) {
         if (this._shouldUpdate(calc, file)) {
             if (file.id === this.file.id) {
@@ -158,11 +158,11 @@ export class AuxFile3D extends GameObject {
      * @param file The file that was removed.
      * @param calc The calculation context.
      */
-    fileRemoved(file: AuxFile, calc: FileCalculationContext) {
+    fileRemoved(calc: AsyncCalculationContext, file: AuxFile) {
         // TODO:
     }
 
-    frameUpdate(calc: FileCalculationContext): void {
+    frameUpdate(calc: AsyncCalculationContext): void {
         if (this.decorators) {
             for (let i = 0; i < this.decorators.length; i++) {
                 this.decorators[i].frameUpdate(calc);
@@ -179,7 +179,7 @@ export class AuxFile3D extends GameObject {
         }
     }
 
-    private _shouldUpdate(calc: FileCalculationContext, file: File): boolean {
+    private _shouldUpdate(calc: AsyncCalculationContext, file: File): boolean {
         return (
             file.id === this.file.id ||
             isFileInContext(calc, file, this.context) ||
