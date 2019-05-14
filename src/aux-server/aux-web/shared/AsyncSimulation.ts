@@ -229,10 +229,20 @@ export interface AsyncSimulation extends Initable {
     filePanelOpenChanged: Observable<boolean>;
 
     /**
+     * Gets an observable that resolves when the file panel search is updated.
+     */
+    filePanelSearchUpdated: Observable<string>;
+
+    /**
      * Sets the search value in the file panel.
      * @param search The search.
      */
     setSearch(search: string): Promise<void>;
+
+    /**
+     * Toggles whether the file panel is open or closed.
+     */
+    toggleFilePanelOpen(): Promise<void>;
 
     /**
      * Constructs a new weave that contains the smallest possible valid causal history for the given list

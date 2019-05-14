@@ -18,13 +18,13 @@ export default class FileSearch extends Vue {
     files: AuxObject[] = [];
     search: string = '';
 
-    toggleOpen() {
-        appManager.simulationManager.primary.filePanel.toggleOpen();
+    async toggleOpen() {
+        await appManager.simulationManager.primary.toggleFilePanelOpen();
     }
 
     @Watch('search')
-    onSearchChanged() {
-        appManager.simulationManager.primary.filePanel.search = this.search;
+    async onSearchChanged() {
+        await appManager.simulationManager.primary.setSearch(this.search);
     }
 
     get placeholder() {
@@ -43,13 +43,13 @@ export default class FileSearch extends Vue {
         appManager.whileLoggedIn((user, fileManager) => {
             let subs: SubscriptionLike[] = [];
             subs.push(
-                fileManager.filePanel.filesUpdated.subscribe(e => {
+                fileManager.filePanelUpdated.subscribe(e => {
                     this.files = e.files;
                 }),
-                fileManager.filePanel.isOpenChanged.subscribe(open => {
+                fileManager.filePanelOpenChanged.subscribe(open => {
                     this.isOpen = open;
                 }),
-                fileManager.filePanel.searchUpdated.subscribe(search => {
+                fileManager.filePanelSearchUpdated.subscribe(search => {
                     this.search = search;
                 })
             );
