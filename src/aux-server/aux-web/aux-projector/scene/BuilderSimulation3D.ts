@@ -12,32 +12,30 @@ export class BuilderSimulation3D extends Simulation3D {
     recentFiles: Object[] = [];
     selectedRecentFile: Object = null;
 
-    init() {
-        super.init();
+    async init() {
+        await super.init();
 
-        this.recentFiles = this.simulation.recent.files;
+        this.recentFiles = await this.simulation.getRecentFiles();
 
         this._subs.push(
-            this.simulation.recent.onUpdated.subscribe(() => {
-                this.recentFiles = this.simulation.recent.files;
-                this.selectedRecentFile = this.simulation.recent.selectedRecentFile;
+            this.simulation.recentsUpdated.subscribe(e => {
+                this.recentFiles = e.recentFiles;
+                this.selectedRecentFile = e.selectedRecentFile;
             })
         );
     }
 
-    clearRecentFiles() {
-        this.simulation.recent.clear();
+    async clearRecentFiles() {
+        await this.simulation.clearRecents();
     }
 
-    selectRecentFile(file: Object) {
-        if (
-            !this.simulation.recent.selectedRecentFile ||
-            this.simulation.recent.selectedRecentFile.id !== file.id
-        ) {
-            this.simulation.recent.selectedRecentFile = file;
-            this.simulation.selection.clearSelection();
+    async selectRecentFile(file: AuxObject) {
+        const selected = await this.simulation.getSelectedRecentFile();
+        if (!selected || selected.id !== file.id) {
+            await this.simulation.setSelectedRecentFile(file);
+            await this.simulation.clearSelection();
         } else {
-            this.simulation.recent.selectedRecentFile = null;
+            await this.simulation.setSelectedRecentFile(null);
         }
     }
 
@@ -54,7 +52,7 @@ export class BuilderSimulation3D extends Simulation3D {
         return context;
     }
 
-    protected _shouldRemoveUpdatedFile(
+    protected async _shouldRemoveUpdatedFile(
         calc: FileCalculationContext,
         file: AuxObject,
         initialUpdate: boolean
@@ -63,18 +61,16 @@ export class BuilderSimulation3D extends Simulation3D {
         let configTags = getFileConfigContexts(calc, file);
         if (configTags.length === 0) {
             if (!initialUpdate) {
+                const userFile = await this.simulation.getUserFile();
                 if (
                     !file.tags['aux._user'] &&
-                    file.tags['aux._lastEditedBy'] ===
-                        this.simulation.helper.userFile.id
+                    file.tags['aux._lastEditedBy'] === userFile.id
                 ) {
-                    if (
-                        this.simulation.recent.selectedRecentFile &&
-                        file.id === this.simulation.recent.selectedRecentFile.id
-                    ) {
-                        this.simulation.recent.selectedRecentFile = file;
+                    const recentFile = await this.simulation.getSelectedRecentFile();
+                    if (recentFile && file.id === recentFile.id) {
+                        await this.simulation.setSelectedRecentFile(file);
                     } else {
-                        this.simulation.recent.selectedRecentFile = null;
+                        await this.simulation.setSelectedRecentFile(null);
                     }
                     // this.addToRecentFilesList(file);
                 }

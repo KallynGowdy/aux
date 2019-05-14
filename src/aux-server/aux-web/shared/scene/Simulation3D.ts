@@ -62,7 +62,7 @@ export abstract class Simulation3D extends Object3D
     /**
      * Initializes the simulation 3D.
      */
-    init() {
+    async init(): Promise<void> {
         // Subscriptions to file events.
         this._subs.push(
             this.simulation.filesDiscovered
@@ -191,11 +191,11 @@ export abstract class Simulation3D extends Object3D
         );
     }
 
-    protected _shouldRemoveUpdatedFile(
+    protected async _shouldRemoveUpdatedFile(
         calc: FileCalculationContext,
         file: AuxObject,
         initialUpdate: boolean
-    ): { shouldRemove: boolean } {
+    ): Promise<{ shouldRemove: boolean }> {
         return {
             shouldRemove: false,
         };

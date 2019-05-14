@@ -7,16 +7,22 @@ import {
     tagsOnFile,
     isDiff,
     isTagWellKnown,
+    AuxObject,
 } from '@casual-simulation/aux-common';
 import { Subject, Observable } from 'rxjs';
 import { keys } from 'd3';
+
+export interface RecentsUpdatedEvent {
+    recentFiles: File[];
+    selectedRecentFile: File;
+}
 
 /**
  * Defines a class that helps manage recent files.
  */
 export class RecentFilesManager {
     private _helper: FileHelper;
-    private _onUpdated: Subject<void>;
+    private _onUpdated: Subject<RecentsUpdatedEvent>;
     private _selectedRecentFile: File = null;
 
     /**
@@ -32,7 +38,7 @@ export class RecentFilesManager {
     /**
      * Gets an observable that resolves whenever the files list has been updated.
      */
-    get onUpdated(): Observable<void> {
+    get onUpdated(): Observable<RecentsUpdatedEvent> {
         return this._onUpdated;
     }
 
@@ -57,7 +63,7 @@ export class RecentFilesManager {
      */
     constructor(helper: FileHelper) {
         this._helper = helper;
-        this._onUpdated = new Subject<void>();
+        this._onUpdated = new Subject<RecentsUpdatedEvent>();
         this.files = [createFile('empty')];
     }
 
@@ -79,7 +85,7 @@ export class RecentFilesManager {
         });
         this._trimList();
         this._updateSelectedRecentFile();
-        this._onUpdated.next();
+        this._updated();
     }
 
     /**
@@ -110,7 +116,7 @@ export class RecentFilesManager {
         this.files.unshift(f);
         this._trimList();
         this._updateSelectedRecentFile();
-        this._onUpdated.next();
+        this._updated();
     }
 
     private _updateSelectedRecentFile() {
@@ -127,7 +133,7 @@ export class RecentFilesManager {
      */
     clear() {
         this.files = [createFile('empty')];
-        this._onUpdated.next();
+        this._updated();
     }
 
     private _cleanFiles(fileId: string, file?: File) {
@@ -144,5 +150,12 @@ export class RecentFilesManager {
         if (this.files.length > this.maxNumberOfFiles) {
             this.files.length = this.maxNumberOfFiles;
         }
+    }
+
+    private _updated() {
+        this._onUpdated.next({
+            recentFiles: this.files,
+            selectedRecentFile: this.selectedRecentFile,
+        });
     }
 }

@@ -20,6 +20,7 @@ import {
 } from '@casual-simulation/aux-common';
 import { Observable } from 'rxjs';
 import { FilesUpdatedEvent } from './FilePanelManager';
+import { RecentsUpdatedEvent } from './RecentFilesManager';
 
 export interface AsyncSimulation extends Initable {
     /**
@@ -113,9 +114,19 @@ export interface AsyncSimulation extends Initable {
 
     /**
      * Sets the recent file that is currently selected.
-     * @param index The index of the file in the recents list to select.
+     * @param file The file to select.
      */
-    setSelectedRecentFile(index: number): Promise<void>;
+    setSelectedRecentFile(file: AuxObject): Promise<void>;
+
+    /**
+     * Gets the currently selected recent file.
+     */
+    getSelectedRecentFile(): Promise<AuxObject>;
+
+    /**
+     * Gets the list of recent files.
+     */
+    getRecentFiles(): Promise<AuxObject[]>;
 
     /**
      * Calculates the nicely formatted value for the given file and tag.
@@ -244,6 +255,11 @@ export interface AsyncSimulation extends Initable {
      * Gets an observable that resolves when the file panel search is updated.
      */
     filePanelSearchUpdated: Observable<string>;
+
+    /**
+     * Gets an observable that resolves when the recents list is updated.
+     */
+    recentsUpdated: Observable<RecentsUpdatedEvent>;
 
     /**
      * Sets the search value in the file panel.
