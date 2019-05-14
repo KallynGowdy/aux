@@ -62,7 +62,7 @@ export default class Home extends Vue {
         }
 
         for (let i = 0; i < newChannels.length; i++) {
-            await appManager.simulationManager.primary.helper.createSimulation(
+            await appManager.simulationManager.primary.createSimulation(
                 newChannels[i]
             );
         }
