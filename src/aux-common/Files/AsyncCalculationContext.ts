@@ -33,6 +33,13 @@ export interface AsyncCalculationContext {
     ): Promise<{ x: number; y: number; z: number }>;
 
     /**
+     * Gets the index that the given file is at in the given context.
+     * @param file The file.
+     * @param workspaceId The context.
+     */
+    getFileIndex(file: File, context: string): Promise<number>;
+
+    /**
      * Gets the list of files that are at the given position in the given context.
      * @param context The context.
      * @param position The position.
@@ -70,6 +77,12 @@ export interface AsyncCalculationContext {
      * Determines if the given file contains data for a context.
      */
     isContext(contextFile: File): Promise<boolean>;
+
+    /**
+     * Determines if the given file is trying to load a simulation.
+     * @param file The file to check.
+     */
+    isSimulation(file: Object): Promise<boolean>;
 
     /**
      * Gets the grid object for the given file.
@@ -158,6 +171,22 @@ export interface AsyncCalculationContext {
      * @param file The file.
      */
     getFileShape(file: File): Promise<FileShape>;
+
+    /**
+     * Gets the aux.channel tag from the given file.
+     * @param file The file.
+     */
+    getFileChannel(file: Object): Promise<string>;
+
+    /**
+     * Gets the sort order that the given file should appear in the given context.
+     * @param file The file.
+     * @param contextId The ID of the context that we're getting the sort order for.
+     */
+    fileContextSortOrder(
+        file: File,
+        contextId: string
+    ): Promise<number | string>;
 
     /**
      * Calculates the value of the given tag on the given file. If the result is not a number, then the given default value

@@ -6,6 +6,7 @@ import {
     AuxObject,
     updateFile,
 } from '@casual-simulation/aux-common';
+import { TestAsyncCalculationContext } from '@casual-simulation/aux-common/test';
 
 describe('MenuContext', () => {
     it('should construct for specific context', () => {
@@ -26,7 +27,7 @@ describe('MenuContext', () => {
         }).toThrow();
     });
 
-    it('should add and remove files that are part of the context', () => {
+    it('should add and remove files that are part of the context', async () => {
         let context = 'my_inventory';
         let menu = new MenuContext(null, context);
         let files: File[] = [];
@@ -38,10 +39,12 @@ describe('MenuContext', () => {
             files.push(file);
         }
 
-        const calc = createCalculationContext(files);
+        const calc = new TestAsyncCalculationContext(
+            createCalculationContext(files)
+        );
 
         for (let i = 0; i < files.length; i++) {
-            menu.fileAdded(<AuxObject>files[i], calc);
+            await menu.fileAdded(<AuxObject>files[i], calc);
         }
 
         // Make sure all files got added.
@@ -55,7 +58,7 @@ describe('MenuContext', () => {
         expect(menu.files).toHaveLength(7);
     });
 
-    it('should ignore files that are not part of the context.', () => {
+    it('should ignore files that are not part of the context.', async () => {
         let context = 'my_inventory';
         let menu = new MenuContext(null, context);
         let files: File[] = [];
@@ -74,10 +77,12 @@ describe('MenuContext', () => {
             files.push(file);
         }
 
-        const calc = createCalculationContext(files);
+        const calc = new TestAsyncCalculationContext(
+            createCalculationContext(files)
+        );
 
         for (let i = 0; i < files.length; i++) {
-            menu.fileAdded(<AuxObject>files[i], calc);
+            await menu.fileAdded(<AuxObject>files[i], calc);
         }
 
         expect(menu.files).toHaveLength(6);
@@ -87,7 +92,7 @@ describe('MenuContext', () => {
         expect(menu.files).toHaveLength(6);
     });
 
-    it('should sort files based on index in context', () => {
+    it('should sort files based on index in context', async () => {
         let context = 'my_inventory';
         let menu = new MenuContext(null, context);
         let files: File[] = [
@@ -112,16 +117,18 @@ describe('MenuContext', () => {
                 [`${context}.index`]: 4,
             }),
         ];
-        const calc = createCalculationContext(files);
+        const calc = new TestAsyncCalculationContext(
+            createCalculationContext(files)
+        );
 
         for (let i = 0; i < files.length; i++) {
-            menu.fileAdded(<AuxObject>files[i], calc);
+            await menu.fileAdded(<AuxObject>files[i], calc);
         }
 
         // Should be empty.
         expect(menu.items).toEqual([]);
 
-        menu.frameUpdate(calc);
+        await menu.frameUpdate(calc);
 
         // Should not be empty.
         expect(menu.items).not.toEqual([]);
@@ -135,7 +142,7 @@ describe('MenuContext', () => {
         expect(menu.items[4].file.id).toEqual('testId_0');
     });
 
-    it('should update items as expected after file is added and then moved to another slot.', () => {
+    it('should update items as expected after file is added and then moved to another slot.', async () => {
         let context = 'my_inventory';
         let menu = new MenuContext(null, context);
         let files: File[] = [
@@ -149,10 +156,12 @@ describe('MenuContext', () => {
             }),
         ];
 
-        let calc = createCalculationContext(files);
+        let calc = new TestAsyncCalculationContext(
+            createCalculationContext(files)
+        );
 
         for (let i = 0; i < files.length; i++) {
-            menu.fileAdded(<AuxObject>files[i], calc);
+            await menu.fileAdded(<AuxObject>files[i], calc);
         }
 
         // Expected files in context.
@@ -160,7 +169,7 @@ describe('MenuContext', () => {
         expect(menu.files[0].id).toEqual('testId_0');
         expect(menu.files[1].id).toEqual('testId_1');
 
-        menu.frameUpdate(calc);
+        await menu.frameUpdate(calc);
 
         // items should be be in initial state.
         expect(menu.items[0].file.id).toEqual('testId_0');
@@ -173,9 +182,9 @@ describe('MenuContext', () => {
         let file = files[1];
         file.tags[`${context}.index`] = 3;
 
-        calc = createCalculationContext(files);
-        menu.fileUpdated(<AuxObject>file, null, calc);
-        menu.frameUpdate(calc);
+        calc = new TestAsyncCalculationContext(createCalculationContext(files));
+        await menu.fileUpdated(<AuxObject>file, null, calc);
+        await menu.frameUpdate(calc);
 
         // Files should still be in original state.
         expect(menu.files).toHaveLength(2);

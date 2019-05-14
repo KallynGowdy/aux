@@ -3,6 +3,7 @@ import {
     FileCalculationContext,
     calculateFileValue,
     getFileConfigContexts,
+    AsyncCalculationContext,
 } from '@casual-simulation/aux-common';
 
 interface PlayerContextSearchResult {
@@ -17,12 +18,12 @@ interface PlayerContextSearchResult {
     playerContexts: string[];
 }
 
-export function doesFileDefinePlayerContext(
+export async function doesFileDefinePlayerContext(
     file: AuxFile,
     context: string,
-    calc: FileCalculationContext
-): PlayerContextSearchResult {
-    const contexts = getFileConfigContexts(calc, file);
+    calc: AsyncCalculationContext
+): Promise<PlayerContextSearchResult> {
+    const contexts = await calc.getFileConfigContexts(file);
     return {
         playerContexts: contexts,
         matchFound: contexts.indexOf(context) >= 0,

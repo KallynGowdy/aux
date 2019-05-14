@@ -6,6 +6,7 @@ import {
     AuxObject,
     updateFile,
 } from '@casual-simulation/aux-common';
+import { TestAsyncCalculationContext } from '@casual-simulation/aux-common/test';
 
 describe('InventoryContext', () => {
     it('should construct for specific context', () => {
@@ -46,7 +47,7 @@ describe('InventoryContext', () => {
         expect(inventory.getSlotCount()).toBe(11);
     });
 
-    it('should add and remove files that are part of the context', () => {
+    it('should add and remove files that are part of the context', async () => {
         let context = 'my_inventory';
         let inventory = new InventoryContext(null, context);
         let files: File[] = [];
@@ -58,10 +59,12 @@ describe('InventoryContext', () => {
             files.push(file);
         }
 
-        const calc = createCalculationContext(files);
+        const calc = new TestAsyncCalculationContext(
+            createCalculationContext(files)
+        );
 
         for (let i = 0; i < files.length; i++) {
-            inventory.fileAdded(<AuxObject>files[i], calc);
+            await inventory.fileAdded(<AuxObject>files[i], calc);
         }
 
         // Make sure all files got added.
@@ -75,7 +78,7 @@ describe('InventoryContext', () => {
         expect(inventory.files).toHaveLength(7);
     });
 
-    it('should ignore files that are not part of the context.', () => {
+    it('should ignore files that are not part of the context.', async () => {
         let context = 'my_inventory';
         let inventory = new InventoryContext(null, context);
         let files: File[] = [];
@@ -94,10 +97,12 @@ describe('InventoryContext', () => {
             files.push(file);
         }
 
-        const calc = createCalculationContext(files);
+        const calc = new TestAsyncCalculationContext(
+            createCalculationContext(files)
+        );
 
         for (let i = 0; i < files.length; i++) {
-            inventory.fileAdded(<AuxObject>files[i], calc);
+            await inventory.fileAdded(<AuxObject>files[i], calc);
         }
 
         expect(inventory.files).toHaveLength(6);
@@ -107,7 +112,7 @@ describe('InventoryContext', () => {
         expect(inventory.files).toHaveLength(6);
     });
 
-    it('should sort files based on x position in context', () => {
+    it('should sort files based on x position in context', async () => {
         let context = 'my_inventory';
         let slotCount = 3;
         let inventory = new InventoryContext(null, context, slotCount);
@@ -118,10 +123,12 @@ describe('InventoryContext', () => {
             createFile('testId_1', { [context]: true, [`${context}.x`]: 3 }),
             createFile('testId_0', { [context]: true, [`${context}.x`]: 4 }),
         ];
-        const calc = createCalculationContext(files);
+        const calc = new TestAsyncCalculationContext(
+            createCalculationContext(files)
+        );
 
         for (let i = 0; i < files.length; i++) {
-            inventory.fileAdded(<AuxObject>files[i], calc);
+            await inventory.fileAdded(<AuxObject>files[i], calc);
         }
 
         // Should be empty.
@@ -141,7 +148,7 @@ describe('InventoryContext', () => {
         expect(inventory.slots[3]).toBeUndefined();
     });
 
-    it('should not sort files that have context y position greater or less than 0', () => {
+    it('should not sort files that have context y position greater or less than 0', async () => {
         let context = 'my_inventory';
         let slotCount = 5;
         let inventory = new InventoryContext(null, context, slotCount);
@@ -172,10 +179,12 @@ describe('InventoryContext', () => {
                 [`${context}.y`]: 0,
             }),
         ];
-        const calc = createCalculationContext(files);
+        const calc = new TestAsyncCalculationContext(
+            createCalculationContext(files)
+        );
 
         for (let i = 0; i < files.length; i++) {
-            inventory.fileAdded(<AuxObject>files[i], calc);
+            await inventory.fileAdded(<AuxObject>files[i], calc);
         }
 
         // Should be empty.
@@ -196,7 +205,7 @@ describe('InventoryContext', () => {
         expect(inventory.slots[4].file.id).toEqual('testId_0');
     });
 
-    it('should not sort files that have context index greater than 0', () => {
+    it('should not sort files that have context index greater than 0', async () => {
         let context = 'my_inventory';
         let slotCount = 5;
         let inventory = new InventoryContext(null, context, slotCount);
@@ -232,10 +241,12 @@ describe('InventoryContext', () => {
                 [`${context}.index`]: 0,
             }),
         ];
-        const calc = createCalculationContext(files);
+        const calc = new TestAsyncCalculationContext(
+            createCalculationContext(files)
+        );
 
         for (let i = 0; i < files.length; i++) {
-            inventory.fileAdded(<AuxObject>files[i], calc);
+            await inventory.fileAdded(<AuxObject>files[i], calc);
         }
 
         // Should be empty.
@@ -256,7 +267,7 @@ describe('InventoryContext', () => {
         expect(inventory.slots[4].file.id).toEqual('testId_0');
     });
 
-    it('should update slots as expected after file is added and then moved to another slot.', () => {
+    it('should update slots as expected after file is added and then moved to another slot.', async () => {
         let context = 'my_inventory';
         let slotCount = 5;
         let inventory = new InventoryContext(null, context, slotCount);
@@ -265,10 +276,12 @@ describe('InventoryContext', () => {
             createFile('testId_1', { [context]: true, [`${context}.x`]: 1 }),
         ];
 
-        let calc = createCalculationContext(files);
+        let calc = new TestAsyncCalculationContext(
+            createCalculationContext(files)
+        );
 
         for (let i = 0; i < files.length; i++) {
-            inventory.fileAdded(<AuxObject>files[i], calc);
+            await inventory.fileAdded(<AuxObject>files[i], calc);
         }
 
         // Expected files in context.
@@ -289,7 +302,7 @@ describe('InventoryContext', () => {
         let file = files[1];
         file.tags[`${context}.x`] = 3;
 
-        calc = createCalculationContext(files);
+        calc = new TestAsyncCalculationContext(createCalculationContext(files));
         inventory.fileUpdated(<AuxObject>file, null, calc);
         inventory.frameUpdate(calc);
 

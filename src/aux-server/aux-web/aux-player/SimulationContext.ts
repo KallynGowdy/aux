@@ -80,8 +80,8 @@ export class SimulationContext {
     async fileAdded(file: AuxFile, calc: AsyncCalculationContext) {
         const isInContext = !!this.files.find(f => f.id == file.id);
         const shouldBeInContext =
-            isFileInContext(calc, file, this.context) &&
-            isSimulation(calc, file);
+            (await calc.isFileInContext(file, this.context)) &&
+            (await calc.isSimulation(file));
 
         if (!isInContext && shouldBeInContext) {
             this._addFile(file, calc);
@@ -101,8 +101,8 @@ export class SimulationContext {
     ) {
         const isInContext = !!this.files.find(f => f.id == file.id);
         const shouldBeInContext =
-            isFileInContext(calc, file, this.context) &&
-            isSimulation(calc, file);
+            (await calc.isFileInContext(file, this.context)) &&
+            (await calc.isSimulation(file));
 
         if (!isInContext && shouldBeInContext) {
             this._addFile(file, calc);
@@ -122,9 +122,9 @@ export class SimulationContext {
         this._removeFile(id);
     }
 
-    frameUpdate(calc: AsyncCalculationContext): void {
+    async frameUpdate(calc: AsyncCalculationContext) {
         if (this._itemsDirty) {
-            this._resortItems(calc);
+            await this._resortItems(calc);
             this._itemsDirty = false;
         }
     }
@@ -155,17 +155,19 @@ export class SimulationContext {
         }
     }
 
-    private _resortItems(calc: AsyncCalculationContext): void {
-        this.items = sortBy(this.files, f =>
-            fileContextSortOrder(calc, f, this.context)
-        ).map(f => {
-            return {
+    private async _resortItems(calc: AsyncCalculationContext) {
+        let mapped = new Array<any>(this.files.length);
+        for (let i = 0; i < this.files.length; i++) {
+            const f = this.files[i];
+            mapped[i] = {
                 file: f,
                 simulation: this.simulation,
-                simulationToLoad: getFileChannel(calc, f),
+                simulationToLoad: await calc.getFileChannel(f),
                 context: this.context,
+                sortOrder: await calc.fileContextSortOrder(f, this.context),
             };
-        });
+        }
+        this.items = sortBy(mapped, f => f.sortOrder);
 
         this._itemsUpdated.next();
     }

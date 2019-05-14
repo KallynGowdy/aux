@@ -40,10 +40,10 @@ export class BuilderSimulation3D extends Simulation3D {
         }
     }
 
-    protected _createContext(
+    protected async _createContext(
         calc: AsyncCalculationContext,
         file: AuxObject
-    ): ContextGroup3D {
+    ): Promise<ContextGroup3D> {
         const context = new BuilderGroup3D(
             this,
             file,
@@ -59,7 +59,7 @@ export class BuilderSimulation3D extends Simulation3D {
         initialUpdate: boolean
     ) {
         let shouldRemove = false;
-        let configTags = getFileConfigContexts(calc, file);
+        let configTags = await calc.getFileConfigContexts(file);
         if (configTags.length === 0) {
             if (!initialUpdate) {
                 const userFile = await this.simulation.getUserFile();

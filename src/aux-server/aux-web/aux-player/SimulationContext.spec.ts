@@ -6,6 +6,7 @@ import {
     AuxObject,
     updateFile,
 } from '@casual-simulation/aux-common';
+import { TestAsyncCalculationContext } from '@casual-simulation/aux-common/test';
 
 describe('SimulationContext', () => {
     it('should construct for specific context', () => {
@@ -26,7 +27,7 @@ describe('SimulationContext', () => {
         }).toThrow();
     });
 
-    it('should add and remove files that are part of the context', () => {
+    it('should add and remove files that are part of the context', async () => {
         let context = 'my_inventory';
         let sim = new SimulationContext(null, context);
         let files: File[] = [];
@@ -39,10 +40,12 @@ describe('SimulationContext', () => {
             files.push(file);
         }
 
-        const calc = createCalculationContext(files);
+        const calc = new TestAsyncCalculationContext(
+            createCalculationContext(files)
+        );
 
         for (let i = 0; i < files.length; i++) {
-            sim.fileAdded(<AuxObject>files[i], calc);
+            await sim.fileAdded(<AuxObject>files[i], calc);
         }
 
         // Make sure all files got added.
@@ -56,7 +59,7 @@ describe('SimulationContext', () => {
         expect(sim.files).toHaveLength(7);
     });
 
-    it('should ignore files that are not part of the context.', () => {
+    it('should ignore files that are not part of the context.', async () => {
         let context = 'my_inventory';
         let sim = new SimulationContext(null, context);
         let files: File[] = [];
@@ -77,10 +80,12 @@ describe('SimulationContext', () => {
             files.push(file);
         }
 
-        const calc = createCalculationContext(files);
+        const calc = new TestAsyncCalculationContext(
+            createCalculationContext(files)
+        );
 
         for (let i = 0; i < files.length; i++) {
-            sim.fileAdded(<AuxObject>files[i], calc);
+            await sim.fileAdded(<AuxObject>files[i], calc);
         }
 
         expect(sim.files).toHaveLength(6);
@@ -90,7 +95,7 @@ describe('SimulationContext', () => {
         expect(sim.files).toHaveLength(6);
     });
 
-    it('should ignore files that dont have aux.channel set to something', () => {
+    it('should ignore files that dont have aux.channel set to something', async () => {
         let context = 'my_inventory';
         let sim = new SimulationContext(null, context);
         let files: File[] = [];
@@ -110,10 +115,12 @@ describe('SimulationContext', () => {
             files.push(file);
         }
 
-        const calc = createCalculationContext(files);
+        const calc = new TestAsyncCalculationContext(
+            createCalculationContext(files)
+        );
 
         for (let i = 0; i < files.length; i++) {
-            sim.fileAdded(<AuxObject>files[i], calc);
+            await sim.fileAdded(<AuxObject>files[i], calc);
         }
 
         expect(sim.files).toHaveLength(6);
@@ -123,7 +130,7 @@ describe('SimulationContext', () => {
         expect(sim.files).toHaveLength(6);
     });
 
-    it('should sort files based on index in context', () => {
+    it('should sort files based on index in context', async () => {
         let context = 'my_inventory';
         let sim = new SimulationContext(null, context);
         let files: File[] = [
@@ -153,16 +160,18 @@ describe('SimulationContext', () => {
                 'aux.channel': 'a',
             }),
         ];
-        const calc = createCalculationContext(files);
+        const calc = new TestAsyncCalculationContext(
+            createCalculationContext(files)
+        );
 
         for (let i = 0; i < files.length; i++) {
-            sim.fileAdded(<AuxObject>files[i], calc);
+            await sim.fileAdded(<AuxObject>files[i], calc);
         }
 
         // Should be empty.
         expect(sim.items).toEqual([]);
 
-        sim.frameUpdate(calc);
+        await sim.frameUpdate(calc);
 
         // Should not be empty.
         expect(sim.items).not.toEqual([]);
@@ -176,7 +185,7 @@ describe('SimulationContext', () => {
         expect(sim.items[4].file.id).toEqual('testId_0');
     });
 
-    it('should update items as expected after file is added and then moved to another slot.', () => {
+    it('should update items as expected after file is added and then moved to another slot.', async () => {
         let context = 'my_inventory';
         let sim = new SimulationContext(null, context);
         let files: File[] = [
@@ -192,10 +201,12 @@ describe('SimulationContext', () => {
             }),
         ];
 
-        let calc = createCalculationContext(files);
+        let calc = new TestAsyncCalculationContext(
+            createCalculationContext(files)
+        );
 
         for (let i = 0; i < files.length; i++) {
-            sim.fileAdded(<AuxObject>files[i], calc);
+            await sim.fileAdded(<AuxObject>files[i], calc);
         }
 
         // Expected files in context.
@@ -203,7 +214,7 @@ describe('SimulationContext', () => {
         expect(sim.files[0].id).toEqual('testId_0');
         expect(sim.files[1].id).toEqual('testId_1');
 
-        sim.frameUpdate(calc);
+        await sim.frameUpdate(calc);
 
         // items should be be in initial state.
         expect(sim.items[0].file.id).toEqual('testId_0');
@@ -216,9 +227,9 @@ describe('SimulationContext', () => {
         let file = files[1];
         file.tags[`${context}.index`] = 3;
 
-        calc = createCalculationContext(files);
+        calc = new TestAsyncCalculationContext(createCalculationContext(files));
         sim.fileUpdated(<AuxObject>file, null, calc);
-        sim.frameUpdate(calc);
+        await sim.frameUpdate(calc);
 
         // Files should still be in original state.
         expect(sim.files).toHaveLength(2);

@@ -117,7 +117,7 @@ export abstract class Simulation3D extends Object3D
     }
 
     protected async _fileAdded(file: AuxObject): Promise<void> {
-        let context = this._createContext(this.simulation, file);
+        let context = await this._createContext(this.simulation, file);
         if (context) {
             this.contexts.push(context);
             this.add(context);
@@ -208,5 +208,5 @@ export abstract class Simulation3D extends Object3D
     protected abstract _createContext(
         calc: AsyncCalculationContext,
         file: AuxObject
-    ): ContextGroup3D;
+    ): Promise<ContextGroup3D>;
 }

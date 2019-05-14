@@ -158,12 +158,19 @@ export class PlayerSimulation3D extends Simulation3D {
         this.simulationContext.frameUpdate(calc);
     }
 
-    protected _createContext(calc: AsyncCalculationContext, file: AuxObject) {
+    protected async _createContext(
+        calc: AsyncCalculationContext,
+        file: AuxObject
+    ) {
         if (this._contextGroup) {
             return null;
         }
         // We dont have a context group yet. We are in search of a file that defines a player context that matches the user's current context.
-        const result = doesFileDefinePlayerContext(file, this.context, calc);
+        const result = await doesFileDefinePlayerContext(
+            file,
+            this.context,
+            calc
+        );
         if (result.matchFound) {
             // Create ContextGroup3D for this file that we will use to render all files in the context.
             this._contextGroup = new ContextGroup3D(

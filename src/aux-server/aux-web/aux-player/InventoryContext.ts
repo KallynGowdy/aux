@@ -86,7 +86,10 @@ export class InventoryContext {
      */
     async fileAdded(file: AuxFile, calc: AsyncCalculationContext) {
         const isInContext = !!this.files.find(f => f.id == file.id);
-        const shouldBeInContext = isFileInContext(calc, file, this.context);
+        const shouldBeInContext = await calc.isFileInContext(
+            file,
+            this.context
+        );
 
         if (!isInContext && shouldBeInContext) {
             this._addFile(file, calc);
@@ -105,7 +108,10 @@ export class InventoryContext {
         calc: AsyncCalculationContext
     ) {
         const isInContext = !!this.files.find(f => f.id == file.id);
-        const shouldBeInContext = isFileInContext(calc, file, this.context);
+        const shouldBeInContext = await calc.isFileInContext(
+            file,
+            this.context
+        );
 
         if (!isInContext && shouldBeInContext) {
             this._addFile(file, calc);
@@ -177,21 +183,23 @@ export class InventoryContext {
         }
     }
 
-    private _resortSlots(calc: AsyncCalculationContext): void {
+    private async _resortSlots(calc: AsyncCalculationContext) {
         this.slots = new Array(this._slotCount);
         const y = 0;
 
         for (let x = 0; x < this._slotCount; x++) {
-            let file = this.files.find(f => {
-                let contextPos = getFilePosition(calc, f, this.context);
+            let file = null;
+            for (let i = 0; i < this.files.length; i++) {
+                const f = this.files[i];
+                let contextPos = await calc.getFilePosition(f, this.context);
                 if (contextPos.x === x && contextPos.y === y) {
-                    let index = getFileIndex(calc, f, this.context);
+                    let index = await calc.getFileIndex(f, this.context);
                     if (index === 0) {
-                        return true;
+                        file = f;
+                        break;
                     }
                 }
-                return false;
-            });
+            }
 
             if (file) {
                 this.slots[x] = {
