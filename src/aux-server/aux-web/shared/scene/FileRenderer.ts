@@ -23,6 +23,7 @@ import {
     AuxObject,
     createCalculationContext,
     FileCalculationContext,
+    AsyncCalculationContext,
 } from '@casual-simulation/aux-common';
 import { AuxFile3D } from './AuxFile3D';
 import formulaLib from '@casual-simulation/aux-common/Formulas/formula-lib';
@@ -88,7 +89,7 @@ export class FileRenderer {
 
     async render(
         file: AuxObject,
-        calc: FileCalculationContext,
+        calc: AsyncCalculationContext,
         diffball: boolean = false
     ): Promise<string> {
         file = merge(
@@ -103,7 +104,7 @@ export class FileRenderer {
         );
 
         this._file.file = file;
-        this._file.fileUpdated(file, [], calc);
+        this._file.fileUpdated(calc, file, []);
 
         this._updateBounds();
         this._updateCamera();

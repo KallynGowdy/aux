@@ -8,6 +8,7 @@ import {
     TagUpdatedEvent,
     FileCalculationContext,
     isContext,
+    AsyncCalculationContext,
 } from '@casual-simulation/aux-common';
 import { Object3D } from 'three';
 import { Simulation3D } from './Simulation3D';
@@ -54,11 +55,11 @@ export class BuilderGroup3D extends ContextGroup3D {
     }
 
     protected async _updateThis(
+        calc: AsyncCalculationContext,
         file: AuxFile,
-        updates: TagUpdatedEvent[],
-        calc: FileCalculationContext
+        updates: TagUpdatedEvent[]
     ) {
-        await this._updateWorkspace(file, updates, calc);
+        await this._updateWorkspace(calc, file, updates);
     }
 
     /**
@@ -68,17 +69,17 @@ export class BuilderGroup3D extends ContextGroup3D {
      * @param calc
      */
     private async _updateWorkspace(
+        calc: AsyncCalculationContext,
         file: AuxFile,
-        updates: TagUpdatedEvent[],
-        calc: FileCalculationContext
+        updates: TagUpdatedEvent[]
     ) {
-        if (isContext(calc, file)) {
+        if (await calc.isContext(file)) {
             if (!this.surface) {
                 this.surface = new WorkspaceMesh(this.domain);
                 this.surface.gridGhecker = this._checker;
                 this.add(this.surface);
             }
-            const position = getContextPosition(calc, this.file);
+            const position = await calc.getContextPosition(this.file);
 
             this.position.x = position.x;
             this.position.y = position.z;

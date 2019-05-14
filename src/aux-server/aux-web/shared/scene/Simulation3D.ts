@@ -164,7 +164,7 @@ export abstract class Simulation3D extends Object3D
         file: AuxObject,
         initialUpdate: boolean
     ): Promise<void> {
-        let { shouldRemove } = this._shouldRemoveUpdatedFile(
+        let { shouldRemove } = await this._shouldRemoveUpdatedFile(
             this.simulation,
             file,
             initialUpdate

@@ -7,7 +7,6 @@ import {
     DEFAULT_WORKSPACE_GRID_SCALE,
     DEFAULT_MINI_WORKSPACE_SCALE,
     AuxDomain,
-    FileCalculationContext,
     calculateFileValue,
     getContextSize,
     getContextDefaultHeight,
@@ -21,6 +20,7 @@ import {
     DEFAULT_WORKSPACE_COLOR,
     hasValue,
     getContextGridHeight,
+    AsyncCalculationContext,
 } from '@casual-simulation/aux-common/Files';
 import { keys, minBy, isEqual } from 'lodash';
 import { GridChecker, GridCheckResults } from './grid/GridChecker';
@@ -144,7 +144,7 @@ export class WorkspaceMesh extends GameObject {
      * @param force Whether to force the workspace to update everything, even aspects that have not changed.
      */
     async update(
-        calc: FileCalculationContext,
+        calc: AsyncCalculationContext,
         workspace?: AuxFile,
         force?: boolean
     ) {
@@ -154,8 +154,8 @@ export class WorkspaceMesh extends GameObject {
         const prev = this.workspace;
         this.workspace = workspace || prev;
 
-        this.visible = isContext(calc, this.workspace);
-        this.container.visible = !isMinimized(calc, this.workspace);
+        this.visible = await calc.isContext(this.workspace);
+        this.container.visible = !(await calc.isMinimized(this.workspace));
         this.miniHex.visible = !this.container.visible;
 
         let gridUpdate: GridCheckResults = this._debugInfo.gridCheckResults;
@@ -179,7 +179,7 @@ export class WorkspaceMesh extends GameObject {
         }
 
         // Hex color.
-        const colorValue = getContextColor(calc, this.workspace);
+        const colorValue = await calc.getContextColor(this.workspace);
         const color: Color = hasValue(colorValue)
             ? new Color(colorValue)
             : new Color(DEFAULT_WORKSPACE_COLOR);
@@ -208,20 +208,21 @@ export class WorkspaceMesh extends GameObject {
     /**
      * Updates the hex grid to match the workspace data.
      */
-    public updateHexGrid(calc: FileCalculationContext) {
+    public async updateHexGrid(calc: AsyncCalculationContext) {
         if (this.hexGrid) {
             this.hexGrid.dispose();
             this.container.remove(this.hexGrid);
         }
 
-        const size = getContextSize(calc, this.workspace);
-        let centerHeight: number = getContextGridHeight(
-            calc,
+        const size = await calc.getContextSize(this.workspace);
+        let centerHeight: number = await calc.getContextGridHeight(
             this.workspace,
             '0:0'
         );
-        const defaultHeight = getContextDefaultHeight(calc, this.workspace);
-        const scale = getContextScale(calc, this.workspace);
+        const defaultHeight = await calc.getContextDefaultHeight(
+            this.workspace
+        );
+        const scale = await calc.getContextScale(this.workspace);
         this.hexGrid = HexGridMesh.createFilledInHexGrid(
             size,
             centerHeight || DEFAULT_WORKSPACE_HEIGHT,
@@ -229,7 +230,7 @@ export class WorkspaceMesh extends GameObject {
         );
 
         // why does this not ge the out ring of hexes, they need to be updated
-        const grid = getBuilderContextGrid(calc, this.workspace);
+        const grid = await calc.getBuilderContextGrid(this.workspace);
         const positionsKeys = grid ? keys(grid) : [];
         positionsKeys.forEach(key => {
             const position = keyToPos(key);
@@ -258,14 +259,14 @@ export class WorkspaceMesh extends GameObject {
      */
     async updateSquareGrids(
         checker: GridChecker,
-        calc: FileCalculationContext
+        calc: AsyncCalculationContext
     ) {
         if (this.squareGrids && this.squareGrids.length > 0) {
             this.squareGrids.forEach(g => g.dispose());
             this.container.remove(...this.squareGrids);
         }
 
-        const gridScale = getContextGridScale(calc, this.workspace);
+        const gridScale = await calc.getContextGridScale(this.workspace);
         checker.tileRatio = gridScale || DEFAULT_WORKSPACE_GRID_SCALE;
         const results = await checker.check(this.hexGrid);
         const levels = results.levels;
@@ -277,21 +278,21 @@ export class WorkspaceMesh extends GameObject {
         return results;
     }
 
-    private _gridChanged(
+    private async _gridChanged(
         current: AuxFile,
         previous: AuxFile,
-        calc: FileCalculationContext
+        calc: AsyncCalculationContext
     ) {
         if (!previous) {
             return true;
         } else {
-            const currentSize = getContextSize(calc, current);
-            const previousSize = getContextSize(calc, previous);
+            const currentSize = await calc.getContextSize(current);
+            const previousSize = await calc.getContextSize(previous);
             if (currentSize !== previousSize) {
                 return true;
             } else {
-                const currentGrid = getBuilderContextGrid(calc, current);
-                const previousGrid = getBuilderContextGrid(calc, previous);
+                const currentGrid = await calc.getBuilderContextGrid(current);
+                const previousGrid = await calc.getBuilderContextGrid(previous);
 
                 return !isEqual(currentGrid, previousGrid);
             }

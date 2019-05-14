@@ -65,9 +65,9 @@ export class Context3D extends GameObject {
      * Notifies this context that the given file was added to the state.
      * @param file The file.
      */
-    fileAdded(calc: AsyncCalculationContext, file: AuxFile) {
+    async fileAdded(calc: AsyncCalculationContext, file: AuxFile) {
         const isInContext3D = typeof this.files.get(file.id) !== 'undefined';
-        const isInContext = isFileInContext(calc, file, this.context);
+        const isInContext = calc.isFileInContext(file, this.context);
 
         if (!isInContext3D && isInContext) {
             this._addFile(calc, file);
@@ -79,14 +79,14 @@ export class Context3D extends GameObject {
      * @param file The file.
      * @param updates The changes made to the file.
      */
-    fileUpdated(
+    async fileUpdated(
         calc: AsyncCalculationContext,
         file: AuxFile,
         updates: TagUpdatedEvent[]
     ) {
         const isInContext3D = typeof this.files.get(file.id) !== 'undefined';
-        const isInContext = isFileInContext(file, this.context);
-        const isForContext = isConfigForContext(file, this.context);
+        const isInContext = await calc.isFileInContext(file, this.context);
+        const isForContext = await calc.isConfigForContext(file, this.context);
 
         if (!isInContext3D && isInContext) {
             this._addFile(calc, file);
@@ -102,7 +102,7 @@ export class Context3D extends GameObject {
      * @param file The ID of the file that was removed.
      * @param calc The calculation context.
      */
-    fileRemoved(calc: AsyncCalculationContext, id: string) {
+    async fileRemoved(calc: AsyncCalculationContext, id: string) {
         this._removeFile(calc, id);
     }
 

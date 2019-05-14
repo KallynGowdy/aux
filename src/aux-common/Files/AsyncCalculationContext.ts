@@ -11,8 +11,10 @@ import {
  * Defines an interface for objects that are able to calculate file values asynchronously.
  */
 export interface AsyncCalculationContext {
-    // ----- File Calculation Wrappers -----
-    // TODO: Move a bunch of this to a wrapper that can handle things like caching.
+    /**
+     * Gets the list of objects in this calculation context.
+     */
+    getObjects(): Promise<File[]>;
 
     /**
      * Calculates the file drag mode for the given file.
@@ -65,6 +67,11 @@ export interface AsyncCalculationContext {
     getFileConfigContexts(file: File): Promise<string[]>;
 
     /**
+     * Determines if the given file contains data for a context.
+     */
+    isContext(contextFile: File): Promise<boolean>;
+
+    /**
      * Gets the grid object for the given file.
      * @param file
      */
@@ -82,20 +89,52 @@ export interface AsyncCalculationContext {
 
     /**
      * Gets the scale of the context.
-     * @param calc The calculation context to use.
      * @param contextFile The file that represents the context.
      */
     getContextScale(contextFile: File): Promise<number>;
 
     /**
      * Gets the height of the specified grid on the context.
-     * @param calc The calculation context to use.
      * @param contextFile The file that represents the context.
      * @param key The key for the grid position to lookup in the context grid.
      */
     getContextGridHeight(contextFile: File, key: string): Promise<number>;
 
+    /**
+     * Gets the grid scale of the context.
+     * @param contextFile The file that represents the context.
+     */
+    getContextGridScale(contextFile: File): Promise<number>;
+
+    /**
+     * Gets the position that the context should be at using the given file.
+     * @param contextFile The file that represents the context.
+     */
+    getContextPosition(
+        contextFile: File
+    ): Promise<{ x: number; y: number; z: number }>;
+
+    /**
+     * Gets the color of the context.
+     * @param contextFile The file that represents the context.
+     */
+    getContextColor(contextFile: File): Promise<string>;
+
     filesInContext(context: string): Promise<File[]>;
+
+    /**
+     * Returns wether or not the given file resides in the given context id.
+     * @param file The file.
+     * @param contextId The id of the context that we are asking if the file is in.
+     */
+    isFileInContext(file: Object, contextId: string): Promise<boolean>;
+
+    /**
+     * Determines if the given file is a config file for the given context.
+     * @param file The file to check.
+     * @param context The context to check if the file is the config of.
+     */
+    isConfigForContext(file: File, context: string): Promise<boolean>;
 
     /**
      * Calculates the grid scale for the given workspace.
@@ -105,7 +144,6 @@ export interface AsyncCalculationContext {
 
     /**
      * Gets the rotation that the given file is at in the given context.
-     * @param calc The calculation context to use.
      * @param file The file.
      * @param context The context.
      */
@@ -124,7 +162,6 @@ export interface AsyncCalculationContext {
     /**
      * Calculates the value of the given tag on the given file. If the result is not a number, then the given default value
      * is returned.
-     * @param fileManager The file manager.
      * @param file The file.
      * @param tag The tag.
      * @param defaultValue The default value to use if the tag doesn't exist or the result is not a number.
@@ -156,7 +193,6 @@ export interface AsyncCalculationContext {
 
     /**
      * Gets the anchor position for the file's label.
-     * @param calc The calculation context to use.
      * @param file The file.
      */
     getFileLabelAnchor(file: File): Promise<FileLabelAnchor>;

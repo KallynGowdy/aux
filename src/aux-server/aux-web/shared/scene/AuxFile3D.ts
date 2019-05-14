@@ -138,17 +138,17 @@ export class AuxFile3D extends GameObject {
      * @param updates The updates that happened on the file.
      * @param calc The calculation context.
      */
-    fileUpdated(
+    async fileUpdated(
         calc: AsyncCalculationContext,
         file: File,
         updates: TagUpdatedEvent[]
     ) {
-        if (this._shouldUpdate(calc, file)) {
+        if (await this._shouldUpdate(calc, file)) {
             if (file.id === this.file.id) {
                 this.file = file;
             }
             for (let i = 0; i < this.decorators.length; i++) {
-                this.decorators[i].fileUpdated(calc);
+                await this.decorators[i].fileUpdated(calc);
             }
         }
     }
@@ -162,10 +162,10 @@ export class AuxFile3D extends GameObject {
         // TODO:
     }
 
-    frameUpdate(calc: AsyncCalculationContext): void {
+    async frameUpdate(calc: AsyncCalculationContext) {
         if (this.decorators) {
             for (let i = 0; i < this.decorators.length; i++) {
-                this.decorators[i].frameUpdate(calc);
+                await this.decorators[i].frameUpdate(calc);
             }
         }
     }
@@ -179,10 +179,13 @@ export class AuxFile3D extends GameObject {
         }
     }
 
-    private _shouldUpdate(calc: AsyncCalculationContext, file: File): boolean {
+    private async _shouldUpdate(
+        calc: AsyncCalculationContext,
+        file: File
+    ): Promise<boolean> {
         return (
             file.id === this.file.id ||
-            isFileInContext(calc, file, this.context) ||
+            (await calc.isFileInContext(file, this.context)) ||
             (this.contextGroup && this.contextGroup.file.id === file.id)
         );
     }

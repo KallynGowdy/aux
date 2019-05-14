@@ -103,10 +103,10 @@ export class ContextGroup3D extends GameObject {
         return flatMap([...this.contexts.values()], c => [...c.files.values()]);
     }
 
-    frameUpdate(calc: AsyncCalculationContext) {
-        this.contexts.forEach(context => {
-            context.frameUpdate(calc);
-        });
+    async frameUpdate(calc: AsyncCalculationContext) {
+        for (let context of this.contexts.values()) {
+            await context.frameUpdate(calc);
+        }
     }
 
     /**
@@ -117,13 +117,13 @@ export class ContextGroup3D extends GameObject {
     async fileAdded(calc: AsyncCalculationContext, file: AuxFile) {
         if (file.id === this.file.id) {
             this.file = file;
-            await this._updateThis(file, []);
-            this._updateContexts(file);
+            await this._updateThis(calc, file, []);
+            this._updateContexts(calc, file);
         }
 
-        this.contexts.forEach(context => {
-            context.fileAdded(calc, file);
-        });
+        for (let context of this.contexts.values()) {
+            await context.fileAdded(calc, file);
+        }
     }
 
     /**
@@ -139,13 +139,13 @@ export class ContextGroup3D extends GameObject {
     ) {
         if (file.id === this.file.id) {
             this.file = file;
-            await this._updateThis(file, updates);
-            this._updateContexts(file);
+            await this._updateThis(calc, file, updates);
+            this._updateContexts(calc, file);
         }
 
-        this.contexts.forEach(context => {
-            context.fileUpdated(calc, file, updates);
-        });
+        for (let context of this.contexts.values()) {
+            await context.fileUpdated(calc, file, updates);
+        }
     }
 
     /**
@@ -153,10 +153,10 @@ export class ContextGroup3D extends GameObject {
      * @param calc The file calculation context that should be used.
      * @param id The ID of the file that was removed.
      */
-    fileRemoved(calc: AsyncCalculationContext, id: string) {
-        this.contexts.forEach(context => {
-            context.fileRemoved(calc, id);
-        });
+    async fileRemoved(calc: AsyncCalculationContext, id: string) {
+        for (let context of this.contexts.values()) {
+            await context.fileRemoved(calc, id);
+        }
     }
 
     dispose(): void {
@@ -170,17 +170,24 @@ export class ContextGroup3D extends GameObject {
      * @param file The context file.
      * @param calc The file calculation context that should be used.
      */
-    private _updateContexts(calc: AsyncCalculationContext, file: AuxFile) {
-        const contexts = getFileConfigContexts(calc, file);
+    private async _updateContexts(
+        calc: AsyncCalculationContext,
+        file: AuxFile
+    ) {
+        const contexts = await calc.getFileConfigContexts(file);
         // TODO: Handle scenarios where builder.context is empty or null
         if (contexts) {
-            this._addContexts(file, contexts);
+            this._addContexts(calc, file, contexts);
         }
     }
 
-    protected async _updateThis(file: AuxFile, updates: TagUpdatedEvent[]) {}
+    protected async _updateThis(
+        calc: AsyncCalculationContext,
+        file: AuxFile,
+        updates: TagUpdatedEvent[]
+    ) {}
 
-    private _addContexts(
+    private async _addContexts(
         calc: AsyncCalculationContext,
         file: AuxFile,
         newContexts: string | string[]
@@ -207,15 +214,17 @@ export class ContextGroup3D extends GameObject {
                     )
             );
 
-            realNewContexts.forEach(c => {
+            for (let i = 0; i < realNewContexts.length; i++) {
+                const context = realNewContexts[i];
                 // console.log(`[ContextGroup3D] Add context ${c.context} to group ${this.file.id}.`);
-                this.contexts.set(c.context, c);
-                this.display.add(c);
+                this.contexts.set(context.context, context);
+                this.display.add(context);
 
-                calc.objects.forEach(o => {
-                    c.fileAdded(<AuxFile>o, calc);
-                });
-            });
+                const objects = await calc.getObjects();
+                for (let j = 0; j < objects.length; j++) {
+                    await context.fileAdded(calc, <AuxFile>objects[j]);
+                }
+            }
             removedContexts.forEach(c => {
                 // console.log(`[ContextGroup3D] Remove context ${c} from group ${this.file.id}.`);
                 const context = this.contexts.get(c);
