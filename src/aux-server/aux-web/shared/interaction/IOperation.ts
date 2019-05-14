@@ -1,9 +1,9 @@
 import { FileCalculationContext } from '@casual-simulation/aux-common';
-import { Simulation } from '../Simulation';
+import { AsyncSimulation } from '../AsyncSimulation';
 
 export interface IOperation {
-    simulation: Simulation;
+    simulation: AsyncSimulation;
     isFinished(): boolean;
-    update(calc: FileCalculationContext): void;
+    update(): void;
     dispose(): void;
 }
