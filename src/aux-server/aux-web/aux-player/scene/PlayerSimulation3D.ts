@@ -15,6 +15,7 @@ import { ContextGroup3D } from '../../shared/scene/ContextGroup3D';
 import { doesFileDefinePlayerContext } from '../PlayerUtils';
 import { SimulationContext } from '../SimulationContext';
 import { Color, Texture } from 'three';
+import { AsyncSimulation } from '../../shared/AsyncSimulation';
 
 export class PlayerSimulation3D extends Simulation3D {
     /**
@@ -43,19 +44,24 @@ export class PlayerSimulation3D extends Simulation3D {
         return this._contextBackground || this._sceneBackground;
     }
 
-    constructor(context: string, gameView: IGameView, simulation: Simulation) {
+    constructor(
+        context: string,
+        gameView: IGameView,
+        simulation: AsyncSimulation
+    ) {
         super(gameView, simulation);
 
         this.context = context;
         this._fileBackBuffer = new Map();
     }
 
-    init() {
-        super.init();
+    async init() {
+        await super.init();
 
+        const userFile = await this.simulation.getUserFile();
         this._subs.push(
-            this.simulation.watcher
-                .fileChanged(this.simulation.helper.userFile)
+            this.simulation
+                .fileChanged(userFile)
                 .pipe(
                     tap(file => {
                         const userInventoryContextValue = (<Object>file).tags[
@@ -113,9 +119,10 @@ export class PlayerSimulation3D extends Simulation3D {
                 .subscribe()
         );
 
+        const globalsFile = await this.simulation.globalsFile();
         this._subs.push(
-            this.simulation.watcher
-                .fileChanged(this.simulation.helper.globalsFile)
+            this.simulation
+                .fileChanged(globalsFile)
                 .pipe(
                     tap(file => {
                         // Scene background color.
@@ -129,7 +136,7 @@ export class PlayerSimulation3D extends Simulation3D {
         );
 
         this._subs.push(
-            this.simulation.helper.localEvents
+            this.simulation.localEvents
                 .pipe(
                     tap(e => {
                         if (e.name === 'tween_to') {
@@ -168,7 +175,7 @@ export class PlayerSimulation3D extends Simulation3D {
 
             // Subscribe to file change updates for this context file so that we can do things like change the background color to match the context color, etc.
             this._subs.push(
-                this.simulation.watcher
+                this.simulation
                     .fileChanged(file)
                     .pipe(
                         tap(file => {
@@ -241,13 +248,13 @@ export class PlayerSimulation3D extends Simulation3D {
         // Change the user's context after first adding and updating it
         // because the callback for file_updated was happening before we
         // could call fileUpdated from fileAdded.
-        if (file.id === this.simulation.helper.userFile.id) {
-            const userFile = this.simulation.helper.userFile;
+        const userFile = await this.simulation.getUserFile();
+        if (file.id === userFile.id) {
             console.log(
                 "[PlayerSimulation3D] Setting user's context to: " +
                     this.context
             );
-            this.simulation.helper.updateFile(userFile, {
+            await this.simulation.updateFile(userFile, {
                 tags: { 'aux._userContext': this.context },
             });
         }
