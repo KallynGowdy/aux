@@ -17,6 +17,7 @@ import {
     AuxFile,
     File,
     PartialFile,
+    UserMode,
 } from '@casual-simulation/aux-common';
 import { Observable } from 'rxjs';
 import { FilesUpdatedEvent } from './FilePanelManager';
@@ -32,6 +33,12 @@ export interface AsyncSimulation extends Initable {
      * Exports the stored causal tree from the simulation.
      */
     exportAux(): Promise<StoredCausalTree<AuxOp>>;
+
+    /**
+     * Forks the current session's aux into the given session ID.
+     * @param forkName The ID of the new session.
+     */
+    forkAux(forkName: string): Promise<void>;
 
     /**
      * Adds the given file state to the simulation.
@@ -63,6 +70,12 @@ export interface AsyncSimulation extends Initable {
      * Gets the simulation's user file.
      */
     getUserFile(): Promise<AuxObject>;
+
+    /**
+     * Sets the file mode that the user should be in.
+     * @param mode The mode that the user should use.
+     */
+    setUserMode(mode: UserMode): Promise<void>;
 
     /**
      * Gets the simulation's globals file.
@@ -149,6 +162,11 @@ export interface AsyncSimulation extends Initable {
     destroyFile(file: AuxObject): Promise<void>;
 
     /**
+     * Destroys every file in the simulation except the globals file and user files.
+     */
+    deleteEverything(): Promise<void>;
+
+    /**
      * Creates a new file with the given ID and tags. Returns the file that was created.
      * @param id (Optional) The ID that the file should have.
      * @param tags (Optional) The tags that the file should have.
@@ -208,6 +226,11 @@ export interface AsyncSimulation extends Initable {
      * @param file The file to watch.
      */
     fileChanged(file: AuxObject): Observable<AuxObject>;
+
+    /**
+     * Creates an observable that resolves whenever the user's file changes.
+     */
+    userFileChanged(): Observable<AuxObject>;
 
     /**
      * Gets an observable that resolves whenever a new file is discovered.

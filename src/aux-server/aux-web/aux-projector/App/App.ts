@@ -1,7 +1,7 @@
 import Vue, { ComponentOptions } from 'vue';
 import Component from 'vue-class-component';
 import { Provide, Watch } from 'vue-property-decorator';
-import { appManager, User } from '../../shared/AppManager';
+import { appManager } from '../../shared/AppManager';
 import { EventBus } from '../../shared/EventBus';
 import ConfirmDialogOptions from '../../shared/ConfirmDialogOptions';
 import AlertDialogOptions from '../../shared/AlertDialogOptions';
@@ -23,6 +23,7 @@ import Loading from '../../shared/vue-components/Loading/Loading';
 import ForkIcon from '../public/icons/repo-forked.svg';
 import FileTableToggle from '../FileTableToggle/FileTableToggle';
 import FileSearch from '../FileSearch/FileSearch';
+import { User } from '../../shared/User';
 
 import vueFilePond from 'vue-filepond';
 import 'filepond/dist/filepond.min.css';
@@ -129,6 +130,11 @@ export default class App extends Vue {
     qrCode: string = '';
 
     /**
+     * Whether the app was forced offline.
+     */
+    forcedOffline: boolean = false;
+
+    /**
      * Gets whether we're in developer mode.
      */
     get dev() {
@@ -203,12 +209,6 @@ export default class App extends Vue {
         return this.userMode ? 'Files' : 'Worksurfaces';
     }
 
-    forcedOffline() {
-        return appManager.simulationManager.primary
-            ? appManager.simulationManager.primary.socketManager.forcedOffline
-            : false;
-    }
-
     toggleOpen() {
         EventBus.$emit('toggleFilePanel');
     }
@@ -234,8 +234,8 @@ export default class App extends Vue {
 
                 this.loggedIn = true;
                 this.session = user.channelId;
-                this.online = fileManager.isOnline;
-                this.synced = fileManager.isSynced;
+                // this.online = fileManager.isOnline;
+                // this.synced = fileManager.isSynced;
 
                 setTimeout(() => {
                     if (!this.online && !this.lostConnection) {
@@ -245,30 +245,28 @@ export default class App extends Vue {
                 }, 1000);
 
                 subs.push(
-                    fileManager.aux.channel.connectionStateChanged.subscribe(
-                        connected => {
-                            if (!connected) {
-                                this._showConnectionLost();
-                                this.online = false;
-                                this.synced = false;
-                                this.lostConnection = true;
-                            } else {
-                                this.online = true;
-                                if (this.lostConnection) {
-                                    this._showConnectionRegained();
-                                }
-                                this.lostConnection = false;
-                                this.startedOffline = false;
-                                this.synced = true;
-                                appManager.checkForUpdates();
+                    fileManager.connectionStateChanged.subscribe(connected => {
+                        if (!connected) {
+                            this._showConnectionLost();
+                            this.online = false;
+                            this.synced = false;
+                            this.lostConnection = true;
+                        } else {
+                            this.online = true;
+                            if (this.lostConnection) {
+                                this._showConnectionRegained();
                             }
+                            this.lostConnection = false;
+                            this.startedOffline = false;
+                            this.synced = true;
+                            appManager.checkForUpdates();
                         }
-                    )
+                    })
                 );
 
                 subs.push(
-                    fileManager.watcher
-                        .fileChanged(fileManager.helper.userFile)
+                    fileManager
+                        .userFileChanged()
                         .pipe(
                             tap(file => {
                                 this.userMode = this._calculateUserMode(<
@@ -280,7 +278,7 @@ export default class App extends Vue {
                 );
 
                 subs.push(
-                    fileManager.helper.localEvents.subscribe(e => {
+                    fileManager.localEvents.subscribe(e => {
                         if (e.name === 'show_toast') {
                             this.snackbar = {
                                 message: e.message,
@@ -431,9 +429,10 @@ export default class App extends Vue {
         });
     }
 
-    toggleOnlineOffline() {
+    async toggleOnlineOffline() {
         let options = new ConfirmDialogOptions();
-        if (appManager.simulationManager.primary.socketManager.forcedOffline) {
+        const forcedOffline = appManager.simulationManager.primary.isForcedOffline();
+        if (forcedOffline) {
             options.title = 'Enable online?';
             options.body = 'Allow the app to reconnect to the server?';
             options.okText = 'Go Online';
@@ -445,7 +444,7 @@ export default class App extends Vue {
             options.cancelText = 'Stay Online';
         }
         EventBus.$once(options.okEvent, () => {
-            appManager.simulationManager.primary.socketManager.toggleForceOffline();
+            appManager.simulationManager.primary.toggleForceOffline();
             EventBus.$off(options.cancelEvent);
         });
         EventBus.$once(options.cancelEvent, () => {
