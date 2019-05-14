@@ -70,6 +70,7 @@ import { Simulation } from '../../shared/Simulation';
 import { MenuItem } from '../MenuContext';
 import SimulationItem from '../SimulationContext';
 import { HtmlMixer } from '../../shared/scene/HtmlMixer';
+import { AsyncSimulation } from '../../shared/AsyncSimulation';
 
 @Component({
     components: {
@@ -326,32 +327,25 @@ export default class GameView extends Vue implements IGameView {
 
         this._fileSubs.push(
             appManager.simulationManager.simulationAdded
-                .pipe(
-                    tap(sim => {
-                        this._simulationAdded(sim);
-                    })
-                )
+                .pipe(concatMap(sim => this._simulationAdded(sim)))
                 .subscribe()
         );
 
         this._fileSubs.push(
             appManager.simulationManager.simulationRemoved
-                .pipe(
-                    tap(sim => {
-                        this._simulationRemoved(sim);
-                    })
-                )
+                .pipe(concatMap(sim => this._simulationRemoved(sim)))
                 .subscribe()
         );
     }
 
-    private _simulationAdded(sim: Simulation) {
+    private async _simulationAdded(sim: AsyncSimulation) {
+        const parsedId = await sim.getParsedId();
         const sim3D = new PlayerSimulation3D(
-            sim.parsedId.context || this.context,
+            parsedId.context || this.context,
             this,
             sim
         );
-        sim3D.init();
+        await sim3D.init();
         sim3D.onFileAdded.addListener(this.onFileAdded.invoke);
         sim3D.onFileRemoved.addListener(this.onFileRemoved.invoke);
         sim3D.onFileUpdated.addListener(this.onFileUpdated.invoke);
@@ -364,7 +358,7 @@ export default class GameView extends Vue implements IGameView {
         this._scene.add(sim3D);
     }
 
-    private _simulationRemoved(sim: Simulation) {
+    private async _simulationRemoved(sim: AsyncSimulation) {
         const index = this.simulations.findIndex(
             s => s.simulation.id === sim.id
         );
