@@ -31,8 +31,7 @@ import {
     Orthographic_MaxZoom,
 } from '../scene/CameraRigFactory';
 import { TapCodeManager } from './TapCodeManager';
-import InventoryFile from 'aux-web/aux-player/InventoryFile/InventoryFile';
-import { Simulation } from '../Simulation';
+import { AsyncSimulation } from '../AsyncSimulation';
 
 export abstract class BaseInteractionManager {
     protected _gameView: IGameView;
@@ -42,7 +41,7 @@ export abstract class BaseInteractionManager {
     protected _tapCodeManager: TapCodeManager;
     protected _maxTapCodeLength: number;
     protected _hoveredObject: File;
-    protected _hoveredSimulation: Simulation;
+    protected _hoveredSimulation: AsyncSimulation;
 
     private _operations: IOperation[];
     private _overHtmlMixerIFrame: boolean;
@@ -108,10 +107,7 @@ export abstract class BaseInteractionManager {
         // const calc = appManager.simulationManager.primary.helper.createContext();
         // Update active operations and dispose of any that are finished.
         this._operations = this._operations.filter(o => {
-            const calc = o.simulation
-                ? o.simulation.helper.createContext()
-                : null;
-            o.update(calc);
+            o.update();
 
             if (o.isFinished()) {
                 o.dispose();
@@ -274,7 +270,7 @@ export abstract class BaseInteractionManager {
                 const code = this._tapCodeManager.code;
                 console.log('[InteractionManager] TapCode: ', code);
                 appManager.simulationManager.simulations.forEach(sim => {
-                    sim.helper.action('onTapCode', null, code);
+                    sim.action('onTapCode', null, code);
                 });
                 this._tapCodeManager.trim(this._maxTapCodeLength - 1);
             }
@@ -312,7 +308,7 @@ export abstract class BaseInteractionManager {
         webglCanvas.style.pointerEvents = 'auto';
     }
 
-    protected _findHoveredFile(input: Input): [File, Simulation] {
+    protected _findHoveredFile(input: Input): [File, AsyncSimulation] {
         const screenPos = input.getMouseScreenPos();
         const raycastResult = Physics.raycastAtScreenPos(
             screenPos,
@@ -385,21 +381,23 @@ export abstract class BaseInteractionManager {
     }
 
     async selectFile(file: AuxFile3D) {
-        file.contextGroup.simulation.simulation.filePanel.search = '';
+        await file.contextGroup.simulation.simulation.setSearch('');
         const shouldMultiSelect = this._gameView
             .getInput()
             .getKeyHeld('Control');
-        file.contextGroup.simulation.simulation.recent.addFileDiff(file.file);
-        file.contextGroup.simulation.simulation.recent.selectedRecentFile = null;
-        await file.contextGroup.simulation.simulation.selection.selectFile(
+        await file.contextGroup.simulation.simulation.addFileDiff(file.file);
+        await file.contextGroup.simulation.simulation.setSelectedRecentFile(
+            null
+        );
+        await file.contextGroup.simulation.simulation.selectFile(
             <AuxFile>file.file,
             shouldMultiSelect
         );
     }
 
     async clearSelection() {
-        appManager.simulationManager.primary.filePanel.search = '';
-        await appManager.simulationManager.primary.selection.clearSelection();
+        await appManager.simulationManager.primary.setSearch('');
+        await appManager.simulationManager.primary.clearSelection();
     }
 
     getDraggableObjects() {
@@ -508,9 +506,18 @@ export abstract class BaseInteractionManager {
     ): IOperation;
     abstract createEmptyClickOperation(): IOperation;
     abstract createHtmlElementClickOperation(element: HTMLElement): IOperation;
-    abstract handlePointerEnter(file: File, simulation: Simulation): IOperation;
-    abstract handlePointerExit(file: File, simulation: Simulation): IOperation;
-    abstract handlePointerDown(file: File, simulation: Simulation): IOperation;
+    abstract handlePointerEnter(
+        file: File,
+        simulation: AsyncSimulation
+    ): IOperation;
+    abstract handlePointerExit(
+        file: File,
+        simulation: AsyncSimulation
+    ): IOperation;
+    abstract handlePointerDown(
+        file: File,
+        simulation: AsyncSimulation
+    ): IOperation;
 
     protected abstract _contextMenuActions(
         calc: FileCalculationContext,
