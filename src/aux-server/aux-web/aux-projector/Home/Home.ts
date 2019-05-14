@@ -127,8 +127,8 @@ export default class Home extends Vue {
         });
     }
 
-    tagFocusChanged(file: AuxObject, tag: string, focused: boolean) {
-        this.fileManager.helper.setEditingFile(file);
+    async tagFocusChanged(file: AuxObject, tag: string, focused: boolean) {
+        await this.fileManager.setEditingFile(file);
     }
 
     constructor() {
@@ -145,7 +145,7 @@ export default class Home extends Vue {
         this.updateTime = -1;
 
         this._subs.push(
-            this.fileManager.filePanel.filesUpdated.subscribe(e => {
+            this.fileManager.filePanelUpdated.subscribe(e => {
                 this.files = e.files;
                 this.isDiff = e.isDiff;
                 this.searchResult = e.searchResult;
@@ -159,14 +159,14 @@ export default class Home extends Vue {
                 //     this.isOpen = true;
                 // }
             }),
-            this.fileManager.filePanel.isOpenChanged.subscribe(open => {
+            this.fileManager.filePanelOpenChanged.subscribe(open => {
                 this.isOpen = open;
             })
         );
 
         this._subs.push(
-            this.fileManager.watcher
-                .fileChanged(this.fileManager.helper.userFile)
+            this.fileManager
+                .fileChanged(await this.fileManager.getUserFile())
                 .pipe(
                     tap(file => {
                         this.mode = getUserMode(file);

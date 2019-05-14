@@ -15,8 +15,10 @@ import {
     FileOp,
     AuxState,
     AuxFile,
+    File,
 } from '@casual-simulation/aux-common';
 import { Observable } from 'rxjs';
+import { FilesUpdatedEvent } from './FilePanelManager';
 
 export interface AsyncSimulation extends Initable {
     /**
@@ -93,6 +95,12 @@ export interface AsyncSimulation extends Initable {
     ): Promise<void>;
 
     /**
+     * Sets the file that the user is editing.
+     * @param file The file.
+     */
+    setEditingFile(file: File): Promise<void>;
+
+    /**
      * Gets the parsed ID of the simulation.
      */
     getParsedId(): Promise<SimulationIdParseSuccess>;
@@ -106,6 +114,12 @@ export interface AsyncSimulation extends Initable {
      * Toggles whether the simulation has been forced offline.
      */
     toggleForceOffline(): Promise<void>;
+
+    /**
+     * Creates an observable that resolves whenever the given file changes.
+     * @param file The file to watch.
+     */
+    fileChanged(file: AuxObject): Observable<AuxObject>;
 
     /**
      * Gets an observable that resolves whenever a new file is discovered.
@@ -138,6 +152,16 @@ export interface AsyncSimulation extends Initable {
      * Basically this resolves with true whenever we're connected and false whenever we're disconnected.
      */
     connectionStateChanged: Observable<boolean>;
+
+    /**
+     * Gets an observable that resolves whenever the list of selected files is updated.
+     */
+    filePanelUpdated: Observable<FilesUpdatedEvent>;
+
+    /**
+     * Gets an observable that resolves when the file panel is opened or closed.
+     */
+    filePanelOpenChanged: Observable<boolean>;
 
     /**
      * Constructs a new weave that contains the smallest possible valid causal history for the given list
