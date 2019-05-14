@@ -125,11 +125,11 @@ export class FileHelper {
     }
 
     /**
-     * Creates a new file with the given ID and tags. Returns the ID of the new file.
+     * Creates a new file with the given ID and tags. Returns the file that was created.
      * @param id (Optional) The ID that the file should have.
      * @param tags (Optional) The tags that the file should have.
      */
-    async createFile(id?: string, tags?: File['tags']): Promise<string> {
+    async createFile(id?: string, tags?: File['tags']): Promise<AuxObject> {
         if (FileHelper._debug) {
             console.log('[FileManager] Create File');
         }
@@ -137,7 +137,7 @@ export class FileHelper {
         const file = createFile(id, tags);
         await this._tree.addFile(file);
 
-        return file.id;
+        return this._tree.value[file.id];
     }
 
     /**

@@ -28,7 +28,7 @@ import FileTag from '../FileTag/FileTag';
 import FileTableToggle from '../FileTableToggle/FileTableToggle';
 import { TreeView } from 'vue-json-tree-view';
 import { tickStep } from 'd3';
-import { downloadAuxState } from '../download';
+import { downloadJson } from '../../shared/download';
 import { storedTree, site } from '@casual-simulation/causal-trees';
 import Cube from '../public/icons/Cube.svg';
 
@@ -131,7 +131,7 @@ export default class FileTable extends Vue {
     }
 
     @Watch('multilineValue')
-    multilineValueChanged() {
+    async multilineValueChanged() {
         if (this.focusedFile && this.focusedTag) {
             if (isDiff(this.focusedFile)) {
                 const updated = merge(this.focusedFile, {
@@ -139,14 +139,14 @@ export default class FileTable extends Vue {
                         [this.focusedTag]: this.multilineValue,
                     },
                 });
-                this.fileManager.recent.addFileDiff(updated, true);
+                await this.fileManager.addFileDiff(updated, true);
             } else {
-                this.fileManager.recent.addTagDiff(
+                await this.fileManager.addTagDiff(
                     `${this.focusedFile.id}_${this.focusedTag}`,
                     this.focusedTag,
                     this.multilineValue
                 );
-                this.fileManager.helper.updateFile(this.focusedFile, {
+                await this.fileManager.updateFile(this.focusedFile, {
                     tags: {
                         [this.focusedTag]: this.multilineValue,
                     },
@@ -164,17 +164,16 @@ export default class FileTable extends Vue {
     }
 
     async toggleFile(file: AuxObject) {
-        await this.fileManager.selection.selectFile(file);
+        await this.fileManager.selectFile(file);
     }
 
     async deleteFile(file: AuxObject) {
-        await this.fileManager.helper.destroyFile(file);
+        await this.fileManager.destroyFile(file);
     }
 
     async createFile() {
-        const id = await this.fileManager.helper.createFile();
-        const file = this.fileManager.helper.filesState[id];
-        this.fileManager.selection.selectFile(file, true);
+        const file = await this.fileManager.createFile();
+        this.fileManager.selectFile(file, true);
     }
 
     addTag(placement: NewTagPlacement = 'top') {
@@ -222,31 +221,32 @@ export default class FileTable extends Vue {
         this.isMakingNewTag = false;
     }
 
-    clearSearch() {
-        this.fileManager.filePanel.search = '';
+    async clearSearch() {
+        await this.fileManager.setSearch('');
     }
 
     async clearSelection() {
-        await this.fileManager.selection.clearSelection();
+        await this.fileManager.clearSelection();
     }
 
     async multiSelect() {
-        await this.fileManager.selection.setSelectedFiles(this.files);
+        await this.fileManager.setSelectedFiles(this.files);
     }
 
     async downloadFiles() {
         if (this.hasFiles) {
             const atoms = this.files.map(f => f.metadata.ref);
-            const weave = this.fileManager.aux.tree.weave.subweave(...atoms);
+            const weave = await this.fileManager.subweave(...atoms);
             const stored = storedTree(
-                this.fileManager.aux.tree.site,
-                this.fileManager.aux.tree.knownSites,
+                await this.fileManager.site(),
+                await this.fileManager.knownSites(),
                 weave.atoms
             );
             let tree = new AuxCausalTree(stored);
             await tree.import(stored);
 
-            downloadAuxState(tree, `selection-${Date.now()}`);
+            const json = JSON.stringify(tree.export());
+            downloadJson(json, `selection-${Date.now()}.aux`);
         }
     }
 
@@ -271,8 +271,8 @@ export default class FileTable extends Vue {
         this.$emit('tagFocusChanged', file, tag, focused);
     }
 
-    onFileClicked(file: AuxObject) {
-        this.fileManager.helper.transaction(tweenTo(file.id));
+    async onFileClicked(file: AuxObject) {
+        await this.fileManager.transaction(tweenTo(file.id));
     }
 
     toggleHidden() {
@@ -323,8 +323,8 @@ export default class FileTable extends Vue {
     }
 
     async clearDiff() {
-        await this.fileManager.recent.clear();
-        this.fileManager.recent.selectedRecentFile = this.fileManager.recent.files[0];
+        await this.fileManager.clearRecents();
+        await this.fileManager.setSelectedRecentFile(0);
     }
 
     constructor() {

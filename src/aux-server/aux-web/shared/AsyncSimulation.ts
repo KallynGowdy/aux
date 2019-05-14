@@ -16,6 +16,7 @@ import {
     AuxState,
     AuxFile,
     File,
+    PartialFile,
 } from '@casual-simulation/aux-common';
 import { Observable } from 'rxjs';
 import { FilesUpdatedEvent } from './FilePanelManager';
@@ -66,6 +67,70 @@ export interface AsyncSimulation extends Initable {
      * Gets the list of files that the current user has selected.
      */
     getSelectedFilesForUser(): Promise<AuxObject[]>;
+
+    /**
+     * Clears the user's current selection.
+     */
+    clearSelection(): Promise<void>;
+
+    /**
+     * Sets the list of files that the user should have selected.
+     * @param files The files.
+     */
+    setSelectedFiles(files: AuxObject[]): Promise<void>;
+
+    /**
+     * Selects the given file for the current user.
+     * @param file The file to select.
+     * @param multiSelect Whether to put the user into multi-select mode. (Default false)
+     */
+    selectFile(file: AuxObject, multiSelect?: boolean): Promise<void>;
+
+    /**
+     * Adds the given file to the recents list.
+     * @param file The file to add.
+     * @param updateTags Whether to update the diff tags.
+     */
+    addFileDiff(file: File, updateTags?: boolean): Promise<void>;
+
+    /**
+     * Adds a diffball that represents the given file ID, tag, and value.
+     * @param fileId The ID of the file that the diff represents.
+     * @param tag The tag that the diff contains.
+     * @param value The value that the diff contains.
+     */
+    addTagDiff(fileId: string, tag: string, value: any): Promise<void>;
+
+    /**
+     * Clears the list of recent files.
+     */
+    clearRecents(): Promise<void>;
+
+    /**
+     * Sets the recent file that is currently selected.
+     * @param index The index of the file in the recents list to select.
+     */
+    setSelectedRecentFile(index: number): Promise<void>;
+
+    /**
+     * Updates the given file with the given data.
+     * @param file The file.
+     * @param newData The new data that the file should have.
+     */
+    updateFile(file: AuxFile, newData: PartialFile): Promise<void>;
+
+    /**
+     * Destroys the given file.
+     * @param file The file to destroy.
+     */
+    destroyFile(file: AuxObject): Promise<void>;
+
+    /**
+     * Creates a new file with the given ID and tags. Returns the file that was created.
+     * @param id (Optional) The ID that the file should have.
+     * @param tags (Optional) The tags that the file should have.
+     */
+    createFile(id?: string, tags?: File['tags']): Promise<AuxObject>;
 
     /**
      * Creates a new file for the current user that loads the simulation with the given ID.
@@ -162,6 +227,12 @@ export interface AsyncSimulation extends Initable {
      * Gets an observable that resolves when the file panel is opened or closed.
      */
     filePanelOpenChanged: Observable<boolean>;
+
+    /**
+     * Sets the search value in the file panel.
+     * @param search The search.
+     */
+    setSearch(search: string): Promise<void>;
 
     /**
      * Constructs a new weave that contains the smallest possible valid causal history for the given list
