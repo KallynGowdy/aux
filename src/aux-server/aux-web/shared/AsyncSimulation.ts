@@ -170,13 +170,6 @@ export interface AsyncSimulation extends Initable, AsyncCalculationContext {
     getRecentFiles(): Promise<File[]>;
 
     /**
-     * Calculates the nicely formatted value for the given file and tag.
-     * @param file The file to calculate the value for.
-     * @param tag The tag to calculate the value for.
-     */
-    calculateFormattedFileValue(file: File, tag: string): Promise<string>;
-
-    /**
      * Updates the given file with the given data.
      * @param file The file.
      * @param newData The new data that the file should have.

@@ -45,12 +45,11 @@ export class TextureDecorator extends AuxFile3DDecorator {
         );
     }
 
-    fileUpdated(calc: AsyncCalculationContext): void {
+    async fileUpdated(calc: AsyncCalculationContext): Promise<void> {
         let imageValueChanged = false;
 
         // Get value of image tag.
-        const imageValue = calculateFileValue(
-            calc,
+        const imageValue = await calc.calculateFileValue(
             this.file3D.file,
             'aux.image'
         );
@@ -93,7 +92,7 @@ export class TextureDecorator extends AuxFile3DDecorator {
         }
     }
 
-    frameUpdate(calc: AsyncCalculationContext) {}
+    async frameUpdate(calc: AsyncCalculationContext) {}
 
     dispose() {
         if (this._targetMeshDecorator) {

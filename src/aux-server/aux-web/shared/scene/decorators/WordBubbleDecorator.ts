@@ -29,11 +29,11 @@ export class WordBubbleDecorator extends AuxFile3DDecorator {
         this.wordBubble.visible = false;
     }
 
-    fileUpdated(calc: AsyncCalculationContext): void {
+    async fileUpdated(calc: AsyncCalculationContext): Promise<void> {
         this._updateWorldBubble(calc);
     }
 
-    frameUpdate(calc: AsyncCalculationContext): void {
+    async frameUpdate(calc: AsyncCalculationContext): Promise<void> {
         if (this._elements) {
             for (let i = 0; i < this._elements.length; i++) {
                 if (this._elements[i].shouldUpdateWorldBubbleThisFrame()) {
@@ -49,14 +49,14 @@ export class WordBubbleDecorator extends AuxFile3DDecorator {
         this.file3D.remove(this.wordBubble);
     }
 
-    private _updateWorldBubble(calc: AsyncCalculationContext): void {
+    private async _updateWorldBubble(calc: AsyncCalculationContext) {
         let fileBoundingBox = this.file3D.boundingBox;
         if (!fileBoundingBox) {
             this.wordBubble.visible = false;
             return;
         }
 
-        let anchor = getFileLabelAnchor(calc, this.file3D.file);
+        let anchor = await calc.getFileLabelAnchor(this.file3D.file);
         this.wordBubble.visible = anchor === 'floating';
 
         let arrowPoint = new Vector3();

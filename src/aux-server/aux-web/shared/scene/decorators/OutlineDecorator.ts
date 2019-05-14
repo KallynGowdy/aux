@@ -68,10 +68,9 @@ export class OutlineDecorator extends AuxFile3DDecorator
         );
     }
 
-    fileUpdated(calc: AsyncCalculationContext): void {
+    async fileUpdated(calc: AsyncCalculationContext): Promise<void> {
         // Color
-        const colorValue = calculateFileValue(
-            calc,
+        const colorValue = await calc.calculateFileValue(
             this.file3D.file,
             'aux.stroke.color'
         );
@@ -82,8 +81,7 @@ export class OutlineDecorator extends AuxFile3DDecorator
         }
 
         // Width
-        const widthValue = calculateFileValue(
-            calc,
+        const widthValue = await calc.calculateFileValue(
             this.file3D.file,
             'aux.stroke.width'
         );
@@ -96,7 +94,7 @@ export class OutlineDecorator extends AuxFile3DDecorator
         this._updateOutlineMesh();
     }
 
-    frameUpdate(calc: AsyncCalculationContext) {}
+    async frameUpdate(calc: AsyncCalculationContext) {}
 
     dispose() {
         if (this._targetMeshDecorator) {

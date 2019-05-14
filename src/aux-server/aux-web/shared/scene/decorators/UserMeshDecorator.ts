@@ -65,11 +65,11 @@ export class UserMeshDecorator extends AuxFile3DDecorator
         this.onMeshUpdated.invoke(this);
     }
 
-    fileUpdated(calc: AsyncCalculationContext): void {
+    async fileUpdated(calc: AsyncCalculationContext): Promise<void> {
         this.file3D.display.updateMatrixWorld(false);
     }
 
-    frameUpdate(calc: AsyncCalculationContext) {
+    async frameUpdate(calc: AsyncCalculationContext): Promise<void> {
         let file = <AuxObject>this.file3D.file;
 
         // visible if not destroyed, and was active in the last minute

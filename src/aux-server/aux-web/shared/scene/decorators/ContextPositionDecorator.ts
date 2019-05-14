@@ -51,20 +51,18 @@ export class ContextPositionDecorator extends AuxFile3DDecorator {
         this._lerp = !!options.lerp;
     }
 
-    fileUpdated(calc: AsyncCalculationContext): void {
+    async fileUpdated(calc: AsyncCalculationContext): Promise<void> {
         const userContext = this.file3D.context;
         if (userContext) {
-            const scale = calculateGridScale(
-                calc,
+            const scale = await calc.calculateGridScale(
                 this.file3D.contextGroup.file
             );
-            this._nextPos = calculateObjectPositionInGrid(
+            this._nextPos = await calculateObjectPositionInGrid(
                 calc,
                 this.file3D,
                 scale
             );
-            this._nextRot = getFileRotation(
-                calc,
+            this._nextRot = await calc.getFileRotation(
                 this.file3D.file,
                 this.file3D.context
             );
@@ -80,7 +78,7 @@ export class ContextPositionDecorator extends AuxFile3DDecorator {
         }
     }
 
-    frameUpdate(calc: AsyncCalculationContext): void {
+    async frameUpdate(calc: AsyncCalculationContext): Promise<void> {
         if (this._lerp && this._nextPos && this._nextRot) {
             this.file3D.display.position.lerp(this._nextPos, 0.1);
             const euler = new Euler(
@@ -103,14 +101,13 @@ export class ContextPositionDecorator extends AuxFile3DDecorator {
  * @param gridScale The scale of the grid.
  * @param contextId The id of the context we want to get positional data for the given file.
  */
-export function calculateObjectPositionInGrid(
+export async function calculateObjectPositionInGrid(
     context: AsyncCalculationContext,
     file: AuxFile3D,
     gridScale: number
-): Vector3 {
-    const position = getFilePosition(context, file.file, file.context);
-    const objectsAtPosition = objectsAtContextGridPosition(
-        context,
+): Promise<Vector3> {
+    const position = await context.getFilePosition(file.file, file.context);
+    const objectsAtPosition = await context.objectsAtContextGridPosition(
         file.context,
         position
     );
@@ -127,9 +124,16 @@ export function calculateObjectPositionInGrid(
         objectsAtPosition,
         o => o.id !== file.file.id
     );
-    const totalScales = sumBy(objectsBelowThis, obj =>
-        calculateVerticalHeight(context, obj, file.context, gridScale)
-    );
+
+    let totalScales = 0;
+    for (let i = 0; i < objectsBelowThis.length; i++) {
+        totalScales += await calculateVerticalHeight(
+            context,
+            objectsBelowThis[i],
+            file.context,
+            gridScale
+        );
+    }
 
     const indexOffset = new Vector3(0, totalScales, 0);
     localPosition.add(indexOffset);
@@ -137,14 +141,15 @@ export function calculateObjectPositionInGrid(
     if (file.contextGroup instanceof BuilderGroup3D) {
         if (!isUserFile(file.file)) {
             // Offset local position with hex grid height.
-            let hexScale = getContextScale(context, file.contextGroup.file);
+            let hexScale = await context.getContextScale(
+                file.contextGroup.file
+            );
             let axial = realPosToGridPos(
                 new Vector2(localPosition.x, localPosition.z),
                 hexScale
             );
             let key = posToKey(axial);
-            let height = getContextGridHeight(
-                context,
+            let height = await context.getContextGridHeight(
                 file.contextGroup.file,
                 '0:0'
             );
@@ -162,14 +167,14 @@ export function calculateObjectPositionInGrid(
  * @param context The context that the file's height should be evalulated in.
  * @param gridScale The scale of the grid.
  */
-export function calculateVerticalHeight(
+export async function calculateVerticalHeight(
     calc: AsyncCalculationContext,
     file: File,
     context: string,
     gridScale: number
 ) {
-    const height = calculateScale(calc, file, gridScale).y;
-    const offset = getFilePosition(calc, file, context);
+    const height = (await calculateScale(calc, file, gridScale)).y;
+    const offset = await calc.getFilePosition(file, context);
 
     return height + offset.z;
 }

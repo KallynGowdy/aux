@@ -48,8 +48,8 @@ export class FileShapeDecorator extends AuxFile3DDecorator
         this._rebuildShape('cube');
     }
 
-    fileUpdated(calc: AsyncCalculationContext): void {
-        const shape = getFileShape(calc, this.file3D.file);
+    async fileUpdated(calc: AsyncCalculationContext): Promise<void> {
+        const shape = await calc.getFileShape(this.file3D.file);
         if (this._shape !== shape) {
             this._rebuildShape(shape);
         }
@@ -58,19 +58,17 @@ export class FileShapeDecorator extends AuxFile3DDecorator
         this._updateStroke(calc);
     }
 
-    private _updateStroke(calc: AsyncCalculationContext) {
+    private async _updateStroke(calc: AsyncCalculationContext) {
         if (!this.stroke) {
             return;
         }
 
         this.stroke.visible = true;
-        const strokeColorValue = calculateFileValue(
-            calc,
+        const strokeColorValue = await calc.calculateFileValue(
             this.file3D.file,
             'aux.stroke.color'
         );
-        const strokeWidth: number = calculateFileValue(
-            calc,
+        const strokeWidth: number = await calc.calculateFileValue(
             this.file3D.file,
             'aux.stroke.width'
         );
@@ -90,7 +88,7 @@ export class FileShapeDecorator extends AuxFile3DDecorator
         }
     }
 
-    frameUpdate(calc: AsyncCalculationContext): void {}
+    async frameUpdate(calc: AsyncCalculationContext): Promise<void> {}
 
     dispose(): void {
         const index = this.file3D.colliders.indexOf(this.mesh);
@@ -107,10 +105,10 @@ export class FileShapeDecorator extends AuxFile3DDecorator
         this.stroke = null;
     }
 
-    private _updateColor(calc: AsyncCalculationContext) {
+    private async _updateColor(calc: AsyncCalculationContext) {
         let color: any = null;
         if (this.file3D.file.tags['aux.color']) {
-            color = calculateFileValue(calc, this.file3D.file, 'aux.color');
+            color = calc.calculateFileValue(this.file3D.file, 'aux.color');
         }
 
         this._setColor(color);

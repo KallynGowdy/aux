@@ -55,23 +55,20 @@ export class HtmlMixerPlaneDecorator extends AuxFile3DDecorator {
         this._gameView = gameView;
     }
 
-    fileUpdated(calc: AsyncCalculationContext): void {
+    async fileUpdated(calc: AsyncCalculationContext): Promise<void> {
         // Get value of iframe plane position.
         this._localPosition = new Vector3(
-            calculateNumericalTagValue(
-                calc,
+            await calc.calculateNumericalTagValue(
                 this.file3D.file,
                 'aux.iframe.x',
                 DEFAULT_IFRAME_LOCAL_POSITION.x
             ),
-            calculateNumericalTagValue(
-                calc,
+            await calc.calculateNumericalTagValue(
                 this.file3D.file,
                 'aux.iframe.y',
                 DEFAULT_IFRAME_LOCAL_POSITION.y
             ),
-            calculateNumericalTagValue(
-                calc,
+            await calc.calculateNumericalTagValue(
                 this.file3D.file,
                 'aux.iframe.z',
                 DEFAULT_IFRAME_LOCAL_POSITION.z
@@ -80,20 +77,17 @@ export class HtmlMixerPlaneDecorator extends AuxFile3DDecorator {
 
         // Get value of iframe plane rotation.
         this._localRotation = new Vector3(
-            calculateNumericalTagValue(
-                calc,
+            await calc.calculateNumericalTagValue(
                 this.file3D.file,
                 'aux.iframe.rotation.x',
                 DEFUALT_IFRAME_LOCAL_ROTATION.x
             ),
-            calculateNumericalTagValue(
-                calc,
+            await calc.calculateNumericalTagValue(
                 this.file3D.file,
                 'aux.iframe.rotation.y',
                 DEFUALT_IFRAME_LOCAL_ROTATION.y
             ),
-            calculateNumericalTagValue(
-                calc,
+            await calc.calculateNumericalTagValue(
                 this.file3D.file,
                 'aux.iframe.rotation.z',
                 DEFUALT_IFRAME_LOCAL_ROTATION.z
@@ -101,8 +95,7 @@ export class HtmlMixerPlaneDecorator extends AuxFile3DDecorator {
         );
 
         // Get value of iframe plane scale.
-        this._planeScale = calculateNumericalTagValue(
-            calc,
+        this._planeScale = await calc.calculateNumericalTagValue(
             this.file3D.file,
             'aux.iframe.scale',
             DEFAULT_IFRAME_PLANE_SCALE
@@ -110,14 +103,12 @@ export class HtmlMixerPlaneDecorator extends AuxFile3DDecorator {
 
         // Get value of iframe plane size.
         const iframeSizeValue = new Vector2(
-            calculateNumericalTagValue(
-                calc,
+            await calc.calculateNumericalTagValue(
                 this.file3D.file,
                 'aux.iframe.size.x',
                 DEFAULT_IFRAME_PLANE_SIZE.x
             ),
-            calculateNumericalTagValue(
-                calc,
+            await calc.calculateNumericalTagValue(
                 this.file3D.file,
                 'aux.iframe.size.y',
                 DEFAULT_IFRAME_PLANE_SIZE.y
@@ -131,8 +122,7 @@ export class HtmlMixerPlaneDecorator extends AuxFile3DDecorator {
         }
 
         // Get value of iframe element width.
-        const iframeElementWidthValue = calculateNumericalTagValue(
-            calc,
+        const iframeElementWidthValue = await calc.calculateNumericalTagValue(
             this.file3D.file,
             'aux.iframe.element.width',
             DEFAULT_IFRAME_ELEMENT_WIDTH
@@ -145,8 +135,7 @@ export class HtmlMixerPlaneDecorator extends AuxFile3DDecorator {
         }
 
         // Get value of iframe url.
-        const iframeValue = calculateFileValue(
-            calc,
+        const iframeValue = await calc.calculateFileValue(
             this.file3D.file,
             'aux.iframe'
         );
@@ -241,7 +230,7 @@ export class HtmlMixerPlaneDecorator extends AuxFile3DDecorator {
         );
     }
 
-    frameUpdate(calc: AsyncCalculationContext) {}
+    async frameUpdate(calc: AsyncCalculationContext): Promise<void> {}
 
     dispose() {
         this._destroyMixerPlane();

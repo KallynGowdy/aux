@@ -14,16 +14,15 @@ export class ScaleDecorator extends AuxFile3DDecorator {
         super(file3D);
     }
 
-    fileUpdated(calc: AsyncCalculationContext): void {
-        const gridScale = calculateGridScale(
-            calc,
+    async fileUpdated(calc: AsyncCalculationContext): Promise<void> {
+        const gridScale = await calc.calculateGridScale(
             this.file3D.contextGroup ? this.file3D.contextGroup.file : null
         );
-        const scale = calculateScale(calc, this.file3D.file, gridScale);
+        const scale = await calculateScale(calc, this.file3D.file, gridScale);
         this.file3D.display.scale.set(scale.x, scale.y, scale.z);
     }
 
-    frameUpdate(calc: AsyncCalculationContext): void {}
+    async frameUpdate(calc: AsyncCalculationContext): Promise<void> {}
 
     dispose(): void {}
 }

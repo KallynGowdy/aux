@@ -41,13 +41,12 @@ export class LabelDecorator extends AuxFile3DDecorator
         this.file3D.add(this.label);
     }
 
-    fileUpdated(calc: AsyncCalculationContext): void {
+    async fileUpdated(calc: AsyncCalculationContext): Promise<void> {
         let label = this.file3D.file.tags['aux.label'];
 
         if (label) {
             if (isFormula(label)) {
-                let calculatedValue = calculateFormattedFileValue(
-                    calc,
+                let calculatedValue = await calc.calculateFormattedFileValue(
                     this.file3D.file,
                     'aux.label'
                 );
@@ -67,11 +66,10 @@ export class LabelDecorator extends AuxFile3DDecorator
         }
     }
 
-    frameUpdate(calc: AsyncCalculationContext): void {
+    async frameUpdate(calc: AsyncCalculationContext): Promise<void> {
         if (this.label) {
             // update label scale
-            let labelMode = calculateFileValue(
-                calc,
+            let labelMode = calc.calculateFileValue(
                 this.file3D.file,
                 'aux.label.size.mode'
             );
@@ -92,16 +90,17 @@ export class LabelDecorator extends AuxFile3DDecorator
         return this.label.boundingBox;
     }
 
-    shouldUpdateWorldBubbleThisFrame(): boolean {
+    shouldUpdateWorldBubbleThisFrame(): Promise<boolean> {
         // Should update word bubble every frame if the label is in auto size mode.
         return this._isInAutoSizeMode();
     }
 
-    private _isInAutoSizeMode(calc?: AsyncCalculationContext): boolean {
+    private async _isInAutoSizeMode(
+        calc?: AsyncCalculationContext
+    ): Promise<boolean> {
         if (this.file3D.file.tags['aux.label.size.mode']) {
             let fileCalc = calc ? calc : appManager.simulationManager.primary;
-            let mode = calculateFileValue(
-                fileCalc,
+            let mode = await fileCalc.calculateFileValue(
                 this.file3D.file,
                 'aux.label.size.mode'
             );
@@ -110,14 +109,13 @@ export class LabelDecorator extends AuxFile3DDecorator
         return false;
     }
 
-    private _updateLabelSize(calc: AsyncCalculationContext) {
+    private async _updateLabelSize(calc: AsyncCalculationContext) {
         let labelSize =
-            calculateNumericalTagValue(
-                calc,
+            (await calc.calculateNumericalTagValue(
                 this.file3D.file,
                 'aux.label.size',
                 1
-            ) * Text3D.defaultScale;
+            )) * Text3D.defaultScale;
         if (this._isInAutoSizeMode(calc)) {
             let labelWorldPos = new Vector3();
             this.label.getWorldPosition(labelWorldPos);
@@ -133,12 +131,11 @@ export class LabelDecorator extends AuxFile3DDecorator
         this.label.setScale(labelSize);
     }
 
-    private _updateLabelColor(calc: FileCalculationContext) {
+    private async _updateLabelColor(calc: AsyncCalculationContext) {
         let labelColor = this.file3D.file.tags['aux.label.color'];
         if (labelColor) {
             if (isFormula(labelColor)) {
-                let calculatedValue = calculateFormattedFileValue(
-                    calc,
+                let calculatedValue = await calc.calculateFormattedFileValue(
                     this.file3D.file,
                     'aux.label.color'
                 );
@@ -149,8 +146,8 @@ export class LabelDecorator extends AuxFile3DDecorator
         }
     }
 
-    private _updateLabelAnchor(calc: AsyncCalculationContext) {
-        let anchor = getFileLabelAnchor(calc, this.file3D.file);
+    private async _updateLabelAnchor(calc: AsyncCalculationContext) {
+        let anchor = await calc.getFileLabelAnchor(this.file3D.file);
         this.label.setAnchor(anchor);
     }
 }

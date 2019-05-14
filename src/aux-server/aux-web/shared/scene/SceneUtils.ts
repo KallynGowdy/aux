@@ -39,6 +39,7 @@ import {
     FileCalculationContext,
     File,
     FileLabelAnchor,
+    AsyncCalculationContext,
 } from '@casual-simulation/aux-common';
 import { getOptionalValue } from '../SharedUtils';
 import { HtmlMixer } from '../../shared/scene/HtmlMixer';
@@ -299,33 +300,29 @@ export function debugLayersToString(obj: Object3D): string {
  * @param defaultScale The default value.
  * @param prefix The optional prefix for the tags. Defaults to `aux.`
  */
-export function calculateScale(
-    context: FileCalculationContext,
+export async function calculateScale(
+    context: AsyncCalculationContext,
     obj: File,
     multiplier: number = 1,
     defaultScale: number = 1,
     prefix: string = 'aux.'
-): Vector3 {
-    const scaleX = calculateNumericalTagValue(
-        context,
+): Promise<Vector3> {
+    const scaleX = await context.calculateNumericalTagValue(
         obj,
         `${prefix}scale.x`,
         defaultScale
     );
-    const scaleY = calculateNumericalTagValue(
-        context,
+    const scaleY = await context.calculateNumericalTagValue(
         obj,
         `${prefix}scale.y`,
         defaultScale
     );
-    const scaleZ = calculateNumericalTagValue(
-        context,
+    const scaleZ = await context.calculateNumericalTagValue(
         obj,
         `${prefix}scale.z`,
         defaultScale
     );
-    const uniformScale = calculateNumericalTagValue(
-        context,
+    const uniformScale = await context.calculateNumericalTagValue(
         obj,
         `${prefix}scale`,
         1

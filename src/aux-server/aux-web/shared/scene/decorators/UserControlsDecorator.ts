@@ -62,11 +62,11 @@ export class UserControlsDecorator extends AuxFile3DDecorator {
         this._gameView = gameView;
     }
 
-    fileUpdated(calc: AsyncCalculationContext): void {
+    async fileUpdated(calc: AsyncCalculationContext): Promise<void> {
         // Do nothing.
     }
 
-    frameUpdate(calc: AsyncCalculationContext) {
+    async frameUpdate(calc: AsyncCalculationContext): Promise<void> {
         let file = <AuxObject>this.file3D.file;
         const time = Date.now();
 
@@ -81,11 +81,14 @@ export class UserControlsDecorator extends AuxFile3DDecorator {
             let camPosition: Vector3 = mainCamera.position.clone();
 
             // Scale camera's local position so that it maps to the context positioning.
-            const gridScale = calculateGridScale(
-                calc,
+            const gridScale = await calc.calculateGridScale(
                 this.file3D.contextGroup.file
             );
-            const scale = calculateScale(calc, this.file3D.file, gridScale);
+            const scale = await calculateScale(
+                calc,
+                this.file3D.file,
+                gridScale
+            );
             camPosition.x /= scale.x;
             camPosition.y /= scale.y;
             camPosition.z /= scale.z;
@@ -140,13 +143,11 @@ export class UserControlsDecorator extends AuxFile3DDecorator {
                 camPosition = newCamPos.clone();
             }
 
-            const filePosition = getFilePosition(
-                calc,
+            const filePosition = await calc.getFilePosition(
                 file,
                 this.file3D.context
             );
-            const fileRotation = getFileRotation(
-                calc,
+            const fileRotation = await calc.getFileRotation(
                 file,
                 this.file3D.context
             );

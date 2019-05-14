@@ -12,5 +12,5 @@ export interface WordBubbleElement {
     /**
      * Should the word bubble decorator update the world bubble 3d on this frame?
      */
-    shouldUpdateWorldBubbleThisFrame(): boolean;
+    shouldUpdateWorldBubbleThisFrame(): Promise<boolean>;
 }

@@ -102,7 +102,7 @@ export class Arrow3D extends Object3D {
         );
     }
 
-    public update(calc: AsyncCalculationContext) {
+    public async update(calc: AsyncCalculationContext) {
         if (!this._arrowHelper) return;
 
         let sourceFile = <Object>this._sourceFile3d.file;
@@ -112,9 +112,9 @@ export class Arrow3D extends Object3D {
         let targetWorkspace = this._getWorkspace(this._targetFile3d);
 
         const sourceMinimized =
-            sourceWorkspace && isMinimized(calc, sourceWorkspace.file);
+            sourceWorkspace && (await calc.isMinimized(sourceWorkspace.file));
         const targetMinimized =
-            targetWorkspace && isMinimized(calc, targetWorkspace.file);
+            targetWorkspace && (await calc.isMinimized(targetWorkspace.file));
 
         if (sourceMinimized && targetMinimized) {
             // The workspace of both the source file and target file are minimized. Hide arrow and do nothing else.

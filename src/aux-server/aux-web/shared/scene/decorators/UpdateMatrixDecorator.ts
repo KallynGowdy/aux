@@ -13,14 +13,14 @@ export class UpdateMaxtrixDecorator extends AuxFile3DDecorator {
         super(file3D);
     }
 
-    fileUpdated(calc: AsyncCalculationContext): void {
+    async fileUpdated(calc: AsyncCalculationContext): Promise<void> {
         const userContext = this.file3D.context;
         if (userContext) {
             this.file3D.updateMatrixWorld(true);
         }
     }
 
-    frameUpdate(calc: AsyncCalculationContext): void {}
+    async frameUpdate(calc: AsyncCalculationContext): Promise<void> {}
 
     dispose(): void {}
 }

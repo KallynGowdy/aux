@@ -27,9 +27,9 @@ export class LineToDecorator extends AuxFile3DDecorator {
         this._finder = fileFinder;
     }
 
-    fileUpdated(calc: AsyncCalculationContext): void {}
+    async fileUpdated(calc: AsyncCalculationContext): Promise<void> {}
 
-    frameUpdate(calc: AsyncCalculationContext): void {
+    async frameUpdate(calc: AsyncCalculationContext): Promise<void> {
         this._tagUpdateLine(calc);
     }
 
@@ -41,7 +41,7 @@ export class LineToDecorator extends AuxFile3DDecorator {
         }
     }
 
-    private _tagUpdateLine(calc: AsyncCalculationContext): void {
+    private async _tagUpdateLine(calc: AsyncCalculationContext) {
         if (!this._finder) {
             return;
         }
@@ -59,8 +59,7 @@ export class LineToDecorator extends AuxFile3DDecorator {
 
             if (lineColorTagValue) {
                 if (isFormula(lineColorTagValue)) {
-                    let calculatedValue = calculateFormattedFileValue(
-                        calc,
+                    let calculatedValue = await calc.calculateFormattedFileValue(
                         this.file3D.file,
                         'aux.line.color'
                     );
@@ -73,8 +72,7 @@ export class LineToDecorator extends AuxFile3DDecorator {
             // Parse the line.to tag.
             // It can either be a formula or a handtyped string.
             if (isFormula(lineTo)) {
-                let calculatedValue = calculateFileValue(
-                    calc,
+                let calculatedValue = await calc.calculateFileValue(
                     this.file3D.file,
                     'aux.line.to'
                 );
@@ -157,7 +155,7 @@ export class LineToDecorator extends AuxFile3DDecorator {
         files.forEach(f => this._trySetupLine(calc, f, validLineIds, color));
     }
 
-    private _trySetupLine(
+    private async _trySetupLine(
         calc: AsyncCalculationContext,
         targetFile: AuxFile3D,
         validLineIds: number[],
@@ -184,7 +182,7 @@ export class LineToDecorator extends AuxFile3DDecorator {
 
         if (targetArrow) {
             targetArrow.setColor(color);
-            targetArrow.update(calc);
+            await targetArrow.update(calc);
             // Add the target file id to the valid ids list.
             validLineIds.push(targetFile.id);
         }

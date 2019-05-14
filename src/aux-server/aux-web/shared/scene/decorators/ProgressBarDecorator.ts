@@ -57,7 +57,7 @@ export class ProgressBarDecorator extends AuxFile3DDecorator
         this._rebuildBar();
     }
 
-    fileUpdated(calc: AsyncCalculationContext): void {
+    async fileUpdated(calc: AsyncCalculationContext): Promise<void> {
         if (this.mesh) {
             this.dispose();
         }
@@ -66,8 +66,7 @@ export class ProgressBarDecorator extends AuxFile3DDecorator
         if (!this.file3D.file.tags['aux.progressBar']) {
             return;
         } else {
-            this.progressNum = calculateNumericalTagValue(
-                calc,
+            this.progressNum = await calc.calculateNumericalTagValue(
                 this.file3D.file,
                 'aux.progressBar',
                 null
@@ -84,7 +83,7 @@ export class ProgressBarDecorator extends AuxFile3DDecorator
             }
         }
 
-        const shape = getFileShape(calc, this.file3D.file);
+        const shape = await calc.getFileShape(this.file3D.file);
         if (this._shape !== shape) {
             this._rebuildBar();
         }
@@ -95,7 +94,7 @@ export class ProgressBarDecorator extends AuxFile3DDecorator
         // this.file3D.display.updateMatrixWorld(false);
     }
 
-    frameUpdate(calc: AsyncCalculationContext): void {}
+    async frameUpdate(calc: AsyncCalculationContext): Promise<void> {}
 
     dispose(): void {
         const index = this.file3D.colliders.indexOf(this.mesh);
@@ -113,8 +112,7 @@ export class ProgressBarDecorator extends AuxFile3DDecorator
     private _updateColor(calc: AsyncCalculationContext) {
         let color: any = null;
         if (this.file3D.file.tags['aux.progressBar.color']) {
-            color = calculateFileValue(
-                calc,
+            color = calc.calculateFileValue(
                 this.file3D.file,
                 'aux.progressBar.color'
             );
@@ -122,8 +120,7 @@ export class ProgressBarDecorator extends AuxFile3DDecorator
 
         let colorBackground: any = null;
         if (this.file3D.file.tags['aux.progressBar.backgroundColor']) {
-            colorBackground = calculateFileValue(
-                calc,
+            colorBackground = calc.calculateFileValue(
                 this.file3D.file,
                 'aux.progressBar.backgroundColor'
             );
