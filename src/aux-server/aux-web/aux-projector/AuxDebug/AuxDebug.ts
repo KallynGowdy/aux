@@ -41,22 +41,22 @@ export default class AuxDebug extends Vue {
         this.includeDestroyed = false;
     }
 
-    created() {
-        this.auxJson = this.fileManager.helper.filesState;
-
+    async created() {
         this._subs = [];
+        this.auxJson = await this.fileManager.getFilesState();
+
         this._subs.push(
-            this.fileManager.watcher.filesDiscovered.subscribe(file => {
+            this.fileManager.filesDiscovered.subscribe(file => {
                 this.refreshAuxJson();
             })
         );
         this._subs.push(
-            this.fileManager.watcher.filesRemoved.subscribe(file => {
+            this.fileManager.filesRemoved.subscribe(file => {
                 this.refreshAuxJson();
             })
         );
         this._subs.push(
-            this.fileManager.watcher.filesUpdated.subscribe(file => {
+            this.fileManager.filesUpdated.subscribe(file => {
                 this.refreshAuxJson();
             })
         );
@@ -70,11 +70,11 @@ export default class AuxDebug extends Vue {
         this.app.upload();
     }
 
-    refreshAuxJson() {
+    async refreshAuxJson() {
         if (this.search) {
             this.auxJson = this._search();
         } else {
-            this.auxJson = this.fileManager.helper.filesState;
+            this.auxJson = await this.fileManager.getFilesState();
         }
     }
 
@@ -95,10 +95,10 @@ export default class AuxDebug extends Vue {
         }
     }
 
-    private _search() {
+    private async _search() {
         const value = searchFileState(
             this.search,
-            this.fileManager.helper.filesState,
+            await this.fileManager.getFilesState(),
             { includeDestroyed: this.includeDestroyed }
         );
         return value;

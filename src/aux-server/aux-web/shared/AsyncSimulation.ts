@@ -39,6 +39,11 @@ export interface AsyncSimulation extends Initable {
     addState(state: FilesState): Promise<void>;
 
     /**
+     * Gets the current file state.
+     */
+    getFilesState(): Promise<AuxState>;
+
+    /**
      * Runs the given event on the given files.
      * @param eventName The name of the event to run.
      * @param files The files that should be searched for handlers for the event name.
