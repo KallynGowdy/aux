@@ -53,7 +53,7 @@ export class TweenCameraToOperation implements IOperation {
         this._target = finalPosition;
     }
 
-    update(): void {
+    async update(): Promise<void> {
         if (this._finished) return;
 
         const cam = this._gameView.getMainCamera();

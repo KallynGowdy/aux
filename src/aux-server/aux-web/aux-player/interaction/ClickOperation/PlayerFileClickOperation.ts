@@ -36,28 +36,24 @@ export class PlayerFileClickOperation extends BaseFileClickOperation {
         this.faceClicked = { face: faceValue };
     }
 
-    protected _performClick(calc: FileCalculationContext): void {
-        this.simulation.helper.action(
-            'onClick',
-            [this._file],
-            this.faceClicked
-        );
+    protected async _performClick(): Promise<void> {
+        await this.simulation.action('onClick', [this._file], this.faceClicked);
     }
 
-    protected _createDragOperation(
-        calc: FileCalculationContext
-    ): BaseFileDragOperation {
-        const mode = getFileDragMode(calc, this._file);
+    protected async _createDragOperation(): Promise<BaseFileDragOperation> {
+        const mode = await this.simulation.getFileDragMode(this._file);
         if (mode === 'clone') {
             return this._createCloneDragOperation();
         }
 
         const file3D: AuxFile3D = <AuxFile3D>this._file3D;
         const context = file3D.context;
-        const position = getFilePosition(calc, file3D.file, context);
+        const position = await this.simulation.getFilePosition(
+            file3D.file,
+            context
+        );
         if (position) {
-            const objects = objectsAtContextGridPosition(
-                calc,
+            const objects = await this.simulation.objectsAtContextGridPosition(
                 context,
                 position
             );

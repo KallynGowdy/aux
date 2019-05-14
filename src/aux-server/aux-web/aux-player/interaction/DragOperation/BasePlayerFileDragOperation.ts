@@ -48,18 +48,21 @@ export class BasePlayerFileDragOperation extends BaseFileDragOperation {
     ) {
         super(simulation, interaction, files, context);
         this._originalContext = context;
-        this._originallyInInventory = this._inInventory =
-            context &&
-            this.simulation.helper.userFile.tags[
-                'aux._userInventoryContext'
-            ] === context;
+        this._inInventory = false;
     }
 
-    protected _onDrag(calc: FileCalculationContext): void {
+    protected async _onDrag(): Promise<void> {
+        if (typeof this._originallyInInventory === 'undefined') {
+            const userFile = await this.simulation.getUserFile();
+            this._originallyInInventory = this._inInventory =
+                this._context &&
+                userFile.tags['aux._userInventoryContext'] === this._context;
+        }
+
         const targetData = this.gameView.getInput().getTargetData();
         const vueElement = Input.getVueParent(targetData.inputOver);
 
-        const mode = getFileDragMode(calc, this._files[0]);
+        const mode = await this.simulation.getFileDragMode(this._files[0]);
 
         let nextContext = this._simulation3D.context;
         if (vueElement && vueElement instanceof InventoryFile) {
@@ -96,14 +99,10 @@ export class BasePlayerFileDragOperation extends BaseFileDragOperation {
                 this.gameView.getInput().getMouseScreenPos(),
                 this.gameView.getMainCamera()
             );
-            const { good, gridTile } = this._interaction.pointOnGrid(
-                calc,
-                mouseDir
-            );
+            const { good, gridTile } = this._interaction.pointOnGrid(mouseDir);
 
             if (good) {
                 const result = this._calculateFileDragStackPosition(
-                    calc,
                     this._context,
                     gridTile.tileCoordinate,
                     ...this._files
@@ -139,39 +138,39 @@ export class BasePlayerFileDragOperation extends BaseFileDragOperation {
         return mode === 'all' || mode === 'drag';
     }
 
-    protected _onDragReleased(calc: FileCalculationContext): void {
-        super._onDragReleased(calc);
+    protected async _onDragReleased(): Promise<void> {
+        await super._onDragReleased();
 
         if (this._originallyInInventory && !this._inInventory) {
             let events: FileEvent[] = [];
-            let result = this.simulation.helper.actionEvents(
+            let result = await this.simulation.actionEvents(
                 DRAG_OUT_OF_INVENTORY_ACTION_NAME,
                 this._files
             );
             events.push(...result.events);
-            result = this.simulation.helper.actionEvents(
+            result = await this.simulation.actionEvents(
                 DRAG_ANY_OUT_OF_INVENTORY_ACTION_NAME,
                 null,
                 this._files
             );
             events.push(...result.events);
 
-            this.simulation.helper.transaction(...events);
+            await this.simulation.transaction(...events);
         } else if (!this._originallyInInventory && this._inInventory) {
             let events: FileEvent[] = [];
-            let result = this.simulation.helper.actionEvents(
+            let result = await this.simulation.actionEvents(
                 DROP_IN_INVENTORY_ACTION_NAME,
                 this._files
             );
             events.push(...result.events);
-            result = this.simulation.helper.actionEvents(
+            result = await this.simulation.actionEvents(
                 DROP_ANY_IN_INVENTORY_ACTION_NAME,
                 null,
                 this._files
             );
             events.push(...result.events);
 
-            this.simulation.helper.transaction(...events);
+            await this.simulation.transaction(...events);
         }
     }
 }

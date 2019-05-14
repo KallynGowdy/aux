@@ -39,14 +39,12 @@ export class PlayerInventoryFileClickOperation extends BaseFileClickOperation {
         this._context = this._item ? this._item.context : null;
     }
 
-    protected _performClick(): void {
-        this._item.simulation.simulation.helper.action('onClick', [this._file]);
+    protected async _performClick(): Promise<void> {
+        await this._item.simulation.simulation.action('onClick', [this._file]);
     }
 
-    protected _createDragOperation(
-        calc: FileCalculationContext
-    ): BaseFileDragOperation {
-        const mode = getFileDragMode(calc, this._file);
+    protected async _createDragOperation(): Promise<BaseFileDragOperation> {
+        const mode = await this.simulation.getFileDragMode(this._file);
         if (mode === 'clone') {
             return this._createCloneDragOperation();
         }
@@ -69,7 +67,7 @@ export class PlayerInventoryFileClickOperation extends BaseFileClickOperation {
         );
     }
 
-    protected _canDragFile(calc: FileCalculationContext, file: File) {
+    protected async _canDragFile(file: File): Promise<boolean> {
         return true;
     }
 }

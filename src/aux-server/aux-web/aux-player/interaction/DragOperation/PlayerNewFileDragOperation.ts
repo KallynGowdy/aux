@@ -41,7 +41,10 @@ export class PlayerNewFileDragOperation extends BasePlayerFileDragOperation {
         super(simulation, interaction, [file], context);
     }
 
-    protected _updateFile(file: File, data: PartialFile): FileEvent {
+    protected async _updateFile(
+        file: File,
+        data: PartialFile
+    ): Promise<FileEvent> {
         if (!this._fileAdded) {
             // Add the duplicated file.
             this._file = merge(this._file, data || {});
@@ -51,15 +54,15 @@ export class PlayerNewFileDragOperation extends BasePlayerFileDragOperation {
 
             return fileAdded(this._file);
         } else {
-            return super._updateFile(this._file, data);
+            return await super._updateFile(this._file, data);
         }
     }
 
-    protected _onDragReleased(calc: FileCalculationContext): void {
+    protected async _onDragReleased(): Promise<void> {
         if (this._fileAdded) {
-            this.simulation.helper.action(CREATE_ACTION_NAME, this._files);
+            await this.simulation.action(CREATE_ACTION_NAME, this._files);
         }
-        super._onDragReleased(calc);
+        await super._onDragReleased();
     }
 
     protected _canDragWithinContext(mode: FileDragMode): boolean {

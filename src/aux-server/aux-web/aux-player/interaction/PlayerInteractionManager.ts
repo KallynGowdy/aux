@@ -4,6 +4,8 @@ import {
     File,
     FileCalculationContext,
     calculateGridScale,
+    DEFAULT_WORKSPACE_SCALE,
+    DEFAULT_WORKSPACE_GRID_SCALE,
 } from '@casual-simulation/aux-common';
 import { IOperation } from '../../shared/interaction/IOperation';
 import { BaseInteractionManager } from '../../shared/interaction/BaseInteractionManager';
@@ -19,6 +21,8 @@ import { PlayerInventoryFileClickOperation } from './ClickOperation/PlayerInvent
 import { appManager } from '../../shared/AppManager';
 import { PlayerSimulation3D } from '../scene/PlayerSimulation3D';
 import { Simulation } from '../../shared/Simulation';
+import { AsyncSimulation } from '../../shared/AsyncSimulation';
+import { Simulation3D } from '../../shared/scene/Simulation3D';
 
 export class PlayerInteractionManager extends BaseInteractionManager {
     // This overrides the base class IGameView
@@ -28,8 +32,7 @@ export class PlayerInteractionManager extends BaseInteractionManager {
 
     constructor(gameView: GameView) {
         super(gameView);
-        let calc = appManager.simulationManager.primary.helper.createContext();
-        let gridScale = calculateGridScale(calc, null);
+        let gridScale = DEFAULT_WORKSPACE_SCALE * DEFAULT_WORKSPACE_GRID_SCALE;
         this._grid = new PlayerGrid(gridScale);
     }
 
@@ -73,18 +76,18 @@ export class PlayerInteractionManager extends BaseInteractionManager {
         }
     }
 
-    handlePointerEnter(file: File, simulation: Simulation): IOperation {
-        simulation.helper.action('onPointerEnter', [file]);
+    handlePointerEnter(file: File, simulation: AsyncSimulation): IOperation {
+        simulation.action('onPointerEnter', [file]);
         return null;
     }
 
-    handlePointerExit(file: File, simulation: Simulation): IOperation {
-        simulation.helper.action('onPointerExit', [file]);
+    handlePointerExit(file: File, simulation: AsyncSimulation): IOperation {
+        simulation.action('onPointerExit', [file]);
         return null;
     }
 
-    handlePointerDown(file: File, simulation: Simulation): IOperation {
-        simulation.helper.action('onPointerDown', [file]);
+    handlePointerDown(file: File, simulation: AsyncSimulation): IOperation {
+        simulation.action('onPointerDown', [file]);
         return null;
     }
 
@@ -112,7 +115,7 @@ export class PlayerInteractionManager extends BaseInteractionManager {
      * Calculates the grid location that the given ray intersects with.
      * @param ray The ray to test.
      */
-    pointOnGrid(calc: FileCalculationContext, ray: Ray) {
+    pointOnGrid(ray: Ray) {
         let planeHit = Physics.pointOnPlane(
             ray,
             this._gameView.getGroundPlane()
@@ -135,7 +138,7 @@ export class PlayerInteractionManager extends BaseInteractionManager {
         };
     }
 
-    protected _findHoveredFile(input: Input): [File, Simulation] {
+    protected _findHoveredFile(input: Input): [File, AsyncSimulation] {
         if (input.isMouseFocusingAny(this._gameView.getUIHtmlElements())) {
             const element = input.getTargetData().inputOver;
             const vueElement = Input.getVueParent(element);
@@ -155,12 +158,12 @@ export class PlayerInteractionManager extends BaseInteractionManager {
         return super._findHoveredFile(input);
     }
 
-    protected _contextMenuActions(
-        calc: FileCalculationContext,
+    protected async _contextMenuActions(
+        simulation: Simulation3D,
         gameObject: GameObject,
         point: Vector3,
         pagePos: Vector2
-    ): ContextMenuAction[] {
+    ): Promise<ContextMenuAction[]> {
         return null;
     }
 }
