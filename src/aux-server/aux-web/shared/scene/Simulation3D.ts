@@ -10,6 +10,7 @@ import { SubscriptionLike } from 'rxjs';
 import { IGameView } from '../IGameView';
 import { concatMap, tap, flatMap as rxFlatMap } from 'rxjs/operators';
 import { ArgEvent } from '@casual-simulation/aux-common/Events';
+import { AsyncSimulation } from '../AsyncSimulation';
 
 /**
  * Defines a class that is able to render a simulation.
@@ -36,7 +37,7 @@ export abstract class Simulation3D extends Object3D
     /**
      * The simulation that this object is rendering.
      */
-    simulation: Simulation;
+    simulation: AsyncSimulation;
 
     /**
      * Gets the game view that is for this simulation.
@@ -50,7 +51,7 @@ export abstract class Simulation3D extends Object3D
      * @param gameView The game view.
      * @param simulation The simulation to render.
      */
-    constructor(gameView: IGameView, simulation: Simulation) {
+    constructor(gameView: IGameView, simulation: AsyncSimulation) {
         super();
         this._gameView = gameView;
         this.simulation = simulation;
@@ -64,7 +65,7 @@ export abstract class Simulation3D extends Object3D
     init() {
         // Subscriptions to file events.
         this._subs.push(
-            this.simulation.watcher.filesDiscovered
+            this.simulation.filesDiscovered
                 .pipe(
                     rxFlatMap(files => files),
                     concatMap(file => this._fileAdded(file))
@@ -72,7 +73,7 @@ export abstract class Simulation3D extends Object3D
                 .subscribe()
         );
         this._subs.push(
-            this.simulation.watcher.filesRemoved
+            this.simulation.filesRemoved
                 .pipe(
                     rxFlatMap(files => files),
                     tap(file => this._fileRemoved(file))
@@ -80,7 +81,7 @@ export abstract class Simulation3D extends Object3D
                 .subscribe()
         );
         this._subs.push(
-            this.simulation.watcher.filesUpdated
+            this.simulation.filesUpdated
                 .pipe(
                     rxFlatMap(files => files),
                     concatMap(file => this._fileUpdated(file, false))
@@ -88,7 +89,7 @@ export abstract class Simulation3D extends Object3D
                 .subscribe()
         );
         this._subs.push(
-            this.simulation.helper.localEvents
+            this.simulation.localEvents
                 .pipe(
                     tap(e => {
                         if (e.name === 'tween_to') {
@@ -104,8 +105,9 @@ export abstract class Simulation3D extends Object3D
     }
 
     frameUpdate() {
-        const calc = this.simulation.helper.createContext();
-        this._frameUpdateCore(calc);
+        // TOOD: Fix
+        // const calc = this.simulation.helper.createContext();
+        // this._frameUpdateCore(calc);
     }
 
     protected _frameUpdateCore(calc: FileCalculationContext) {
@@ -115,17 +117,16 @@ export abstract class Simulation3D extends Object3D
     }
 
     protected async _fileAdded(file: AuxObject): Promise<void> {
-        let calc = this.simulation.helper.createContext();
-        let context = this._createContext(calc, file);
-        if (context) {
-            this.contexts.push(context);
-            this.add(context);
-        }
-
-        await this._fileAddedCore(calc, file);
-
-        await this._fileUpdated(file, true);
-        this.onFileAdded.invoke(file);
+        // TODO: Fix
+        // let calc = this.simulation.helper.createContext();
+        // let context = this._createContext(calc, file);
+        // if (context) {
+        //     this.contexts.push(context);
+        //     this.add(context);
+        // }
+        // await this._fileAddedCore(calc, file);
+        // await this._fileUpdated(file, true);
+        // this.onFileAdded.invoke(file);
     }
 
     protected async _fileAddedCore(
@@ -136,10 +137,10 @@ export abstract class Simulation3D extends Object3D
     }
 
     protected async _fileRemoved(id: string): Promise<void> {
-        const calc = this.simulation.helper.createContext();
-        this._fileRemovedCore(calc, id);
-
-        this.onFileRemoved.invoke(null);
+        // TODO: Fix
+        // const calc = this.simulation.helper.createContext();
+        // this._fileRemovedCore(calc, id);
+        // this.onFileRemoved.invoke(null);
     }
 
     protected _fileRemovedCore(calc: FileCalculationContext, id: string) {
@@ -167,19 +168,18 @@ export abstract class Simulation3D extends Object3D
         file: AuxObject,
         initialUpdate: boolean
     ): Promise<void> {
-        const calc = this.simulation.helper.createContext();
-        let { shouldRemove } = this._shouldRemoveUpdatedFile(
-            calc,
-            file,
-            initialUpdate
-        );
-
-        await this._fileUpdatedCore(calc, file);
-        this.onFileUpdated.invoke(file);
-
-        if (shouldRemove) {
-            this._fileRemoved(file.id);
-        }
+        // TODO: Fix
+        // const calc = this.simulation.helper.createContext();
+        // let { shouldRemove } = this._shouldRemoveUpdatedFile(
+        //     calc,
+        //     file,
+        //     initialUpdate
+        // );
+        // await this._fileUpdatedCore(calc, file);
+        // this.onFileUpdated.invoke(file);
+        // if (shouldRemove) {
+        //     this._fileRemoved(file.id);
+        // }
     }
 
     protected async _fileUpdatedCore(

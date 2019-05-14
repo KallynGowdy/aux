@@ -91,9 +91,9 @@ export class AppManager {
         this.loadingProgress = new LoadingProgress();
         this._initSentry();
         this._initOffline();
-        this._simulationManager = new SimulationManager(id => {
-            return new SimulationHelper(this.user, id, this._config);
-        });
+        // this._simulationManager = new SimulationManager(id => {
+        //     return new SimulationHelper(this.user, id, this._config);
+        // });
         this._userSubject = new BehaviorSubject<User>(null);
         this._db = new AppDatabase();
         this._initPromise = this._init();
@@ -184,12 +184,15 @@ export class AppManager {
      * Copies the given list of files as an AUX to the user's clipboard.
      * @param files The files to copy.
      */
-    async copyFilesFromSimulation(simulation: Simulation, files: AuxObject[]) {
+    async copyFilesFromSimulation(
+        simulation: AsyncSimulation,
+        files: AuxObject[]
+    ) {
         const atoms = files.map(f => f.metadata.ref);
-        const weave = simulation.aux.tree.weave.subweave(...atoms);
+        const weave = await simulation.subweave(...atoms);
         const stored = storedTree(
-            simulation.aux.tree.site,
-            simulation.aux.tree.knownSites,
+            await simulation.site(),
+            await simulation.knownSites(),
             weave.atoms
         );
         let tree = new AuxCausalTree(stored);

@@ -179,14 +179,14 @@ export default class GameView extends Vue implements IGameView {
     /**
      * Click event from GameView.vue
      */
-    private onConfirmDialogOk() {
+    private async onConfirmDialogOk() {
         let contextType = '=isBuilder';
 
         if (this.playerCheck) {
             contextType = '=isBuilder || isPlayer';
         }
 
-        this.simulation3D.simulation.helper.createWorkspace(
+        await this.simulation3D.simulation.createWorkspace(
             undefined,
             this.contextDialog,
             contextType
@@ -439,11 +439,9 @@ export default class GameView extends Vue implements IGameView {
 
     private async _copySelection() {
         const sim = appManager.simulationManager.primary;
-        const files = sim.selection.getSelectedFilesForUser(
-            sim.helper.userFile
-        );
+        const files = await sim.getSelectedFilesForUser();
         if (files.length === 0) {
-            appManager.simulationManager.primary.helper.transaction(
+            await appManager.simulationManager.primary.transaction(
                 toast('Nothing selected to copy!')
             );
             return;
@@ -451,7 +449,7 @@ export default class GameView extends Vue implements IGameView {
 
         await appManager.copyFilesFromSimulation(sim, files);
 
-        appManager.simulationManager.primary.helper.transaction(
+        await appManager.simulationManager.primary.transaction(
             toast('Selection Copied!')
         );
     }
@@ -466,41 +464,8 @@ export default class GameView extends Vue implements IGameView {
                 await tree.import(stored);
 
                 const value = tree.value;
-                const fileIds = keys(value);
                 let state: FilesState = {};
-
-                const oldFiles = fileIds.map(id => value[id]);
-                const calc = createCalculationContext(
-                    oldFiles,
-                    appManager.simulationManager.primary.helper.userFile.id,
-                    appManager.simulationManager.primary.helper.lib
-                );
-                const oldWorksurface =
-                    oldFiles.find(
-                        f => getFileConfigContexts(calc, f).length > 0
-                    ) || createWorkspace();
-                const oldContexts = getFileConfigContexts(calc, oldWorksurface);
-
-                const contextMap: Map<string, string> = new Map();
-                let newContexts: string[] = [];
-                oldContexts.forEach(c => {
-                    const context = createContextId();
-                    newContexts.push(context);
-                    contextMap.set(c, context);
-                });
-
-                let worksurface = duplicateFile(oldWorksurface);
-
-                oldContexts.forEach(c => {
-                    let newContext = contextMap.get(c);
-                    let config = oldWorksurface.tags[`${c}.config`];
-                    worksurface.tags[c] = null;
-                    worksurface.tags[`${c}.config`] = null;
-                    worksurface.tags[newContext] = true;
-                    worksurface.tags[`${newContext}.config`] = config;
-                });
-
-                worksurface = cleanFile(worksurface);
+                // const fileIds = keys(value);
 
                 const mouseDir = Physics.screenPosToRay(
                     this.getInput().getMouseScreenPos(),
@@ -511,57 +476,99 @@ export default class GameView extends Vue implements IGameView {
                     this.getGroundPlane()
                 );
 
-                worksurface.tags['aux.context.x'] = point.x;
-                worksurface.tags['aux.context.y'] = point.z;
-                worksurface.tags['aux.context.z'] = point.y;
-
-                state[worksurface.id] = worksurface;
-
-                for (let i = 0; i < fileIds.length; i++) {
-                    const file = value[fileIds[i]];
-
-                    if (file.id === oldWorksurface.id) {
-                        continue;
-                    }
-
-                    let newFile = duplicateFile(file);
-
-                    oldContexts.forEach(c => {
-                        let newContext = contextMap.get(c);
-                        newFile.tags[c] = null;
-
-                        let x = file.tags[`${c}.x`];
-                        let y = file.tags[`${c}.y`];
-                        let z = file.tags[`${c}.z`];
-                        let index = file.tags[`${c}.index`];
-                        newFile.tags[`${c}.x`] = null;
-                        newFile.tags[`${c}.y`] = null;
-                        newFile.tags[`${c}.z`] = null;
-                        newFile.tags[`${c}.index`] = null;
-
-                        newFile.tags[newContext] = true;
-                        newFile.tags[`${newContext}.x`] = x;
-                        newFile.tags[`${newContext}.y`] = y;
-                        newFile.tags[`${newContext}.z`] = z;
-                        newFile.tags[`${newContext}.index`] = index;
-                    });
-
-                    state[newFile.id] = cleanFile(newFile);
-                }
-
-                await appManager.simulationManager.primary.helper.addState(
-                    state
+                await appManager.simulationManager.primary.pasteState(
+                    value,
+                    point.x,
+                    point.z,
+                    point.y
                 );
-                appManager.simulationManager.primary.helper.transaction(
-                    toast(
-                        `${fileIds.length} ${
-                            fileIds.length === 1 ? 'file' : 'files'
-                        } pasted!`
-                    )
-                );
+
+                // TODO: Fix
+                // const oldFiles = fileIds.map(id => value[id]);
+                // const userFile = await appManager.simulationManager.primary.getUserFile();
+                // const calc = createCalculationContext(
+                //     oldFiles,
+                //     userFile.id,
+                //     await appManager.simulationManager.primary.lib()
+                // );
+                // const oldWorksurface =
+                //     oldFiles.find(
+                //         f => getFileConfigContexts(calc, f).length > 0
+                //     ) || createWorkspace();
+                // const oldContexts = getFileConfigContexts(calc, oldWorksurface);
+
+                // const contextMap: Map<string, string> = new Map();
+                // let newContexts: string[] = [];
+                // oldContexts.forEach(c => {
+                //     const context = createContextId();
+                //     newContexts.push(context);
+                //     contextMap.set(c, context);
+                // });
+
+                // let worksurface = duplicateFile(oldWorksurface);
+
+                // oldContexts.forEach(c => {
+                //     let newContext = contextMap.get(c);
+                //     let config = oldWorksurface.tags[`${c}.config`];
+                //     worksurface.tags[c] = null;
+                //     worksurface.tags[`${c}.config`] = null;
+                //     worksurface.tags[newContext] = true;
+                //     worksurface.tags[`${newContext}.config`] = config;
+                // });
+
+                // worksurface = cleanFile(worksurface);
+
+                // worksurface.tags['aux.context.x'] = point.x;
+                // worksurface.tags['aux.context.y'] = point.z;
+                // worksurface.tags['aux.context.z'] = point.y;
+
+                // state[worksurface.id] = worksurface;
+
+                // for (let i = 0; i < fileIds.length; i++) {
+                //     const file = value[fileIds[i]];
+
+                //     if (file.id === oldWorksurface.id) {
+                //         continue;
+                //     }
+
+                //     let newFile = duplicateFile(file);
+
+                //     oldContexts.forEach(c => {
+                //         let newContext = contextMap.get(c);
+                //         newFile.tags[c] = null;
+
+                //         let x = file.tags[`${c}.x`];
+                //         let y = file.tags[`${c}.y`];
+                //         let z = file.tags[`${c}.z`];
+                //         let index = file.tags[`${c}.index`];
+                //         newFile.tags[`${c}.x`] = null;
+                //         newFile.tags[`${c}.y`] = null;
+                //         newFile.tags[`${c}.z`] = null;
+                //         newFile.tags[`${c}.index`] = null;
+
+                //         newFile.tags[newContext] = true;
+                //         newFile.tags[`${newContext}.x`] = x;
+                //         newFile.tags[`${newContext}.y`] = y;
+                //         newFile.tags[`${newContext}.z`] = z;
+                //         newFile.tags[`${newContext}.index`] = index;
+                //     });
+
+                //     state[newFile.id] = cleanFile(newFile);
+                // }
+
+                // await appManager.simulationManager.primary.helper.addState(
+                //     state
+                // );
+                // appManager.simulationManager.primary.helper.transaction(
+                //     toast(
+                //         `${fileIds.length} ${
+                //             fileIds.length === 1 ? 'file' : 'files'
+                //         } pasted!`
+                //     )
+                // );
             } catch (ex) {
                 console.error('[GameView] Paste failed', ex);
-                appManager.simulationManager.primary.helper.transaction(
+                await appManager.simulationManager.primary.transaction(
                     toast(
                         "Couldn't paste your clipboard. Have you copied a selection or worksurface?"
                     )
@@ -569,7 +576,7 @@ export default class GameView extends Vue implements IGameView {
             }
         } else {
             console.error("[GameView] Browser doesn't support clipboard API!");
-            appManager.simulationManager.primary.helper.transaction(
+            await appManager.simulationManager.primary.transaction(
                 toast(
                     "Sorry, but your browser doesn't support pasting files from a selection or worksurface."
                 )
@@ -596,7 +603,7 @@ export default class GameView extends Vue implements IGameView {
             this,
             appManager.simulationManager.primary
         );
-        this._setupScene();
+        await this._setupScene();
         DebugObjectManager.init(this._time, this._scene);
         this._input = new Input(this);
         this._inputVR = new InputVR(this);
@@ -780,10 +787,10 @@ export default class GameView extends Vue implements IGameView {
         }
     }
 
-    private _setupScene() {
+    private async _setupScene() {
         this._scene = new Scene();
 
-        let globalsFile = this.simulation3D.simulation.helper.globalsFile;
+        let globalsFile = await this.simulation3D.simulation.globalsFile();
 
         // Scene background color.
         let sceneBackgroundColor = globalsFile.tags['aux.scene.color'];
