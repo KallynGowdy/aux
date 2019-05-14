@@ -52,11 +52,11 @@ export default class FileValue extends Vue {
         super();
     }
 
-    valueChanged(file: AuxFile, tag: string, value: string) {
+    async valueChanged(file: AuxFile, tag: string, value: string) {
         this.$emit('tagChanged', file, tag, value);
         if (!isDiff(file)) {
-            this.fileManager.recent.addTagDiff(`${file.id}_${tag}`, tag, value);
-            this.fileManager.helper.updateFile(file, {
+            await this.fileManager.addTagDiff(`${file.id}_${tag}`, tag, value);
+            await this.fileManager.updateFile(file, {
                 tags: {
                     [tag]: value,
                 },
@@ -67,7 +67,7 @@ export default class FileValue extends Vue {
                     [tag]: value,
                 },
             });
-            this.fileManager.recent.addFileDiff(updated, true);
+            await this.fileManager.addFileDiff(updated, true);
         }
     }
 
@@ -90,10 +90,10 @@ export default class FileValue extends Vue {
         this._updateValue();
     }
 
-    private _updateValue() {
+    private async _updateValue() {
         this.isFormula = isFormula(this.file.tags[this.tag]);
         if (!this.isFocused || !this.showFormulaWhenFocused) {
-            this.value = this.fileManager.helper.calculateFormattedFileValue(
+            this.value = await this.fileManager.calculateFormattedFileValue(
                 this.file,
                 this.tag
             );
@@ -110,12 +110,12 @@ export default class FileValue extends Vue {
         }
     }
 
-    private _updateAssignment() {
+    private async _updateAssignment() {
         const val = this.file.tags[this.tag];
         if (isAssignment(val)) {
             const assignment: Assignment = val;
             if (assignment.editing) {
-                this.fileManager.helper.updateFile(this.file, {
+                await this.fileManager.updateFile(this.file, {
                     tags: {
                         [this.tag]: assign(assignment, {
                             editing: false,
