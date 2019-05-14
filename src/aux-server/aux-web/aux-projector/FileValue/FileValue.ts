@@ -19,20 +19,20 @@ import uuid from 'uuid/v4';
 @Component({
     watch: {
         file: function(newFile: Object, oldFile: Object) {
-            const _this: FileRow = this;
+            const _this: FileValue = this;
             _this._updateValue();
         },
         tag: function(newTag: string, oldTag: string) {
-            const _this: FileRow = this;
+            const _this: FileValue = this;
             _this._updateValue();
         },
         updateTime: function() {
-            const _this: FileRow = this;
+            const _this: FileValue = this;
             _this._updateValue();
         },
     },
 })
-export default class FileRow extends Vue {
+export default class FileValue extends Vue {
     @Prop() file: AuxObject;
     @Prop() tag: string;
     @Prop() readOnly: boolean;
