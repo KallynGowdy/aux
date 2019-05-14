@@ -35,10 +35,11 @@ export default class MenuFile extends Vue {
     @Watch('item')
     private async _fileChanged(item: MenuItem) {
         if (item) {
-            const calc = item.simulation.simulation.helper.createContext();
-            this._updateLabel(calc, item.file);
-            this._updateColor(calc, item.file);
-            this._updateInput(calc, item.file);
+            // TODO: Fix
+            // const calc = item.simulation.simulation.helper.createContext();
+            // this._updateLabel(calc, item.file);
+            // this._updateColor(calc, item.file);
+            // this._updateInput(calc, item.file);
         } else {
             this.label = '';
             this.labelColor = '#000';
@@ -55,19 +56,20 @@ export default class MenuFile extends Vue {
     }
 
     async click() {
-        await this.item.simulation.simulation.helper.action('onClick', [
+        await this.item.simulation.simulation.action('onClick', [
             this.item.file,
         ]);
         if (this.input) {
-            const calc = this.item.simulation.simulation.helper.createContext();
-            this._updateInput(calc, this.item.file);
+            // TODO: Fix
+            // const calc = this.item.simulation.simulation.helper.createContext();
+            // this._updateInput(calc, this.item.file);
             this.showDialog = true;
         }
     }
 
     async closeDialog() {
         if (this.showDialog) {
-            await this.item.simulation.simulation.helper.action('onClose', [
+            await this.item.simulation.simulation.action('onClose', [
                 this.item.file,
             ]);
             this.showDialog = false;
@@ -76,15 +78,12 @@ export default class MenuFile extends Vue {
 
     async saveDialog() {
         if (this.showDialog) {
-            await this.item.simulation.simulation.helper.updateFile(
-                this.inputTarget,
-                {
-                    tags: {
-                        [this.input]: this.inputValue,
-                    },
-                }
-            );
-            await this.item.simulation.simulation.helper.action('onSave', [
+            await this.item.simulation.simulation.updateFile(this.inputTarget, {
+                tags: {
+                    [this.input]: this.inputValue,
+                },
+            });
+            await this.item.simulation.simulation.action('onSave', [
                 this.item.file,
             ]);
             await this.closeDialog();
