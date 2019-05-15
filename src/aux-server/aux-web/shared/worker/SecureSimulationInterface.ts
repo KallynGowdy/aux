@@ -1,4 +1,6 @@
 import { User } from '../User';
+import { SimulationEvents } from './RemoteAsyncSimulation';
+import { AuxObject } from '@casual-simulation/aux-common';
 
 /**
  * Defines the API that the secure simulation client provides to the host.
@@ -9,6 +11,19 @@ export interface SecureSimulationClientInterface {
         id: string,
         config: { isBuilder: boolean; isPlayer: boolean }
     ): void;
+
+    registerListener(
+        key: string,
+        callback: (event: SimulationEvents) => void
+    ): void;
+    unregisterListener(key: string): void;
+
+    watchFile(
+        key: string,
+        id: string,
+        callback: (event: AuxObject) => void
+    ): void;
+    unwatchFile(key: string, id: string): void;
 
     /**
      * Issues an async call to the given function name with the given arguments.
@@ -26,11 +41,4 @@ export interface SecureSimulationClientInterface {
 /**
  * Defines the API that the secure simulation host provides to the client.
  */
-export interface SecureSimulationHostInterface {
-    event(name: string, data: any): void;
-}
-
-export interface SecureSimulationEvent {
-    name: string;
-    data: any;
-}
+export interface SecureSimulationHostInterface {}
