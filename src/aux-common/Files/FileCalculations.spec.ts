@@ -3109,7 +3109,7 @@ describe('FileCalculations', () => {
     describe('addToContextDiff()', () => {
         it('should return the tags needed to add a file to a context', () => {
             const calc = createCalculationContext([]);
-            const tags = removeFromContextDiff(calc, 'test');
+            const tags = removeFromContextDiff('test');
 
             expect(tags).toEqual({
                 test: null,

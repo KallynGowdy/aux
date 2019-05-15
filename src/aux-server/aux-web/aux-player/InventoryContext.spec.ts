@@ -134,7 +134,7 @@ describe('InventoryContext', () => {
         // Should be empty.
         expect(inventory.slots).toEqual([]);
 
-        inventory.frameUpdate(calc);
+        await inventory.frameUpdate(calc);
 
         // Should not be empty.
         expect(inventory.slots).not.toEqual([]);
@@ -190,7 +190,7 @@ describe('InventoryContext', () => {
         // Should be empty.
         expect(inventory.slots).toEqual([]);
 
-        inventory.frameUpdate(calc);
+        await inventory.frameUpdate(calc);
 
         // Should not be empty.
         expect(inventory.slots).not.toEqual([]);
@@ -252,7 +252,7 @@ describe('InventoryContext', () => {
         // Should be empty.
         expect(inventory.slots).toEqual([]);
 
-        inventory.frameUpdate(calc);
+        await inventory.frameUpdate(calc);
 
         // Should not be empty.
         expect(inventory.slots).not.toEqual([]);
@@ -289,7 +289,7 @@ describe('InventoryContext', () => {
         expect(inventory.files[0].id).toEqual('testId_0');
         expect(inventory.files[1].id).toEqual('testId_1');
 
-        inventory.frameUpdate(calc);
+        await inventory.frameUpdate(calc);
 
         // Slots should be be in initial state.
         expect(inventory.slots[0].file.id).toEqual('testId_0');
@@ -303,8 +303,8 @@ describe('InventoryContext', () => {
         file.tags[`${context}.x`] = 3;
 
         calc = new TestAsyncCalculationContext(createCalculationContext(files));
-        inventory.fileUpdated(<AuxObject>file, null, calc);
-        inventory.frameUpdate(calc);
+        await inventory.fileUpdated(<AuxObject>file, null, calc);
+        await inventory.frameUpdate(calc);
 
         // Files should still be in original state.
         expect(inventory.files).toHaveLength(2);

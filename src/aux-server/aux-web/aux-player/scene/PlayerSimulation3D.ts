@@ -151,11 +151,11 @@ export class PlayerSimulation3D extends Simulation3D {
         );
     }
 
-    protected _frameUpdateCore(calc: AsyncCalculationContext) {
-        super._frameUpdateCore(calc);
-        this.inventoryContext.frameUpdate(calc);
-        this.menuContext.frameUpdate(calc);
-        this.simulationContext.frameUpdate(calc);
+    protected async _frameUpdateCore(calc: AsyncCalculationContext) {
+        await super._frameUpdateCore(calc);
+        await this.inventoryContext.frameUpdate(calc);
+        await this.menuContext.frameUpdate(calc);
+        await this.simulationContext.frameUpdate(calc);
     }
 
     protected async _createContext(

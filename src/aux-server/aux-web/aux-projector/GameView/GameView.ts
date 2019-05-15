@@ -623,7 +623,7 @@ export default class GameView extends Vue implements IGameView {
 
         this._setupWebVR();
         await this._setupWebXR();
-        this._frameUpdate();
+        await this._frameUpdate();
     }
 
     public beforeDestroy() {
@@ -644,14 +644,14 @@ export default class GameView extends Vue implements IGameView {
         }
     }
 
-    private _frameUpdate(xrFrame?: any) {
+    private async _frameUpdate(xrFrame?: any) {
         DebugObjectManager.update();
 
         this._input.update();
         this._inputVR.update();
         this._interaction.update();
 
-        this.simulation3D.frameUpdate();
+        await this.simulation3D.frameUpdate();
 
         if (this._htmlMixerContext) {
             this._htmlMixerContext.update();

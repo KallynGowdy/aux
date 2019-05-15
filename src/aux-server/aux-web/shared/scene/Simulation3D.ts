@@ -104,16 +104,14 @@ export abstract class Simulation3D extends Object3D
         );
     }
 
-    frameUpdate() {
-        // TOOD: Fix
-        // const calc = this.simulation.helper.createContext();
-        // this._frameUpdateCore(calc);
+    async frameUpdate() {
+        await this._frameUpdateCore(this.simulation);
     }
 
-    protected _frameUpdateCore(calc: AsyncCalculationContext) {
-        this.contexts.forEach(context => {
-            context.frameUpdate(calc);
-        });
+    protected async _frameUpdateCore(calc: AsyncCalculationContext) {
+        for (let i = 0; i < this.contexts.length; i++) {
+            await this.contexts[i].frameUpdate(calc);
+        }
     }
 
     protected async _fileAdded(file: AuxObject): Promise<void> {

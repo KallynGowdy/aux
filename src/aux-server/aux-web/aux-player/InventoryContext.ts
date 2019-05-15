@@ -132,9 +132,9 @@ export class InventoryContext {
         this._removeFile(id);
     }
 
-    frameUpdate(calc: AsyncCalculationContext): void {
+    async frameUpdate(calc: AsyncCalculationContext): Promise<void> {
         if (this._slotsDirty) {
-            this._resortSlots(calc);
+            await this._resortSlots(calc);
             this._slotsDirty = false;
         }
     }

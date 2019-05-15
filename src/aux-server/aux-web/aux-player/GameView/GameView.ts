@@ -322,7 +322,7 @@ export default class GameView extends Vue implements IGameView {
         this._setupWebVR();
         await this._setupWebXR();
         this._triggerFilesRefresh();
-        this._frameUpdate();
+        await this._frameUpdate();
 
         this._fileSubs.push(
             appManager.simulationManager.simulationAdded
@@ -443,7 +443,7 @@ export default class GameView extends Vue implements IGameView {
         );
     }
 
-    private _frameUpdate(xrFrame?: any) {
+    private async _frameUpdate(xrFrame?: any) {
         DebugObjectManager.update();
 
         // let calc = this.fileManager.helper.createContext();
@@ -452,25 +452,13 @@ export default class GameView extends Vue implements IGameView {
         this._inputVR.update();
         this._interaction.update();
 
-        this.simulations.forEach(s => {
-            s.frameUpdate();
-        });
+        for (let i = 0; i < this.simulations.length; i++) {
+            await this.simulations[i].frameUpdate();
+        }
 
         if (this._htmlMixerContext) {
             this._htmlMixerContext.update();
         }
-        // if (this._contextGroup) {
-        //     this._contextGroup.frameUpdate(calc);
-        // }
-
-        // TODO: Fix
-        // if (this.inventoryContext) {
-        //     this.inventoryContext.frameUpdate(calc);
-        // }
-
-        // if (this.menuContext) {
-        //     this.menuContext.frameUpdate(calc);
-        // }
 
         this._cameraUpdate();
 
