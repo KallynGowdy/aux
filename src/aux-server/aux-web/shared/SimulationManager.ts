@@ -1,12 +1,12 @@
 import { Initable } from './Initable';
 import { LoadingProgressCallback } from '@casual-simulation/aux-common/LoadingProgress';
-import { Subject, ReplaySubject, Observable } from 'rxjs';
+import { Subject, ReplaySubject, Observable, SubscriptionLike } from 'rxjs';
 
 /**
  * Defines a class that it able to manage multiple simulations that are loaded at the same time.
  * @param TSimulation The type of objects that represent a simulation.
  */
-export default class SimulationManager<TSimulation extends Initable> {
+export default class SimulationManager<TSimulation extends SubscriptionLike> {
     private _factory: SimulationFactory<TSimulation>;
     private _simulationAdded: ReplaySubject<TSimulation>;
     private _simulationRemoved: ReplaySubject<TSimulation>;
@@ -89,8 +89,13 @@ export default class SimulationManager<TSimulation extends Initable> {
         if (this.simulations.has(id)) {
             return this.simulations.get(id);
         } else {
-            const sim = this._factory(id);
-            await sim.init(loadingCallback);
+            const val = this._factory(id);
+            let sim: TSimulation;
+            if (val instanceof Promise) {
+                sim = await val;
+            } else {
+                sim = val;
+            }
             this.simulations.set(id, sim);
             this._simulationAdded.next(sim);
             return sim;
@@ -123,4 +128,6 @@ export default class SimulationManager<TSimulation extends Initable> {
     }
 }
 
-export type SimulationFactory<TSimulation> = (id: string) => TSimulation;
+export type SimulationFactory<TSimulation> = (
+    id: string
+) => TSimulation | Promise<TSimulation>;

@@ -29,50 +29,11 @@ import {
 import { LoadingProgressCallback } from '@casual-simulation/aux-common/LoadingProgress';
 import { FilesUpdatedEvent } from '../FilePanelManager';
 import { RecentsUpdatedEvent } from '../RecentFilesManager';
-import { simd } from 'sharp';
-import {
-    RemoteAsyncSimulation,
-    SimulationEvents,
-} from './RemoteAsyncSimulation';
+import { User } from '../User';
+import { FileManager } from '../FileManager';
 
-export class RemoteAsyncSimulationWrapper extends AsyncCalculationContextWrapper
-    implements RemoteAsyncSimulation {
-    async watchFile(
-        key: string,
-        id: string,
-        callback: (event: AuxObject) => void
-    ): Promise<void> {
-        const listenerId = key + id;
-
-        await this.unwatchFile(key, id);
-
-        const file = this._sim.helper.filesState[id];
-        const sub = this.fileChanged(file).subscribe(f => {
-            callback(f);
-        });
-
-        this._fileListeners.set(listenerId, sub);
-    }
-
-    async unwatchFile(key: string, id: string): Promise<void> {
-        const listenerId = key + id;
-        if (this._fileListeners.has(listenerId)) {
-            const listener = this._fileListeners.get(listenerId);
-            listener.unsubscribe();
-        }
-    }
-
-    async registerListener(
-        key: string,
-        callback: (event: SimulationEvents) => void
-    ): Promise<void> {
-        this._listeners.set(key, callback);
-    }
-
-    async unregisterListener(key: string): Promise<void> {
-        this._listeners.delete(key);
-    }
-
+export class AsyncSimulationWrapper extends AsyncCalculationContextWrapper
+    implements AsyncSimulation {
     get id(): string {
         return this._sim.id;
     }
@@ -239,6 +200,10 @@ export class RemoteAsyncSimulationWrapper extends AsyncCalculationContextWrapper
         return this._sim.watcher.fileChanged(file);
     }
 
+    userFileChanged(): Observable<AuxObject> {
+        return this.fileChanged(this._sim.helper.userFile);
+    }
+
     get filesDiscovered(): Observable<AuxObject[]> {
         return this._sim.watcher.filesDiscovered;
     }
@@ -304,65 +269,14 @@ export class RemoteAsyncSimulationWrapper extends AsyncCalculationContextWrapper
         throw new Error('Method not implemented.');
     }
 
-    async init(loadingCallback?: LoadingProgressCallback): Promise<void> {
+    async init(
+        user: User,
+        id: string,
+        config: { isBuilder: boolean; isPlayer: boolean },
+        loadingCallback?: LoadingProgressCallback
+    ): Promise<void> {
+        this._sim = new FileManager(user, id, config);
         await this._sim.init(loadingCallback);
-
-        this._subs = [
-            this.filesDiscovered.subscribe(files => {
-                this._sendEvent({
-                    name: 'files_discovered',
-                    data: files,
-                });
-            }),
-            this.filesUpdated.subscribe(files => {
-                this._sendEvent({
-                    name: 'files_updated',
-                    data: files,
-                });
-            }),
-            this.filesRemoved.subscribe(files => {
-                this._sendEvent({
-                    name: 'files_removed',
-                    data: files,
-                });
-            }),
-            this.localEvents.subscribe(event => {
-                this._sendEvent({
-                    name: 'local_events',
-                    data: event,
-                });
-            }),
-            this.filePanelSearchUpdated.subscribe(search => {
-                this._sendEvent({
-                    name: 'file_panel_search_updated',
-                    data: search,
-                });
-            }),
-            this.filePanelOpenChanged.subscribe(open => {
-                this._sendEvent({
-                    name: 'file_panel_open_changed',
-                    data: open,
-                });
-            }),
-            this.filePanelUpdated.subscribe(files => {
-                this._sendEvent({
-                    name: 'file_panel_updated',
-                    data: files,
-                });
-            }),
-            this.recentsUpdated.subscribe(recents => {
-                this._sendEvent({
-                    name: 'recents_updated',
-                    data: recents,
-                });
-            }),
-            this.connectionStateChanged.subscribe(state => {
-                this._sendEvent({
-                    name: 'connection_state_changed',
-                    data: state,
-                });
-            }),
-        ];
     }
 
     unsubscribe(): void {
@@ -376,19 +290,9 @@ export class RemoteAsyncSimulationWrapper extends AsyncCalculationContextWrapper
         return this._sim.helper.objects;
     }
 
-    private _sendEvent(event: SimulationEvents) {
-        this._listeners.forEach(l => l(event));
-    }
-
-    private _listeners: Map<string, (event: SimulationEvents) => void>;
-    private _fileListeners: Map<string, SubscriptionLike>;
     private _sim: Simulation;
-    private _subs: SubscriptionLike[];
 
-    constructor(sim: Simulation) {
+    constructor() {
         super(null);
-        this._sim = sim;
-        this._listeners = new Map();
-        this._fileListeners = new Map();
     }
 }

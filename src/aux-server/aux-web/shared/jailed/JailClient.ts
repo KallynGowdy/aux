@@ -3,9 +3,10 @@ import { JailedClientAPI, JailedClientObservable } from './JailClientAPI';
 import { get, invoke } from 'lodash';
 import { Observable, SubscriptionLike } from 'rxjs';
 import uuid from 'uuid/v4';
+import { JailedHostAPI } from './JailHostAPI';
 
 export function setupAPI(
-    application: Application<any, JailedClientAPI>,
+    application: Application<JailedHostAPI, JailedClientAPI>,
     target: any
 ) {
     let subs: {
@@ -68,6 +69,18 @@ export function setupAPI(
             }
         },
     });
+
+    let observables: string[] = [];
+    for (let key of target) {
+        if (target.hasOwnProperty(key)) {
+            const val = target[key];
+            if (val && typeof val.subscribe === 'function') {
+                observables.push(key);
+            }
+        }
+    }
+
+    application.remote.setObservablePropertyNames(observables);
 }
 
 function returnValue(cb: Function, name: string, value: any) {

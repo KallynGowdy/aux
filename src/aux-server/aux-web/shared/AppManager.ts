@@ -29,8 +29,9 @@ import { Simulation } from './Simulation';
 import SimulationManager from './SimulationManager';
 import { copyToClipboard } from './SharedUtils';
 import { User } from './User';
-import { SimulationHelper } from './worker/Simulation.helper';
 import { AsyncSimulation } from './AsyncSimulation';
+import { createSandbox } from './worker/SecureSimulation';
+import { union } from './worker/UnionProxy';
 
 /**
  * Defines an interface that contains version information about the app.
@@ -91,8 +92,16 @@ export class AppManager {
         this.loadingProgress = new LoadingProgress();
         this._initSentry();
         this._initOffline();
-        this._simulationManager = new SimulationManager(id => {
-            return new SimulationHelper(this.user, id, this._config);
+        this._simulationManager = new SimulationManager(async id => {
+            const sandbox = await createSandbox();
+            await sandbox.init(this._user, id, this._config);
+            return union(sandbox, {
+                id: id,
+                userFileId: this._user.id,
+
+                // TODO: Get this prop to be reactive
+                closed: false,
+            });
         });
         this._userSubject = new BehaviorSubject<User>(null);
         this._db = new AppDatabase();

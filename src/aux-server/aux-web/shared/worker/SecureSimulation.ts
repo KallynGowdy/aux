@@ -1,6 +1,7 @@
 import { createJail } from '../jailed/JailProxy';
-import { RemoteAsyncSimulation } from './RemoteAsyncSimulation';
+import { AsyncSimulation } from '../AsyncSimulation';
+import PluginUrl from 'file-loader!./SimulationPlugin.ts';
 
 export function createSandbox() {
-    return createJail<RemoteAsyncSimulation>('abc');
+    return createJail<AsyncSimulation>(PluginUrl);
 }

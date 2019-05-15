@@ -16,6 +16,7 @@ export interface JailedClientAPI {
         ref: JailedClientObservable,
         onValue: Function
     ): void;
+
     unsubscribe(
         cb: (err?: any, value?: any) => void,
         ref: JailedClientObservable
