@@ -29,11 +29,10 @@ export default class InventoryFile extends Vue {
     @Watch('file')
     private async _fileChanged(file: AuxFile) {
         if (file) {
-            // TODO: Fix
-            // this.image = await this.fileRenderer.render(
-            //     file,
-            //     this.item.simulation.simulation.createContext()
-            // );
+            this.image = await this.fileRenderer.render(
+                file,
+                this.item.simulation.simulation
+            );
             this.showImage = 'flex';
             let label = file.tags['aux.label'];
             if (label) {

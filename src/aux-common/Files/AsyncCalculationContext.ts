@@ -6,6 +6,7 @@ import {
     FileTags,
     FileLabelAnchor,
 } from './File';
+import { FilterParseResult } from './FilterParseResult';
 
 /**
  * Defines an interface for objects that are able to calculate file values asynchronously.
@@ -46,7 +47,7 @@ export interface AsyncCalculationContext {
      */
     objectsAtContextGridPosition(
         context: string,
-        position: { x: number; y: number; z: number }
+        position: { x: number; y: number }
     ): Promise<File[]>;
 
     /**
@@ -66,6 +67,18 @@ export interface AsyncCalculationContext {
      * @param file The file.
      */
     isFileMovable(file: File): Promise<boolean>;
+
+    /**
+     * Gets whether the given file is stackable.
+     * @param file The file to check.
+     */
+    isFileStackable(file: File): Promise<boolean>;
+
+    /**
+     * Determines if the given file allows for merging.
+     * @param file The file to check.
+     */
+    isMergeable(file: File): Promise<boolean>;
 
     /**
      * Gets the list of contexts that the given file is the config for.
@@ -179,6 +192,18 @@ export interface AsyncCalculationContext {
     getFileChannel(file: Object): Promise<string>;
 
     /**
+     * Gets the file that the given file is using as the input target.
+     * @param file The file.
+     */
+    getFileInputTarget(file: AuxFile): Promise<AuxFile>;
+
+    /**
+     * Gets the placeholder to use for a file's input box.
+     * @param file The file.
+     */
+    getFileInputPlaceholder(file: AuxFile): Promise<string>;
+
+    /**
      * Gets the sort order that the given file should appear in the given context.
      * @param file The file.
      * @param contextId The ID of the context that we're getting the sort order for.
@@ -189,6 +214,18 @@ export interface AsyncCalculationContext {
     ): Promise<number | string>;
 
     /**
+     * Gets a list of tags from the given object that match the given event name and arguments.
+     * @param file The file to find the tags that match the arguments.
+     * @param eventName The event name to test.
+     * @param other The arguments to match against.
+     */
+    filtersMatchingArguments(
+        file: File,
+        eventName: string,
+        args: any[]
+    ): Promise<FilterParseResult[]>;
+
+    /**
      * Calculates the value of the given tag on the given file. If the result is not a number, then the given default value
      * is returned.
      * @param file The file.
@@ -196,7 +233,7 @@ export interface AsyncCalculationContext {
      * @param defaultValue The default value to use if the tag doesn't exist or the result is not a number.
      */
     calculateNumericalTagValue(
-        file: Object,
+        file: File,
         tag: string,
         defaultValue: number
     ): Promise<number>;
@@ -215,7 +252,7 @@ export interface AsyncCalculationContext {
      * @param unwrapProxy
      */
     calculateFileValue(
-        object: Object,
+        object: File,
         tag: keyof FileTags,
         unwrapProxy?: boolean
     ): Promise<any>;

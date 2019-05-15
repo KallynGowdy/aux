@@ -4,14 +4,13 @@ import { Inject, Watch, Prop } from 'vue-property-decorator';
 import {
     File,
     AuxFile,
-    FileCalculationContext,
+    AsyncCalculationContext,
     getFileInputTarget,
     calculateFormattedFileValue,
     calculateFileValue,
     isFormula,
     getFileInputPlaceholder,
 } from '@casual-simulation/aux-common';
-import { FileRenderer } from '../../shared/scene/FileRenderer';
 import { MenuItem } from '../MenuContext';
 
 @Component({
@@ -35,11 +34,10 @@ export default class MenuFile extends Vue {
     @Watch('item')
     private async _fileChanged(item: MenuItem) {
         if (item) {
-            // TODO: Fix
-            // const calc = item.simulation.simulation.helper.createContext();
-            // this._updateLabel(calc, item.file);
-            // this._updateColor(calc, item.file);
-            // this._updateInput(calc, item.file);
+            const calc = item.simulation.simulation;
+            await this._updateLabel(calc, item.file);
+            await this._updateColor(calc, item.file);
+            await this._updateInput(calc, item.file);
         } else {
             this.label = '';
             this.labelColor = '#000';
@@ -60,9 +58,8 @@ export default class MenuFile extends Vue {
             this.item.file,
         ]);
         if (this.input) {
-            // TODO: Fix
-            // const calc = this.item.simulation.simulation.helper.createContext();
-            // this._updateInput(calc, this.item.file);
+            const calc = this.item.simulation.simulation;
+            this._updateInput(calc, this.item.file);
             this.showDialog = true;
         }
     }
@@ -90,22 +87,27 @@ export default class MenuFile extends Vue {
         }
     }
 
-    private _updateColor(calc: FileCalculationContext, file: AuxFile) {
+    private async _updateColor(calc: AsyncCalculationContext, file: AuxFile) {
         if (file.tags['aux.color']) {
-            this.backgroundColor = calculateFileValue(calc, file, 'aux.color');
+            this.backgroundColor = await calc.calculateFileValue(
+                file,
+                'aux.color'
+            );
         } else {
             this.backgroundColor = '#FFF';
         }
     }
 
-    private _updateLabel(calc: FileCalculationContext, file: AuxFile) {
+    private async _updateLabel(calc: AsyncCalculationContext, file: AuxFile) {
         let label = file.tags['aux.label'];
         if (label) {
-            this.label = calculateFormattedFileValue(calc, file, 'aux.label');
+            this.label = await calc.calculateFormattedFileValue(
+                file,
+                'aux.label'
+            );
             const labelColor = file.tags['aux.label.color'];
             if (labelColor) {
-                this.labelColor = calculateFormattedFileValue(
-                    calc,
+                this.labelColor = await calc.calculateFormattedFileValue(
                     file,
                     'aux.label.color'
                 );
@@ -117,20 +119,22 @@ export default class MenuFile extends Vue {
         }
     }
 
-    private _updateInput(calc: FileCalculationContext, file: AuxFile) {
+    private async _updateInput(calc: AsyncCalculationContext, file: AuxFile) {
         let input = file.tags['aux.input'];
         if (input) {
-            this.input = calculateFormattedFileValue(calc, file, 'aux.input');
+            this.input = await calc.calculateFormattedFileValue(
+                file,
+                'aux.input'
+            );
 
             if (this.input) {
-                this.inputTarget = getFileInputTarget(calc, file);
-                this.inputValue = calculateFormattedFileValue(
-                    calc,
+                this.inputTarget = await calc.getFileInputTarget(file);
+                this.inputValue = await calc.calculateFormattedFileValue(
                     this.inputTarget,
                     this.input
                 );
                 this.placeholder =
-                    getFileInputPlaceholder(calc, file) || this.input;
+                    (await calc.getFileInputPlaceholder(file)) || this.input;
             }
         } else {
             this.input = '';

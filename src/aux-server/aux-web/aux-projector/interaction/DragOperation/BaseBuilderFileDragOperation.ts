@@ -13,6 +13,7 @@ import {
     calculateActionEvents,
     DESTROY_ACTION_NAME,
     getFileDragMode,
+    AsyncCalculationContext,
 } from '@casual-simulation/aux-common';
 
 import { setParent } from '../../../shared/scene/SceneUtils';
@@ -120,7 +121,7 @@ export abstract class BaseBuilderFileDragOperation extends BaseFileDragOperation
         }
 
         // calculate index for file
-        const result = this._calcWorkspaceDragPosition(gridPosition);
+        const result = await this._calcWorkspaceDragPosition(gridPosition);
 
         this._combine = result.combine;
         this._merge = result.merge;
@@ -131,7 +132,7 @@ export abstract class BaseBuilderFileDragOperation extends BaseFileDragOperation
         }
     }
 
-    protected _dragFilesFree(): void {
+    protected async _dragFilesFree(): Promise<void> {
         const mouseDir = Physics.screenPosToRay(
             this.gameView.getInput().getMouseScreenPos(),
             this.gameView.getMainCamera()
@@ -141,9 +142,12 @@ export abstract class BaseBuilderFileDragOperation extends BaseFileDragOperation
         if (firstFileExists) {
             // Move the file freely in space at the distance the file is currently from the camera.
             if (!this._freeDragGroup) {
-                this._freeDragMeshes = this._files.map(f =>
-                    this._createDragMesh(f)
-                );
+                this._freeDragMeshes = new Array<AuxFile3D>(this._files.length);
+                for (let i = 0; i < this._files.length; i++) {
+                    this._freeDragMeshes[i] = await this._createDragMesh(
+                        this._files[i]
+                    );
+                }
                 this._freeDragGroup = this._createFreeDragGroup(
                     this._freeDragMeshes
                 );
@@ -162,10 +166,10 @@ export abstract class BaseBuilderFileDragOperation extends BaseFileDragOperation
                 );
             }
 
-            this._freeDragMeshes.forEach(m => {
-                // TODO: Fix
-                // m.fileUpdated(m.file, []);
-            });
+            for (let i = 0; i < this._freeDragMeshes.length; i++) {
+                const m = this._freeDragMeshes[i];
+                await m.fileUpdated(this.simulation, m.file, []);
+            }
 
             let worldPos = Physics.pointOnRay(mouseDir, this._freeDragDistance);
             this._freeDragGroup.position.copy(worldPos);
@@ -286,7 +290,7 @@ export abstract class BaseBuilderFileDragOperation extends BaseFileDragOperation
      * @param calc The file calculation context.
      * @param file The file.
      */
-    protected _createDragMesh(file: File): AuxFile3D {
+    protected async _createDragMesh(file: File): Promise<AuxFile3D> {
         // Instance a file mesh to represent the file in its intial drag state before being added to the world.
         let mesh = new AuxFile3D(
             file,
@@ -297,8 +301,7 @@ export abstract class BaseBuilderFileDragOperation extends BaseFileDragOperation
             new AuxFile3DDecoratorFactory(this.gameView)
         );
 
-        // TODO: Fix
-        // mesh.fileUpdated(file, [], calc);
+        await mesh.fileUpdated(this.simulation, file, []);
 
         if (!mesh.parent) {
             this.gameView.getScene().add(mesh);

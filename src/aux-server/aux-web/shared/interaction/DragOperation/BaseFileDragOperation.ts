@@ -7,7 +7,6 @@ import {
     PartialFile,
     FileEvent,
     updateFile,
-    FileCalculationContext,
     objectsAtContextGridPosition,
     isFileStackable,
     getFileIndex,
@@ -22,6 +21,7 @@ import {
     calculateActionEvents,
     DRAG_ANY_OUT_OF_CONTEXT_ACTION_NAME,
     DROP_ANY_IN_CONTEXT_ACTION_NAME,
+    AsyncCalculationContext,
 } from '@casual-simulation/aux-common';
 
 import { AuxFile3D } from '../../../shared/scene/AuxFile3D';
@@ -194,50 +194,58 @@ export abstract class BaseFileDragOperation implements IOperation {
      * @param gridPosition The grid position that the file is being dragged to.
      * @param file The file that is being dragged.
      */
-    protected _calculateFileDragStackPosition(
+    protected async _calculateFileDragStackPosition(
         context: string,
         gridPosition: Vector2,
         ...files: File[]
-    ): any {
-        // TODO: Fix
-        // const objs = differenceBy(
-        //     objectsAtContextGridPosition(context, gridPosition),
-        //     files,
-        //     f => f.id
-        // );
-        // const canMerge =
-        //     objs.length >= 1 &&
-        //     files.length === 1 &&
-        //     isDiff(files[0]) &&
-        //     isMergeable(calc, files[0]) &&
-        //     isMergeable(calc, objs[0]);
-        // const canCombine =
-        //     this._allowCombine() &&
-        //     !canMerge &&
-        //     objs.length === 1 &&
-        //     files.length === 1 &&
-        //     this._interaction.canCombineFiles(calc, files[0], objs[0]);
-        // // Can stack if we're dragging more than one file,
-        // // or (if the single file we're dragging is stackable and
-        // // the stack we're dragging onto is stackable)
-        // const canStack =
-        //     files.length !== 1 ||
-        //     (isFileStackable(calc, files[0]) &&
-        //         (objs.length === 0 || isFileStackable(calc, objs[0])));
-        // const index = this._nextAvailableObjectIndex(
-        //     calc,
-        //     context,
-        //     gridPosition,
-        //     files,
-        //     objs
-        // );
-        // return {
-        //     combine: canCombine,
-        //     merge: canMerge,
-        //     stackable: canStack,
-        //     other: canCombine ? objs[0] : canMerge ? objs[0] : null,
-        //     index: index,
-        // };
+    ) {
+        const objs = differenceBy(
+            await this.simulation.objectsAtContextGridPosition(
+                context,
+                gridPosition
+            ),
+            files,
+            f => f.id
+        );
+        const canMerge =
+            objs.length >= 1 &&
+            files.length === 1 &&
+            isDiff(files[0]) &&
+            (await this.simulation.isMergeable(files[0])) &&
+            (await this.simulation.isMergeable(objs[0]));
+
+        const canCombine =
+            this._allowCombine() &&
+            !canMerge &&
+            objs.length === 1 &&
+            files.length === 1 &&
+            (await this._interaction.canCombineFiles(
+                this.simulation,
+                files[0],
+                objs[0]
+            ));
+        // Can stack if we're dragging more than one file,
+        // or (if the single file we're dragging is stackable and
+        // the stack we're dragging onto is stackable)
+        const canStack =
+            files.length !== 1 ||
+            ((await this.simulation.isFileStackable(files[0])) &&
+                (objs.length === 0 ||
+                    (await this.simulation.isFileStackable(objs[0]))));
+        const index = await this._nextAvailableObjectIndex(
+            this.simulation,
+            context,
+            gridPosition,
+            files,
+            objs
+        );
+        return {
+            combine: canCombine,
+            merge: canMerge,
+            stackable: canStack,
+            other: canCombine ? objs[0] : canMerge ? objs[0] : null,
+            index: index,
+        };
     }
 
     /**
@@ -248,21 +256,25 @@ export abstract class BaseFileDragOperation implements IOperation {
      * @param files The files that we're trying to find the next index for.
      * @param objs The objects at the same grid position.
      */
-    protected _nextAvailableObjectIndex(
-        calc: FileCalculationContext,
+    protected async _nextAvailableObjectIndex(
+        calc: AsyncCalculationContext,
         context: string,
         gridPosition: Vector2,
         files: File[],
         objs: File[]
-    ): number {
+    ): Promise<number> {
         const except = differenceBy(objs, files, f =>
             f instanceof AuxFile3D ? f.file.id : f.id
         );
 
-        const indexes = except.map(o => ({
-            object: o,
-            index: getFileIndex(calc, o, context),
-        }));
+        let indexes = new Array<any>(except.length);
+        for (let i = 0; i < except.length; i++) {
+            const o = except[i];
+            indexes[i] = {
+                object: o,
+                index: await calc.getFileIndex(o, context),
+            };
+        }
 
         // TODO: Improve to handle other scenarios like:
         // - Reordering objects

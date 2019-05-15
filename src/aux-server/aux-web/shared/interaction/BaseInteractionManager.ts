@@ -16,6 +16,7 @@ import {
     COMBINE_ACTION_NAME,
     getFileConfigContexts,
     File,
+    AsyncCalculationContext,
 } from '@casual-simulation/aux-common';
 import { Physics } from '../scene/Physics';
 import { flatMap, union, debounce } from 'lodash';
@@ -434,26 +435,28 @@ export abstract class BaseInteractionManager {
      * @param file The first file.
      * @param other The second file.
      */
-    canCombineFiles(
-        calc: FileCalculationContext,
+    async canCombineFiles(
+        calc: AsyncCalculationContext,
         file: Object,
         other: Object
-    ): boolean {
+    ): Promise<boolean> {
         // TODO: Make this work even if the file is a "workspace"
         if (
             file &&
             other &&
-            getFileConfigContexts(calc, file).length === 0 &&
-            getFileConfigContexts(calc, other).length === 0 &&
+            (await calc.getFileConfigContexts(file)).length === 0 &&
+            (await calc.getFileConfigContexts(other)).length === 0 &&
             file.id !== other.id
         ) {
             const tags = union(
-                filtersMatchingArguments(calc, file, COMBINE_ACTION_NAME, [
+                await calc.filtersMatchingArguments(file, COMBINE_ACTION_NAME, [
                     other,
                 ]),
-                filtersMatchingArguments(calc, other, COMBINE_ACTION_NAME, [
-                    file,
-                ])
+                await calc.filtersMatchingArguments(
+                    other,
+                    COMBINE_ACTION_NAME,
+                    [file]
+                )
             );
             return tags.length > 0;
         }

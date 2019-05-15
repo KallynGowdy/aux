@@ -131,9 +131,7 @@ export abstract class BaseFileClickOperation implements IOperation {
     }
 
     protected async _canDragFile(file: File): Promise<boolean> {
-        // TODO: Fix
-        return true;
-        // return isFileMovable(calc, file);
+        return await this.simulation.isFileMovable(file);
     }
 
     protected abstract _performClick(): Promise<void>;

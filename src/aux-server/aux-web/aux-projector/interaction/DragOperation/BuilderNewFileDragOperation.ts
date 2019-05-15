@@ -81,7 +81,7 @@ export class BuilderNewFileDragOperation extends BaseBuilderFileDragOperation {
         if (!this._fileAdded) {
             // New file has not been added yet, drag a dummy mesh to drag around until it gets added to a workspace.
             if (!this._initialDragMesh) {
-                this._initialDragMesh = this._createDragMesh(this._file);
+                this._initialDragMesh = await this._createDragMesh(this._file);
             }
 
             const mouseDir = Physics.screenPosToRay(

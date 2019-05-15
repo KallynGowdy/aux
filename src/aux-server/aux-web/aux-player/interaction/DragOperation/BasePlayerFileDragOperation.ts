@@ -102,7 +102,7 @@ export class BasePlayerFileDragOperation extends BaseFileDragOperation {
             const { good, gridTile } = this._interaction.pointOnGrid(mouseDir);
 
             if (good) {
-                const result = this._calculateFileDragStackPosition(
+                const result = await this._calculateFileDragStackPosition(
                     this._context,
                     gridTile.tileCoordinate,
                     ...this._files

@@ -53,6 +53,7 @@ import { merge, shortUuid } from '../utils';
 import { AuxFile, AuxObject, AuxOp, AuxState } from '../aux-format';
 import { Atom } from '@casual-simulation/causal-trees';
 import { TorusGeometry } from 'three';
+import { FilterParseResult } from './FilterParseResult';
 
 export var ShortId_Length: number = 5;
 
@@ -157,25 +158,6 @@ export interface FileCalculationContext {
      * The sandbox that should be used to run JS.
      */
     sandbox: Sandbox;
-}
-
-export type FilterParseResult = FilterParseSuccess | FilterParseFailure;
-
-export interface FilterParseSuccess {
-    success: true;
-    eventName: string;
-    tag: string;
-    filter: {
-        tag: string;
-        value: any;
-    };
-}
-
-export interface FilterParseFailure {
-    success: false;
-    partialSuccess: boolean;
-    tag: string;
-    eventName: string;
 }
 
 export type SimulationIdParseResult =

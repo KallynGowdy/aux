@@ -42,12 +42,11 @@ export default class MiniFile extends Vue {
 
     @Watch('file')
     private async _fileChanged(file: AuxFile) {
-        // TODO: Fix
-        // this.image = await this.fileRenderer.render(
-        //     file,
-        //     appManager.simulationManager.primary.helper.createContext(),
-        //     this.diffball
-        // );
+        this.image = await this.fileRenderer.render(
+            file,
+            appManager.simulationManager.primary,
+            this.diffball
+        );
         let label = file.tags['aux.label'];
         if (label) {
             this.label = await appManager.simulationManager.primary.calculateFormattedFileValue(

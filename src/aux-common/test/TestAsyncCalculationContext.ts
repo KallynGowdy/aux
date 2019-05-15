@@ -36,8 +36,14 @@ import {
     calculateFormattedFileValue,
     calculateFileValue,
     getFileLabelAnchor,
+    getFileInputPlaceholder,
+    getFileInputTarget,
+    isFileStackable,
+    isMergeable,
+    filtersMatchingArguments,
+    FilterParseResult,
 } from '../Files';
-import { AuxObject } from '../aux-format';
+import { AuxObject, AuxFile } from '../aux-format';
 
 export class TestAsyncCalculationContext implements AsyncCalculationContext {
     private _calc: FileCalculationContext;
@@ -162,6 +168,30 @@ export class TestAsyncCalculationContext implements AsyncCalculationContext {
 
     async getFileChannel(file: File): Promise<string> {
         return getFileChannel(this._calc, file);
+    }
+
+    async getFileInputTarget(file: AuxFile): Promise<AuxFile> {
+        return getFileInputTarget(this._calc, file);
+    }
+
+    async getFileInputPlaceholder(file: AuxFile): Promise<string> {
+        return getFileInputPlaceholder(this._calc, file);
+    }
+
+    async isFileStackable(file: File): Promise<boolean> {
+        return isFileStackable(this._calc, file);
+    }
+
+    async isMergeable(file: File): Promise<boolean> {
+        return isMergeable(this._calc, file);
+    }
+
+    async filtersMatchingArguments(
+        file: File,
+        eventName: string,
+        args: any[]
+    ): Promise<FilterParseResult[]> {
+        return filtersMatchingArguments(this._calc, file, eventName, args);
     }
 
     async fileContextSortOrder(
