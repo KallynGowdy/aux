@@ -5,8 +5,8 @@ import {
     createCalculationContext,
     AuxObject,
     updateFile,
+    AsyncCalculationContextWrapper,
 } from '@casual-simulation/aux-common';
-import { TestAsyncCalculationContext } from '@casual-simulation/aux-common/test';
 
 describe('InventoryContext', () => {
     it('should construct for specific context', () => {
@@ -59,7 +59,7 @@ describe('InventoryContext', () => {
             files.push(file);
         }
 
-        const calc = new TestAsyncCalculationContext(
+        const calc = new AsyncCalculationContextWrapper(
             createCalculationContext(files)
         );
 
@@ -97,7 +97,7 @@ describe('InventoryContext', () => {
             files.push(file);
         }
 
-        const calc = new TestAsyncCalculationContext(
+        const calc = new AsyncCalculationContextWrapper(
             createCalculationContext(files)
         );
 
@@ -123,7 +123,7 @@ describe('InventoryContext', () => {
             createFile('testId_1', { [context]: true, [`${context}.x`]: 3 }),
             createFile('testId_0', { [context]: true, [`${context}.x`]: 4 }),
         ];
-        const calc = new TestAsyncCalculationContext(
+        const calc = new AsyncCalculationContextWrapper(
             createCalculationContext(files)
         );
 
@@ -179,7 +179,7 @@ describe('InventoryContext', () => {
                 [`${context}.y`]: 0,
             }),
         ];
-        const calc = new TestAsyncCalculationContext(
+        const calc = new AsyncCalculationContextWrapper(
             createCalculationContext(files)
         );
 
@@ -241,7 +241,7 @@ describe('InventoryContext', () => {
                 [`${context}.index`]: 0,
             }),
         ];
-        const calc = new TestAsyncCalculationContext(
+        const calc = new AsyncCalculationContextWrapper(
             createCalculationContext(files)
         );
 
@@ -276,7 +276,7 @@ describe('InventoryContext', () => {
             createFile('testId_1', { [context]: true, [`${context}.x`]: 1 }),
         ];
 
-        let calc = new TestAsyncCalculationContext(
+        let calc = new AsyncCalculationContextWrapper(
             createCalculationContext(files)
         );
 
@@ -302,7 +302,9 @@ describe('InventoryContext', () => {
         let file = files[1];
         file.tags[`${context}.x`] = 3;
 
-        calc = new TestAsyncCalculationContext(createCalculationContext(files));
+        calc = new AsyncCalculationContextWrapper(
+            createCalculationContext(files)
+        );
         await inventory.fileUpdated(<AuxObject>file, null, calc);
         await inventory.frameUpdate(calc);
 

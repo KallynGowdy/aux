@@ -27,6 +27,7 @@ import {
     calculateDestroyFileEvents,
     merge,
     AUX_FILE_VERSION,
+    fileUpdated,
 } from '@casual-simulation/aux-common';
 import formulaLib from '@casual-simulation/aux-common/Formulas/formula-lib';
 import { Subject, Observable } from 'rxjs';
@@ -122,6 +123,20 @@ export class FileHelper {
         updateFile(file, this.userFile.id, newData, () => this.createContext());
 
         await this._tree.updateFile(file, newData);
+    }
+
+    /**
+     * Updates the given file with the given data.
+     * @param file The file.
+     * @param newData The new data that the file should have.
+     */
+    async updateFileEvent(
+        file: File,
+        newData: PartialFile
+    ): Promise<FileEvent> {
+        updateFile(file, this.userFile.id, newData, () => this.createContext());
+
+        return fileUpdated(file.id, newData);
     }
 
     /**
@@ -228,6 +243,12 @@ export class FileHelper {
         const calc = this.createContext();
         const events = calculateDestroyFileEvents(calc, file);
         await this.transaction(...events);
+    }
+
+    calculateDestroyFileEvents(file: File): FileEvent[] {
+        const calc = this.createContext();
+        const events = calculateDestroyFileEvents(calc, file);
+        return events;
     }
 
     /**

@@ -45,10 +45,14 @@ import {
 } from '../Files';
 import { AuxObject, AuxFile } from '../aux-format';
 
-export class TestAsyncCalculationContext implements AsyncCalculationContext {
+export class AsyncCalculationContextWrapper implements AsyncCalculationContext {
     private _calc: FileCalculationContext;
 
     constructor(calc: FileCalculationContext) {
+        this._calc = calc;
+    }
+
+    setCalc(calc: FileCalculationContext) {
         this._calc = calc;
     }
 

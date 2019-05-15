@@ -3,4 +3,5 @@ export * from './FilesChannel';
 export * from './FileCalculations';
 export * from './TagUpdatedEvent';
 export * from './AsyncCalculationContext';
+export * from './AsyncCalculationContextWrapper';
 export * from './FilterParseResult';

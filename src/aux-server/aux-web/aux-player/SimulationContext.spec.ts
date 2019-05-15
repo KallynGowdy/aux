@@ -5,8 +5,8 @@ import {
     createCalculationContext,
     AuxObject,
     updateFile,
+    AsyncCalculationContextWrapper,
 } from '@casual-simulation/aux-common';
-import { TestAsyncCalculationContext } from '@casual-simulation/aux-common/test';
 
 describe('SimulationContext', () => {
     it('should construct for specific context', () => {
@@ -40,7 +40,7 @@ describe('SimulationContext', () => {
             files.push(file);
         }
 
-        const calc = new TestAsyncCalculationContext(
+        const calc = new AsyncCalculationContextWrapper(
             createCalculationContext(files)
         );
 
@@ -80,7 +80,7 @@ describe('SimulationContext', () => {
             files.push(file);
         }
 
-        const calc = new TestAsyncCalculationContext(
+        const calc = new AsyncCalculationContextWrapper(
             createCalculationContext(files)
         );
 
@@ -115,7 +115,7 @@ describe('SimulationContext', () => {
             files.push(file);
         }
 
-        const calc = new TestAsyncCalculationContext(
+        const calc = new AsyncCalculationContextWrapper(
             createCalculationContext(files)
         );
 
@@ -160,7 +160,7 @@ describe('SimulationContext', () => {
                 'aux.channel': 'a',
             }),
         ];
-        const calc = new TestAsyncCalculationContext(
+        const calc = new AsyncCalculationContextWrapper(
             createCalculationContext(files)
         );
 
@@ -201,7 +201,7 @@ describe('SimulationContext', () => {
             }),
         ];
 
-        let calc = new TestAsyncCalculationContext(
+        let calc = new AsyncCalculationContextWrapper(
             createCalculationContext(files)
         );
 
@@ -227,7 +227,9 @@ describe('SimulationContext', () => {
         let file = files[1];
         file.tags[`${context}.index`] = 3;
 
-        calc = new TestAsyncCalculationContext(createCalculationContext(files));
+        calc = new AsyncCalculationContextWrapper(
+            createCalculationContext(files)
+        );
         sim.fileUpdated(<AuxObject>file, null, calc);
         await sim.frameUpdate(calc);
 

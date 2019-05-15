@@ -91,9 +91,9 @@ export class AppManager {
         this.loadingProgress = new LoadingProgress();
         this._initSentry();
         this._initOffline();
-        // this._simulationManager = new SimulationManager(id => {
-        //     return new SimulationHelper(this.user, id, this._config);
-        // });
+        this._simulationManager = new SimulationManager(id => {
+            return new SimulationHelper(this.user, id, this._config);
+        });
         this._userSubject = new BehaviorSubject<User>(null);
         this._db = new AppDatabase();
         this._initPromise = this._init();

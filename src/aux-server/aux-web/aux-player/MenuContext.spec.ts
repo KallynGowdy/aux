@@ -5,8 +5,8 @@ import {
     createCalculationContext,
     AuxObject,
     updateFile,
+    AsyncCalculationContextWrapper,
 } from '@casual-simulation/aux-common';
-import { TestAsyncCalculationContext } from '@casual-simulation/aux-common/test';
 
 describe('MenuContext', () => {
     it('should construct for specific context', () => {
@@ -39,7 +39,7 @@ describe('MenuContext', () => {
             files.push(file);
         }
 
-        const calc = new TestAsyncCalculationContext(
+        const calc = new AsyncCalculationContextWrapper(
             createCalculationContext(files)
         );
 
@@ -77,7 +77,7 @@ describe('MenuContext', () => {
             files.push(file);
         }
 
-        const calc = new TestAsyncCalculationContext(
+        const calc = new AsyncCalculationContextWrapper(
             createCalculationContext(files)
         );
 
@@ -117,7 +117,7 @@ describe('MenuContext', () => {
                 [`${context}.index`]: 4,
             }),
         ];
-        const calc = new TestAsyncCalculationContext(
+        const calc = new AsyncCalculationContextWrapper(
             createCalculationContext(files)
         );
 
@@ -156,7 +156,7 @@ describe('MenuContext', () => {
             }),
         ];
 
-        let calc = new TestAsyncCalculationContext(
+        let calc = new AsyncCalculationContextWrapper(
             createCalculationContext(files)
         );
 
@@ -182,7 +182,9 @@ describe('MenuContext', () => {
         let file = files[1];
         file.tags[`${context}.index`] = 3;
 
-        calc = new TestAsyncCalculationContext(createCalculationContext(files));
+        calc = new AsyncCalculationContextWrapper(
+            createCalculationContext(files)
+        );
         await menu.fileUpdated(<AuxObject>file, null, calc);
         await menu.frameUpdate(calc);
 
