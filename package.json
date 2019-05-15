@@ -79,6 +79,7 @@
         "prettier": "^1.17.0",
         "pretty-quick": "^1.10.0",
         "raw-loader": "^1.0.0",
+        "extract-loader": "3.1.0",
         "sinon": "^7.2.4",
         "source-map-loader": "^0.2.4",
         "style-loader": "^0.23.1",
