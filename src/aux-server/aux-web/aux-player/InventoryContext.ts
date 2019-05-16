@@ -11,7 +11,6 @@ import {
 import { remove } from 'lodash';
 import { getOptionalValue } from '../shared/SharedUtils';
 import { appManager } from '../shared/AppManager';
-import { Simulation } from '../shared/Simulation';
 import { PlayerSimulation3D } from './scene/PlayerSimulation3D';
 
 export const DEFAULT_INVENTORY_COUNT = 5;

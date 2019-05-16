@@ -9,8 +9,8 @@ export function createWorkerObservable(
     worker: Worker
 ): Observable<WorkerMessage> {
     return Observable.create((observer: Observer<any>) => {
-        const listener = (message: any) => {
-            observer.next(message);
+        const listener = (message: MessageEvent) => {
+            observer.next(message.data);
         };
         const errorListener = (error: ErrorEvent) => {
             observer.error(error);

@@ -65,11 +65,10 @@ import { TweenCameraToOperation } from '../../shared/interaction/TweenCameraToOp
 import { Simulation3D } from '../../shared/scene/Simulation3D';
 import { GridChecker } from '../../shared/scene/grid/GridChecker';
 import { PlayerSimulation3D } from '../scene/PlayerSimulation3D';
-import { Simulation } from '../../shared/Simulation';
 import { MenuItem } from '../MenuContext';
 import SimulationItem from '../SimulationContext';
 import { HtmlMixer } from '../../shared/scene/HtmlMixer';
-import { AsyncSimulation } from '../../shared/AsyncSimulation';
+import { AsyncSimulation } from '@casual-simulation/aux-vm';
 
 @Component({
     components: {

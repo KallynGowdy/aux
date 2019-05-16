@@ -62,7 +62,7 @@ import MiniFile from '../MiniFile/MiniFile';
 import FileTag from '../FileTag/FileTag';
 import FileTable from '../FileTable/FileTable';
 import { appManager } from '../../shared/AppManager';
-import { AsyncSimulation } from '../../shared/AsyncSimulation';
+import { AsyncSimulation } from '@casual-simulation/aux-vm';
 import { Simulation3D } from 'aux-web/shared/scene/Simulation3D';
 
 export class BuilderInteractionManager extends BaseInteractionManager {

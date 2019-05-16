@@ -1,14 +1,8 @@
 import { IOperation } from './IOperation';
 import { BaseInteractionManager } from './BaseInteractionManager';
-import { Vector2, Vector3 } from 'three';
-import { FileCalculationContext } from '@casual-simulation/aux-common';
-
-import { AuxFile3D } from '../../shared/scene/AuxFile3D';
+import { Vector3 } from 'three';
 import { IGameView } from '../../shared/IGameView';
-import { appManager } from '../../shared/AppManager';
-import { differenceBy, maxBy } from 'lodash';
-import { Simulation } from '../Simulation';
-import { AsyncSimulation } from '../AsyncSimulation';
+import { AsyncSimulation } from '@casual-simulation/aux-vm';
 
 /**
  * Class that is able to tween the main camera to a given location.

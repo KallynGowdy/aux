@@ -42,4 +42,5 @@ export interface WorkerProxyEvent {
 export interface ObservableRef {
     $isObservable: true;
     path: string;
+    arguments: any[];
 }

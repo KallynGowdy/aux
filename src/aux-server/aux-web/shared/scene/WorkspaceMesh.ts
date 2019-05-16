@@ -181,8 +181,8 @@ export class WorkspaceMesh extends GameObject {
             force = true;
         }
 
-        if (this._gridChanged(this.workspace, prev, calc) || force) {
-            this.updateHexGrid(calc, files);
+        if ((await this._gridChanged(this.workspace, prev, calc)) || force) {
+            await this.updateHexGrid(calc, files);
             if (this._checker) {
                 gridUpdate = await this.updateSquareGrids(this._checker, calc);
 

@@ -1,3 +1,11 @@
-import SimulationWorker from 'worker-loader!./Simulation.worker';
+import { User, Initable, AsyncSimulation, Simulation } from './managers';
+import { createAsyncSimulation, createProxy } from './workers';
 
-export { SimulationWorker };
+export {
+    User,
+    Initable,
+    AsyncSimulation,
+    Simulation,
+    createAsyncSimulation,
+    createProxy,
+};

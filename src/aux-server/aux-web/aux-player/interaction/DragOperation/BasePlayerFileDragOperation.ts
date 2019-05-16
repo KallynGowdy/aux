@@ -15,13 +15,11 @@ import {
     FileDragMode,
 } from '@casual-simulation/aux-common';
 import { PlayerInteractionManager } from '../PlayerInteractionManager';
-import GameView from '../../GameView/GameView';
 import { Intersection, Vector2 } from 'three';
 import { Physics } from '../../../shared/scene/Physics';
 import { Input } from '../../../shared/scene/Input';
 import InventoryFile from '../../InventoryFile/InventoryFile';
 import { PlayerSimulation3D } from '../../scene/PlayerSimulation3D';
-import next from 'vhost';
 
 export class BasePlayerFileDragOperation extends BaseFileDragOperation {
     // This overrides the base class BaseInteractionManager

@@ -25,11 +25,8 @@ import { copyToClipboard } from '../../shared/SharedUtils';
 import { tap } from 'rxjs/operators';
 import { findIndex, flatMap } from 'lodash';
 import QRCode from '@chenfengyuan/vue-qrcode';
-import CubeIcon from '../public/icons/Cube.svg';
-import HexIcon from '../public/icons/Hexagon.svg';
 import { QrcodeStream } from 'vue-qrcode-reader';
-import { AsyncSimulation } from '../../shared/AsyncSimulation';
-import { User } from '../../shared/User';
+import { User, AsyncSimulation } from '@casual-simulation/aux-vm';
 
 export interface SidebarItem {
     id: string;

@@ -1,6 +1,5 @@
 import { Object3D } from 'three';
 import { ContextGroup3D } from './ContextGroup3D';
-import { Simulation } from '../Simulation';
 import {
     AuxObject,
     AuxFile,
@@ -10,7 +9,7 @@ import { SubscriptionLike } from 'rxjs';
 import { IGameView } from '../IGameView';
 import { concatMap, tap, flatMap as rxFlatMap } from 'rxjs/operators';
 import { ArgEvent } from '@casual-simulation/aux-common/Events';
-import { AsyncSimulation } from '../AsyncSimulation';
+import { AsyncSimulation } from '@casual-simulation/aux-vm';
 
 /**
  * Defines a class that is able to render a simulation.

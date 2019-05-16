@@ -1,5 +1,4 @@
 import SimulationManager from './SimulationManager';
-import { Initable } from './Initable';
 
 describe('SimulationManager', () => {
     it('should start empty', () => {
@@ -187,7 +186,7 @@ describe('SimulationManager', () => {
     });
 });
 
-class TestInitable implements Initable {
+class TestInitable {
     initialized: boolean;
     closed: boolean;
 

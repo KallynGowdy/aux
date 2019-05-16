@@ -1,4 +1,3 @@
-import { Initable } from './Initable';
 import { LoadingProgressCallback } from '@casual-simulation/aux-common/LoadingProgress';
 import { Subject, ReplaySubject, Observable, SubscriptionLike } from 'rxjs';
 

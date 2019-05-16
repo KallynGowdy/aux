@@ -32,7 +32,7 @@ import {
     Orthographic_MaxZoom,
 } from '../scene/CameraRigFactory';
 import { TapCodeManager } from './TapCodeManager';
-import { AsyncSimulation } from '../AsyncSimulation';
+import { AsyncSimulation } from '@casual-simulation/aux-vm';
 import { Simulation3D } from '../scene/Simulation3D';
 
 export abstract class BaseInteractionManager {

@@ -39,8 +39,17 @@ export class BrowserSigningCryptoImpl implements SigningCryptoImpl {
         }
     }
 
+    get global() {
+        if (typeof window !== 'undefined') {
+            return window;
+        } else if (typeof self !== 'undefined') {
+            return self;
+        }
+        return null;
+    }
+
     supported() {
-        return typeof window.crypto.subtle !== 'undefined';
+        return typeof this.global.crypto.subtle !== 'undefined';
     }
 
     async sign(key: PrivateCryptoKey, data: ArrayBuffer): Promise<ArrayBuffer> {

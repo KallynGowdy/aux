@@ -165,8 +165,9 @@ export default class Home extends Vue {
         );
 
         this._subs.push(
-            this.fileManager
-                .fileChanged(await this.fileManager.getUserFile())
+            (await this.fileManager.fileChanged(
+                await this.fileManager.getUserFile()
+            ))
                 .pipe(
                     tap(file => {
                         this.mode = getUserMode(file);

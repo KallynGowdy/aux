@@ -18,10 +18,8 @@ import { Physics } from '../../shared/scene/Physics';
 import { Input } from '../../shared/scene/Input';
 import InventoryFile from '../InventoryFile/InventoryFile';
 import { PlayerInventoryFileClickOperation } from './ClickOperation/PlayerInventoryFileClickOperation';
-import { appManager } from '../../shared/AppManager';
 import { PlayerSimulation3D } from '../scene/PlayerSimulation3D';
-import { Simulation } from '../../shared/Simulation';
-import { AsyncSimulation } from '../../shared/AsyncSimulation';
+import { AsyncSimulation } from '@casual-simulation/aux-vm';
 import { Simulation3D } from '../../shared/scene/Simulation3D';
 
 export class PlayerInteractionManager extends BaseInteractionManager {

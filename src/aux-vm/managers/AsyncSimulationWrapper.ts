@@ -1,5 +1,4 @@
-import { AsyncSimulation } from '../AsyncSimulation';
-import { Simulation } from '../Simulation';
+import { Simulation, AsyncSimulation } from '../managers';
 import {
     FileEvent,
     UserMode,
@@ -196,12 +195,12 @@ export class AsyncSimulationWrapper extends AsyncCalculationContextWrapper
         return this._sim.socketManager.toggleForceOffline();
     }
 
-    fileChanged(file: AuxObject): Observable<AuxObject> {
+    async fileChanged(file: AuxObject): Promise<Observable<AuxObject>> {
         return this._sim.watcher.fileChanged(file);
     }
 
-    userFileChanged(): Observable<AuxObject> {
-        return this.fileChanged(this._sim.helper.userFile);
+    get userFileChanged(): Observable<AuxObject> {
+        return this._sim.watcher.fileChanged(this._sim.helper.userFile);
     }
 
     get filesDiscovered(): Observable<AuxObject[]> {
@@ -277,6 +276,12 @@ export class AsyncSimulationWrapper extends AsyncCalculationContextWrapper
     ): Promise<void> {
         this._sim = new FileManager(user, id, config);
         await this._sim.init(loadingCallback);
+
+        this._subs.push(
+            this._sim.aux.onUpdated.subscribe(() => {
+                super.calculationContext = null;
+            })
+        );
     }
 
     unsubscribe(): void {
@@ -286,13 +291,23 @@ export class AsyncSimulationWrapper extends AsyncCalculationContextWrapper
 
     closed: boolean;
 
+    get calculationContext() {
+        const c = super.calculationContext;
+        if (!c) {
+            super.calculationContext = this._sim.helper.createContext();
+        }
+        return super.calculationContext;
+    }
+
     async getObjects(): Promise<File[]> {
         return this._sim.helper.objects;
     }
 
     private _sim: Simulation;
+    private _subs: SubscriptionLike[] = [];
 
     constructor() {
         super(null);
+        this._subs = [];
     }
 }

@@ -81,10 +81,10 @@
                     <span class="md-list-item-text">Debug</span>
                 </router-link>
                 <md-list-item v-if="getUser() != null" @click.right="toggleOnlineOffline()">
-                    <md-icon id="forced-offline-error" v-if="forcedOffline()">error</md-icon>
+                    <md-icon id="forced-offline-error" v-if="forcedOffline">error</md-icon>
                     <md-icon id="synced-checkmark" v-else-if="synced">cloud_done</md-icon>
                     <md-icon id="not-synced-warning" v-else>cloud_off</md-icon>
-                    <span class="md-list-item-text" v-if="forcedOffline()">
+                    <span class="md-list-item-text" v-if="forcedOffline">
                         Forced Offline
                     </span>
                     <span class="md-list-item-text" v-else-if="synced">

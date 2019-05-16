@@ -6,9 +6,11 @@ import {
     WorkerProxyRequest,
     ObservableRef,
     WorkerProxyEvent,
+    WorkerProxySubscribe,
+    WorkerProxyUnsubscribe,
 } from './WorkerMessages';
 import uuid from 'uuid/v4';
-import { createWorkerObservable } from 'utils';
+import { createWorkerObservable } from './utils';
 
 export interface CreateProxyOptions {
     knownObservables: string[];
@@ -35,6 +37,7 @@ export function createProxy<T>(
                 return createObservable(obj, observable, {
                     $isObservable: true,
                     path: prop,
+                    arguments: null,
                 });
             }
 
@@ -106,8 +109,20 @@ function createObservable(
             )
             .subscribe(observer);
 
-        obj.postMessage(ref);
+        obj.postMessage(<WorkerProxySubscribe>{
+            type: 'subscribe',
+            key: key,
+            name: ref.path,
+            arguments: ref.arguments,
+        });
 
-        return sub;
+        return () => {
+            sub.unsubscribe();
+            obj.postMessage(<WorkerProxyUnsubscribe>{
+                type: 'unsubscribe',
+                key: key,
+                name: ref.path,
+            });
+        };
     });
 }

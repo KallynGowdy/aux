@@ -306,6 +306,9 @@ export interface AsyncSimulation
      */
     userFileId: string;
 
+    // NOTE: Whenever you add an observable here, you need
+    // to also add it to the known observables list in workers/factories.ts
+    // You only need to do this for properties, not functions. (just make sure that the function returns a promise that returns an observable)
     /**
      * Gets an observable that resolves whenever a new file is discovered.
      * That is, it was created or added by another user.
@@ -359,13 +362,13 @@ export interface AsyncSimulation
     recentsUpdated: Observable<RecentsUpdatedEvent>;
 
     /**
+     * Gets an observable that resolves whenever the user's file changes.
+     */
+    userFileChanged: Observable<AuxObject>;
+
+    /**
      * Creates an observable that resolves whenever the given file changes.
      * @param file The file to watch.
      */
-    fileChanged(file: AuxObject): Observable<AuxObject>;
-
-    /**
-     * Creates an observable that resolves whenever the user's file changes.
-     */
-    userFileChanged(): Observable<AuxObject>;
+    fileChanged(file: AuxObject): Promise<Observable<AuxObject>>;
 }

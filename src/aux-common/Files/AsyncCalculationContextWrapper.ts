@@ -52,142 +52,150 @@ export class AsyncCalculationContextWrapper implements AsyncCalculationContext {
         this._calc = calc;
     }
 
-    setCalc(calc: FileCalculationContext) {
-        this._calc = calc;
+    get calculationContext() {
+        return this._calc;
+    }
+
+    set calculationContext(value: FileCalculationContext) {
+        this._calc = value;
     }
 
     async getObjects(): Promise<File[]> {
-        return this._calc.objects;
+        return this.calculationContext.objects;
     }
 
     async getFileDragMode(file: File): Promise<FileDragMode> {
-        return getFileDragMode(this._calc, file);
+        return getFileDragMode(this.calculationContext, file);
     }
 
     async getFilePosition(
         file: File,
         context: string
     ): Promise<{ x: number; y: number; z: number }> {
-        return getFilePosition(this._calc, file, context);
+        return getFilePosition(this.calculationContext, file, context);
     }
 
     async getFileIndex(file: File, context: string): Promise<number> {
-        return getFileIndex(this._calc, file, context);
+        return getFileIndex(this.calculationContext, file, context);
     }
 
     async objectsAtContextGridPosition(
         context: string,
         position: { x: number; y: number; z: number }
     ): Promise<File[]> {
-        return objectsAtContextGridPosition(this._calc, context, position);
+        return objectsAtContextGridPosition(
+            this.calculationContext,
+            context,
+            position
+        );
     }
 
     async isMinimized(file: File): Promise<boolean> {
-        return isMinimized(this._calc, file);
+        return isMinimized(this.calculationContext, file);
     }
 
     async isContextMovable(file: File): Promise<boolean> {
-        return isContextMovable(this._calc, file);
+        return isContextMovable(this.calculationContext, file);
     }
 
     async isFileMovable(file: File): Promise<boolean> {
-        return isFileMovable(this._calc, file);
+        return isFileMovable(this.calculationContext, file);
     }
 
     async getFileConfigContexts(file: File): Promise<string[]> {
-        return getFileConfigContexts(this._calc, file);
+        return getFileConfigContexts(this.calculationContext, file);
     }
 
     async isContext(contextFile: File): Promise<boolean> {
-        return isContext(this._calc, contextFile);
+        return isContext(this.calculationContext, contextFile);
     }
 
     async isSimulation(file: File): Promise<boolean> {
-        return isSimulation(this._calc, file);
+        return isSimulation(this.calculationContext, file);
     }
 
     async getBuilderContextGrid(file: AuxObject): Promise<any> {
-        return getBuilderContextGrid(this._calc, file);
+        return getBuilderContextGrid(this.calculationContext, file);
     }
 
     async getContextDefaultHeight(file: AuxObject): Promise<number> {
-        return getContextDefaultHeight(this._calc, file);
+        return getContextDefaultHeight(this.calculationContext, file);
     }
 
     async getContextSize(file: AuxObject): Promise<number> {
-        return getContextSize(this._calc, file);
+        return getContextSize(this.calculationContext, file);
     }
 
     async getContextScale(contextFile: File): Promise<number> {
-        return getContextScale(this._calc, contextFile);
+        return getContextScale(this.calculationContext, contextFile);
     }
 
     async getContextGridHeight(
         contextFile: File,
         key: string
     ): Promise<number> {
-        return getContextGridHeight(this._calc, contextFile, key);
+        return getContextGridHeight(this.calculationContext, contextFile, key);
     }
 
     async getContextGridScale(contextFile: File): Promise<number> {
-        return getContextGridScale(this._calc, contextFile);
+        return getContextGridScale(this.calculationContext, contextFile);
     }
 
     async getContextPosition(
         contextFile: File
     ): Promise<{ x: number; y: number; z: number }> {
-        return getContextPosition(this._calc, contextFile);
+        return getContextPosition(this.calculationContext, contextFile);
     }
 
     async getContextColor(contextFile: File): Promise<string> {
-        return getContextColor(this._calc, contextFile);
+        return getContextColor(this.calculationContext, contextFile);
     }
 
     async filesInContext(context: string): Promise<File[]> {
-        return filesInContext(this._calc, context);
+        return filesInContext(this.calculationContext, context);
     }
 
     async isFileInContext(file: File, contextId: string): Promise<boolean> {
-        return isFileInContext(this._calc, file, contextId);
+        return isFileInContext(this.calculationContext, file, contextId);
     }
 
     async isConfigForContext(file: File, context: string): Promise<boolean> {
-        return isConfigForContext(this._calc, file, context);
+        return isConfigForContext(this.calculationContext, file, context);
     }
 
     async calculateGridScale(workspace: AuxObject): Promise<number> {
-        return calculateGridScale(this._calc, workspace);
+        return calculateGridScale(this.calculationContext, workspace);
     }
 
     async getFileRotation(
         file: File,
         context: string
     ): Promise<{ x: number; y: number; z: number }> {
-        return getFileRotation(this._calc, file, context);
+        return getFileRotation(this.calculationContext, file, context);
     }
 
     async getFileShape(file: File): Promise<FileShape> {
-        return getFileShape(this._calc, file);
+        return getFileShape(this.calculationContext, file);
     }
 
     async getFileChannel(file: File): Promise<string> {
-        return getFileChannel(this._calc, file);
+        return getFileChannel(this.calculationContext, file);
     }
 
     async getFileInputTarget(file: AuxFile): Promise<AuxFile> {
-        return getFileInputTarget(this._calc, file);
+        return getFileInputTarget(this.calculationContext, file);
     }
 
     async getFileInputPlaceholder(file: AuxFile): Promise<string> {
-        return getFileInputPlaceholder(this._calc, file);
+        return getFileInputPlaceholder(this.calculationContext, file);
     }
 
     async isFileStackable(file: File): Promise<boolean> {
-        return isFileStackable(this._calc, file);
+        return isFileStackable(this.calculationContext, file);
     }
 
     async isMergeable(file: File): Promise<boolean> {
-        return isMergeable(this._calc, file);
+        return isMergeable(this.calculationContext, file);
     }
 
     async filtersMatchingArguments(
@@ -195,14 +203,19 @@ export class AsyncCalculationContextWrapper implements AsyncCalculationContext {
         eventName: string,
         args: any[]
     ): Promise<FilterParseResult[]> {
-        return filtersMatchingArguments(this._calc, file, eventName, args);
+        return filtersMatchingArguments(
+            this.calculationContext,
+            file,
+            eventName,
+            args
+        );
     }
 
     async fileContextSortOrder(
         file: File,
         contextId: string
     ): Promise<string | number> {
-        return fileContextSortOrder(this._calc, file, contextId);
+        return fileContextSortOrder(this.calculationContext, file, contextId);
     }
 
     async calculateNumericalTagValue(
@@ -210,14 +223,19 @@ export class AsyncCalculationContextWrapper implements AsyncCalculationContext {
         tag: string,
         defaultValue: number
     ): Promise<number> {
-        return calculateNumericalTagValue(this._calc, file, tag, defaultValue);
+        return calculateNumericalTagValue(
+            this.calculationContext,
+            file,
+            tag,
+            defaultValue
+        );
     }
 
     async calculateFormattedFileValue(
         file: File,
         tag: string
     ): Promise<string> {
-        return calculateFormattedFileValue(this._calc, file, tag);
+        return calculateFormattedFileValue(this.calculationContext, file, tag);
     }
 
     async calculateFileValue(
@@ -225,10 +243,15 @@ export class AsyncCalculationContextWrapper implements AsyncCalculationContext {
         tag: string | number,
         unwrapProxy?: boolean
     ): Promise<any> {
-        return calculateFileValue(this._calc, object, tag, unwrapProxy);
+        return calculateFileValue(
+            this.calculationContext,
+            object,
+            tag,
+            unwrapProxy
+        );
     }
 
     async getFileLabelAnchor(file: File): Promise<FileLabelAnchor> {
-        return getFileLabelAnchor(this._calc, file);
+        return getFileLabelAnchor(this.calculationContext, file);
     }
 }

@@ -20,12 +20,12 @@ module.exports = {
     entry: {
         projector: path.resolve(__dirname, 'aux-projector', 'index.ts'),
         player: path.resolve(__dirname, 'aux-player', 'index.ts'),
-        worker: path.resolve(
-            __dirname,
-            'shared',
-            'worker',
-            'Simulation.plugin.ts'
-        ),
+        // worker: path.resolve(
+        //     __dirname,
+        //     'shared',
+        //     'worker',
+        //     'Simulation.plugin.ts'
+        // ),
     },
     output: {
         publicPath: '/',
@@ -111,7 +111,7 @@ module.exports = {
             {
                 test: /\.js$/,
                 use: ['source-map-loader'],
-                include: [/aux-common/],
+                include: [/aux-(common|vm)/],
                 enforce: 'pre',
             },
         ],

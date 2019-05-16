@@ -54,8 +54,8 @@ export class FileShapeDecorator extends AuxFile3DDecorator
             this._rebuildShape(shape);
         }
 
-        this._updateColor(calc);
-        this._updateStroke(calc);
+        await this._updateColor(calc);
+        await this._updateStroke(calc);
     }
 
     private async _updateStroke(calc: AsyncCalculationContext) {
@@ -108,7 +108,10 @@ export class FileShapeDecorator extends AuxFile3DDecorator
     private async _updateColor(calc: AsyncCalculationContext) {
         let color: any = null;
         if (this.file3D.file.tags['aux.color']) {
-            color = calc.calculateFileValue(this.file3D.file, 'aux.color');
+            color = await calc.calculateFileValue(
+                this.file3D.file,
+                'aux.color'
+            );
         }
 
         this._setColor(color);

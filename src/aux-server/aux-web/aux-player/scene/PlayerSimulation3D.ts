@@ -7,7 +7,6 @@ import {
 } from '@casual-simulation/aux-common';
 import { Simulation3D } from '../../shared/scene/Simulation3D';
 import { IGameView } from '../../shared/IGameView';
-import { Simulation } from '../../shared/Simulation';
 import { tap } from 'rxjs/operators';
 import { InventoryContext } from '../InventoryContext';
 import { MenuContext } from '../MenuContext';
@@ -15,7 +14,7 @@ import { ContextGroup3D } from '../../shared/scene/ContextGroup3D';
 import { doesFileDefinePlayerContext } from '../PlayerUtils';
 import { SimulationContext } from '../SimulationContext';
 import { Color, Texture } from 'three';
-import { AsyncSimulation } from '../../shared/AsyncSimulation';
+import { AsyncSimulation } from '@casual-simulation/aux-vm';
 
 export class PlayerSimulation3D extends Simulation3D {
     /**
@@ -60,8 +59,7 @@ export class PlayerSimulation3D extends Simulation3D {
 
         const userFile = await this.simulation.getUserFile();
         this._subs.push(
-            this.simulation
-                .fileChanged(userFile)
+            (await this.simulation.fileChanged(userFile))
                 .pipe(
                     tap(file => {
                         const userInventoryContextValue = (<Object>file).tags[
@@ -121,8 +119,7 @@ export class PlayerSimulation3D extends Simulation3D {
 
         const globalsFile = await this.simulation.globalsFile();
         this._subs.push(
-            this.simulation
-                .fileChanged(globalsFile)
+            (await this.simulation.fileChanged(globalsFile))
                 .pipe(
                     tap(file => {
                         // Scene background color.
@@ -182,8 +179,7 @@ export class PlayerSimulation3D extends Simulation3D {
 
             // Subscribe to file change updates for this context file so that we can do things like change the background color to match the context color, etc.
             this._subs.push(
-                this.simulation
-                    .fileChanged(file)
+                (await this.simulation.fileChanged(file))
                     .pipe(
                         tap(file => {
                             // Update the context background color.

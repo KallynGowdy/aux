@@ -1,6 +1,6 @@
 import { SubscriptionLike } from 'rxjs';
-import { createWorkerObservable } from 'utils';
 import { tap } from 'rxjs/operators';
+import { createWorkerObservable } from './utils';
 import {
     WorkerProxyRequest,
     WorkerProxyResponse,
@@ -31,7 +31,7 @@ export function createProxyClient(worker: Worker, obj: any): SubscriptionLike {
                 }
             })
         )
-        .subscribe();
+        .subscribe(null, err => console.error(err));
 }
 
 async function calculateValue(
@@ -53,7 +53,12 @@ async function calculateValue(
 }
 
 async function getValue(worker: Worker, obj: any, prop: string, args: any[]) {
-    let result = obj[prop](...args);
+    let result: any;
+    if (typeof obj[prop] === 'function') {
+        result = obj[prop](...args);
+    } else {
+        result = obj[prop];
+    }
     if (result && typeof result.then === 'function') {
         result = await result;
     }
@@ -102,6 +107,7 @@ function makeResponse(
         result = <ObservableRef>{
             $isObservable: true,
             path: message.name,
+            arguments: message.arguments,
         };
     }
 

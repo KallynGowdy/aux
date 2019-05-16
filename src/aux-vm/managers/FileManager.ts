@@ -47,7 +47,6 @@ import { User } from './User';
 import { SocketManager } from './SocketManager';
 import { CausalTreeManager } from '@casual-simulation/causal-tree-client-socketio';
 import { RealtimeCausalTree } from '@casual-simulation/causal-trees';
-import { getOptionalValue } from './SharedUtils';
 import {
     LoadingProgress,
     LoadingProgressCallback,

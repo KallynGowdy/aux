@@ -1,5 +1,4 @@
-import { FileCalculationContext } from '@casual-simulation/aux-common';
-import { AsyncSimulation } from '../AsyncSimulation';
+import { AsyncSimulation } from '@casual-simulation/aux-vm';
 
 export interface IOperation {
     simulation: AsyncSimulation;
