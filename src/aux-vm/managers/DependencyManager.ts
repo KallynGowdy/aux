@@ -6,6 +6,7 @@ import {
     Transpiler,
     isFormula,
     AuxScriptDependency,
+    AuxScriptDependencies,
 } from '@casual-simulation/aux-common';
 import { uniq, mergeWith } from 'lodash';
 
@@ -71,30 +72,7 @@ export class DependencyManager {
             if (isFormula(val)) {
                 let formulaDependencies = this._transpiler.dependencies(val);
                 deps[tag] = formulaDependencies.tags;
-
-                for (let dep of formulaDependencies.tags) {
-                    if (dep.type === 'this') {
-                        let chain: string = null;
-                        for (let member of dep.members) {
-                            if (!chain) {
-                                chain = member;
-                            } else {
-                                chain += '.' + member;
-                            }
-                            const fileDeps = this._getFileDependents(
-                                `${file.id}:${chain}`,
-                                file.id
-                            );
-                            fileDeps.add(tag);
-                        }
-                    } else {
-                        const fileDeps = this._getFileDependents(
-                            dep.name,
-                            file.id
-                        );
-                        fileDeps.add(tag);
-                    }
-                }
+                this._addTagDependents(formulaDependencies, tag, file);
             }
             let arr = this._tagMap.get(tag);
             if (arr) {
@@ -117,6 +95,15 @@ export class DependencyManager {
 
         if (tags) {
             this._fileMap.delete(file.id);
+            const dependencies = this.getDependencies(file.id);
+            if (dependencies) {
+                // TODO: Cleanup
+                // This code is pretty ugly
+                for (let tag in dependencies) {
+                    this._removeTagDependents(dependencies, tag, file);
+                }
+            }
+            this._dependencyMap.delete(file.id);
             for (let tag of tags) {
                 let ids = this._tagMap.get(tag);
                 if (ids) {
@@ -139,10 +126,33 @@ export class DependencyManager {
             const fileTags = tagsOnFile(update.file);
             tags.splice(0, tags.length, ...fileTags);
 
+            const dependencies = this.getDependencies(update.file.id);
+
             for (let tag of update.tags) {
                 const files = this._tagMap.get(tag);
                 const val = update.file.tags[tag];
                 if (hasValue(val)) {
+                    if (isFormula(val)) {
+                        let formulaDependencies = this._transpiler.dependencies(
+                            val
+                        );
+
+                        if (dependencies[tag]) {
+                            this._removeTagDependents(
+                                dependencies,
+                                tag,
+                                update.file
+                            );
+                        }
+
+                        dependencies[tag] = formulaDependencies.tags;
+                        this._addTagDependents(
+                            formulaDependencies,
+                            tag,
+                            update.file
+                        );
+                    }
+
                     if (files) {
                         const index = files.indexOf(update.file.id);
                         if (index < 0) {
@@ -152,6 +162,15 @@ export class DependencyManager {
                         this._tagMap.set(tag, [update.file.id]);
                     }
                 } else {
+                    if (dependencies[tag]) {
+                        this._removeTagDependents(
+                            dependencies,
+                            tag,
+                            update.file
+                        );
+                    }
+                    delete dependencies[tag];
+
                     if (files) {
                         const index = files.indexOf(update.file.id);
                         if (index >= 0) {
@@ -233,5 +252,63 @@ export class DependencyManager {
         }
 
         return fileDependents;
+    }
+
+    private _addTagDependents(
+        formulaDependencies: AuxScriptDependencies,
+        tag: string,
+        file: File
+    ) {
+        for (let dep of formulaDependencies.tags) {
+            if (dep.type === 'this') {
+                let chain: string = null;
+                for (let member of dep.members) {
+                    if (!chain) {
+                        chain = member;
+                    } else {
+                        chain += '.' + member;
+                    }
+                    const fileDeps = this._getFileDependents(
+                        `${file.id}:${chain}`,
+                        file.id
+                    );
+                    fileDeps.add(tag);
+                }
+            } else {
+                const fileDeps = this._getFileDependents(dep.name, file.id);
+                fileDeps.add(tag);
+            }
+        }
+    }
+
+    private _removeTagDependents(
+        dependencies: FileDependencyInfo,
+        tag: string,
+        file: File
+    ) {
+        const deps = dependencies[tag];
+        for (let dep of deps) {
+            if (dep.type === 'this') {
+                let chain: string = null;
+                for (let member of dep.members) {
+                    if (!chain) {
+                        chain = member;
+                    } else {
+                        chain += '.' + member;
+                    }
+                    const tagDeps = this._dependentMap.get(
+                        `${file.id}:${chain}`
+                    );
+                    if (tagDeps) {
+                        delete tagDeps[file.id];
+                    }
+                }
+            } else {
+                const tagDeps = this._dependentMap.get(dep.name);
+                if (tagDeps) {
+                    delete tagDeps[file.id];
+                }
+            }
+        }
     }
 }

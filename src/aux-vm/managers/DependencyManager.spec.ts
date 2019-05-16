@@ -221,6 +221,7 @@ describe('DependencyManager', () => {
                 createFile('test', {
                     tag: 123,
                     hello: 'world',
+                    other: '=@sum',
                 })
             );
 
@@ -235,9 +236,15 @@ describe('DependencyManager', () => {
 
             const tags = subject.getTagMap();
             const files = subject.getFileMap();
+            const dependencies = subject.getDependencies('test');
+            const dependents = subject.getDependents('sum', 'test');
 
-            expect(tags).toEqual(new Map([['tag', []], ['hello', []]]));
+            expect(tags).toEqual(
+                new Map([['tag', []], ['hello', []], ['other', []]])
+            );
             expect(files).toEqual(new Map([]));
+            expect(dependencies).toBe(undefined);
+            expect(dependents).toEqual({});
         });
     });
 
@@ -281,6 +288,71 @@ describe('DependencyManager', () => {
                 ])
             );
             expect(files).toEqual(new Map([['test', ['newTag', 'tag']]]));
+        });
+
+        it('should update the file dependencies', async () => {
+            let subject = new DependencyManager();
+
+            let tree = new AuxCausalTree(storedTree(site(1)));
+
+            await tree.root();
+
+            await tree.addFile(
+                createFile('test', {
+                    tag: '=this.sum',
+                    sum: '=#abc',
+                    hello: '=#world',
+                })
+            );
+
+            subject.addFile(tree.value['test']);
+
+            await tree.updateFile(tree.value['test'], {
+                tags: {
+                    hello: null,
+                    sum: '=#other',
+                    newTag: '=@num',
+                },
+            });
+
+            subject.updateFile({
+                file: tree.value['test'],
+                tags: ['hello', 'sum', 'newTag'],
+            });
+
+            const dependencies = subject.getDependencies('test');
+            const dependents = subject.getDependentMap();
+
+            expect(dependencies).toEqual({
+                sum: [{ type: 'tag', name: 'other', args: [], members: [] }],
+                newTag: [{ type: 'file', name: 'num', args: [], members: [] }],
+                tag: [{ type: 'this', members: ['sum'] }],
+            });
+
+            expect(dependents).toEqual(
+                new Map([
+                    [
+                        'num',
+                        {
+                            test: new Set(['newTag']),
+                        },
+                    ],
+                    [
+                        'test:sum',
+                        {
+                            test: new Set(['tag']),
+                        },
+                    ],
+                    [
+                        'other',
+                        {
+                            test: new Set(['sum']),
+                        },
+                    ],
+                    ['world', {}],
+                    ['abc', {}],
+                ])
+            );
         });
     });
 });
