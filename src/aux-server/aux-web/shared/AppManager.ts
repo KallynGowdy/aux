@@ -3,11 +3,8 @@ import * as OfflinePluginRuntime from 'offline-plugin/runtime';
 import Axios from 'axios';
 import Vue from 'vue';
 import { BehaviorSubject, Observable, using, SubscriptionLike } from 'rxjs';
-import { FileManager } from './FileManager';
-import { SocketManager } from './SocketManager';
 import { flatMap, map, scan } from 'rxjs/operators';
 import { readFileJson, downloadFile, downloadJson } from './download';
-import { CausalTreeManager } from '@casual-simulation/causal-tree-client-socketio';
 import { StoredCausalTree, storedTree } from '@casual-simulation/causal-trees';
 import {
     AuxOp,
@@ -25,7 +22,6 @@ import {
     LoadingProgress,
     LoadingProgressCallback,
 } from '@casual-simulation/aux-common/LoadingProgress';
-import { Simulation } from './Simulation';
 import SimulationManager from './SimulationManager';
 import { copyToClipboard } from './SharedUtils';
 import { User } from './User';

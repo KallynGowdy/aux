@@ -27,10 +27,10 @@ import {
     SiteInfo,
 } from '@casual-simulation/causal-trees';
 import { LoadingProgressCallback } from '@casual-simulation/aux-common/LoadingProgress';
-import { FilesUpdatedEvent } from '../FilePanelManager';
-import { RecentsUpdatedEvent } from '../RecentFilesManager';
-import { User } from '../User';
-import { FileManager } from '../FileManager';
+import { FilesUpdatedEvent } from './FilePanelManager';
+import { RecentsUpdatedEvent } from './RecentFilesManager';
+import { User } from './User';
+import { FileManager } from './FileManager';
 
 export class AsyncSimulationWrapper extends AsyncCalculationContextWrapper
     implements AsyncSimulation {
