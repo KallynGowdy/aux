@@ -10,10 +10,7 @@ import {
     removeFromContextDiff,
     fileUpdated,
     action,
-    calculateActionEvents,
     DESTROY_ACTION_NAME,
-    getFileDragMode,
-    AsyncCalculationContext,
 } from '@casual-simulation/aux-common';
 
 import { setParent } from '../../../shared/scene/SceneUtils';
@@ -128,7 +125,11 @@ export abstract class BaseBuilderFileDragOperation extends BaseFileDragOperation
         this._other = result.other;
 
         if (result.stackable || result.index === 0) {
-            this._updateFilesPositions(this._files, gridPosition, result.index);
+            await this._updateFilesPositions(
+                this._files,
+                gridPosition,
+                result.index
+            );
         }
     }
 
@@ -152,7 +153,7 @@ export abstract class BaseBuilderFileDragOperation extends BaseFileDragOperation
                     this._freeDragMeshes
                 );
 
-                this._updateFileContexts(this._files, false);
+                await this._updateFileContexts(this._files, false);
 
                 // Calculate the distance to perform free drag at.
                 const fileWorldPos = this._freeDragMeshes[0].getWorldPosition(
@@ -177,13 +178,13 @@ export abstract class BaseBuilderFileDragOperation extends BaseFileDragOperation
         }
     }
 
-    protected _destroyOrRemoveFiles(files: File[]) {
+    protected async _destroyOrRemoveFiles(files: File[]) {
         if (this._isOverTrashCan()) {
-            this._destroyFiles(files);
+            await this._destroyFiles(files);
             return;
         }
 
-        this._removeFromContext(files);
+        await this._removeFromContext(files);
     }
 
     /**
@@ -201,17 +202,15 @@ export abstract class BaseBuilderFileDragOperation extends BaseFileDragOperation
 
     private async _destroyFiles(files: File[]) {
         let events: FileEvent[] = [];
-        const state = await this.simulation.getFilesState();
 
         // Remove the files from the context
         for (let i = 0; i < files.length; i++) {
             const file = files[i];
-            const actionData = action(
+            const result = await this.simulation.actionEvents(
                 DESTROY_ACTION_NAME,
-                [file.id],
+                [file],
                 this.simulation.userFileId
             );
-            const result = calculateActionEvents(state, actionData);
 
             events.push(...result.events);
             events.push(

@@ -106,18 +106,17 @@ export abstract class BaseInteractionManager {
     }
 
     async update(): Promise<void> {
-        // const calc = appManager.simulationManager.primary.helper.createContext();
         // Update active operations and dispose of any that are finished.
-        this._operations = this._operations.filter(o => {
-            o.update();
+        for (let i = 0; i < this._operations.length; i++) {
+            const o = this._operations[i];
+            await o.update();
 
             if (o.isFinished()) {
                 o.dispose();
-                return false;
+                this._operations.splice(i, 1);
+                i -= 1;
             }
-
-            return true;
-        });
+        }
 
         if (this._gameView.vrDisplay && this._gameView.vrDisplay.isPresenting) {
             const inputVR = this._gameView.getInputVR();
