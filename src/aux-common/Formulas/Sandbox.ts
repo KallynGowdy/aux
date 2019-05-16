@@ -3,11 +3,6 @@ import SandboxInterface from './SandboxInterface';
 import { keys } from 'lodash';
 import { merge } from '../utils';
 
-export interface SandboxMacro {
-    test: RegExp;
-    replacement: (val: string) => string;
-}
-
 /**
  * Defines an interface for objects that represent the result of a calculation from the sandbox.
  */
@@ -48,16 +43,6 @@ export class Sandbox {
     private _recursionCounter = 0;
 
     /**
-     * The list of macros that the sandbox uses on the input code before transpiling it.
-     */
-    macros: SandboxMacro[] = [
-        {
-            test: /^(?:\=|\:\=)/g,
-            replacement: val => '',
-        },
-    ];
-
-    /**
      * The interface that the sandbox is using.
      */
     interface: SandboxInterface;
@@ -87,8 +72,7 @@ export class Sandbox {
         context: any,
         variables: SandboxLibrary = {}
     ): SandboxResult<TExtra> {
-        const macroed = this._replaceMacros(formula);
-        return this._runJs(macroed, extras, context, variables);
+        return this._runJs(formula, extras, context, variables);
     }
 
     private _runJs<TExtra>(
@@ -165,24 +149,5 @@ export class Sandbox {
 
     private _transpile(exJs: string): string {
         return this._transpiler.transpile(exJs);
-    }
-
-    /**
-     * Adds the given macro to the list of macros that are run on the code
-     * before execution.
-     */
-    addMacro(macro: SandboxMacro) {
-        this.macros.push(macro);
-    }
-
-    private _replaceMacros(formula: string) {
-        if (!formula) {
-            return formula;
-        }
-        this.macros.forEach(m => {
-            formula = formula.replace(m.test, m.replacement);
-        });
-
-        return formula;
     }
 }

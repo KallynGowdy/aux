@@ -28,7 +28,7 @@ describe('Transpiler', () => {
 
     describe('dependencies()', () => {
         const cases = [
-            ['@ expressions', 'object', '@'],
+            ['@ expressions', 'file', '@'],
             ['# expressions', 'tag', '#'],
         ];
 
@@ -45,11 +45,13 @@ describe('Transpiler', () => {
                         type: type,
                         name: 'tag',
                         args: [],
+                        members: ['num'],
                     },
                     {
                         type: type,
                         name: 'other',
                         args: [],
+                        members: ['num'],
                     },
                 ]);
             });
@@ -66,6 +68,7 @@ describe('Transpiler', () => {
                         type: type,
                         name: 'tag.test',
                         args: [],
+                        members: ['num'],
                     },
                 ]);
             });
@@ -82,6 +85,7 @@ describe('Transpiler', () => {
                         type: type,
                         name: 'tag',
                         args: ['"hello, world"', '123'],
+                        members: [],
                     },
                 ]);
             });
@@ -98,6 +102,102 @@ describe('Transpiler', () => {
                         type: type,
                         name: 'tag',
                         args: ['x => x.indexOf("hi") >= 0'],
+                        members: [],
+                    },
+                ]);
+            });
+
+            it('should parse the tags after the expression', () => {
+                const transpiler = new Transpiler();
+
+                const result = transpiler.dependencies(
+                    `${symbol}tag().aux.color`
+                );
+
+                expect(result.tags).toEqual([
+                    {
+                        type: type,
+                        name: 'tag',
+                        args: [],
+                        members: ['aux', 'color'],
+                    },
+                ]);
+            });
+
+            it('should support indexers after the expression', () => {
+                const transpiler = new Transpiler();
+
+                const result = transpiler.dependencies(
+                    `${symbol}tag()['funny']`
+                );
+
+                expect(result.tags).toEqual([
+                    {
+                        type: type,
+                        name: 'tag',
+                        args: [],
+                        members: ['funny'],
+                    },
+                ]);
+            });
+
+            it('should support convert variables in indexers to wildcards', () => {
+                const transpiler = new Transpiler();
+
+                const result = transpiler.dependencies(`${symbol}tag()[myVar]`);
+
+                expect(result.tags).toEqual([
+                    {
+                        type: type,
+                        name: 'tag',
+                        args: [],
+                        members: ['*'],
+                    },
+                ]);
+            });
+
+            it('should handle members in other function calls', () => {
+                const transpiler = new Transpiler();
+
+                const result = transpiler.dependencies(
+                    `math.sum(${symbol}tag().length)`
+                );
+
+                expect(result.tags).toEqual([
+                    {
+                        type: type,
+                        name: 'tag',
+                        args: [],
+                        members: ['length'],
+                    },
+                ]);
+            });
+        });
+
+        describe('this', () => {
+            it(`should return dependencies on this`, () => {
+                const transpiler = new Transpiler();
+
+                const result = transpiler.dependencies(
+                    `this.num + this.index * this.something.else - this[other][thing]`
+                );
+
+                expect(result.tags).toEqual([
+                    {
+                        type: 'this',
+                        members: ['num'],
+                    },
+                    {
+                        type: 'this',
+                        members: ['index'],
+                    },
+                    {
+                        type: 'this',
+                        members: ['something', 'else'],
+                    },
+                    {
+                        type: 'this',
+                        members: ['*', '*'],
                     },
                 ]);
             });

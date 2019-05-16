@@ -1,6 +1,6 @@
 import * as Acorn from 'acorn';
 import { generate, baseGenerator } from 'astring';
-import { replace, traverse } from 'estraverse';
+import { replace, traverse, VisitorOption } from 'estraverse';
 import { assign } from 'lodash';
 import LRU from 'lru-cache';
 
@@ -180,6 +180,11 @@ function exJsParser(parser: typeof Acorn.Parser) {
 
 const exJsGenerator = assign({}, baseGenerator, {});
 
+export interface TranspilerMacro {
+    test: RegExp;
+    replacement: (val: string) => string;
+}
+
 /**
  * Defines a class that is able to compile code from AUX's custom JavaScript dialect
  * into pure ES6 JavaScript. Does not preserve spacing or comments.
@@ -189,6 +194,16 @@ const exJsGenerator = assign({}, baseGenerator, {});
 export class Transpiler {
     private _parser: typeof Acorn.Parser;
     private _cache: LRU.Cache<string, string>;
+
+    /**
+     * The list of macros that the sandbox uses on the input code before transpiling it.
+     */
+    macros: TranspilerMacro[] = [
+        {
+            test: /^(?:\=|\:\=)/g,
+            replacement: val => '',
+        },
+    ];
 
     constructor() {
         this._cache = new LRU<string, string>({
@@ -205,7 +220,8 @@ export class Transpiler {
         if (cached) {
             return cached;
         }
-        const node = this._parser.parse(code);
+        const macroed = this._replaceMacros(code);
+        const node = this._parser.parse(macroed);
         const replaced = this._replace(node);
         const final = this._toJs(replaced);
         this._cache.set(code, final);
@@ -217,11 +233,31 @@ export class Transpiler {
      * @param code
      */
     dependencies(code: string): AuxScriptDependencies {
-        const node = this._parser.parse(code);
+        const macroed = this._replaceMacros(code);
+        const node = this._parser.parse(macroed);
         return {
             code: code,
             tags: this._tagDependencies(node),
         };
+    }
+
+    /**
+     * Adds the given macro to the list of macros that are run on the code
+     * before execution.
+     */
+    addMacro(macro: TranspilerMacro) {
+        this.macros.push(macro);
+    }
+
+    private _replaceMacros(formula: string) {
+        if (!formula) {
+            return formula;
+        }
+        this.macros.forEach(m => {
+            formula = formula.replace(m.test, m.replacement);
+        });
+
+        return formula;
     }
 
     private _replace(node: Acorn.Node): Acorn.Node {
@@ -294,19 +330,59 @@ export class Transpiler {
         });
     }
 
-    private _tagDependencies(node: Acorn.Node): AuxScriptDependenciesTags[] {
-        let tags: AuxScriptDependenciesTags[] = [];
+    private _tagDependencies(node: Acorn.Node): AuxScriptDependency[] {
+        let tags: AuxScriptDependency[] = [];
+        let lastTag: AuxScriptDependency = null;
+        let members: string[] = [];
 
         traverse(<any>node, {
             enter: (node: any) => {
                 if (node.type === 'TagValue' || node.type === 'ObjectValue') {
-                    const { tag, args } = this._getNodeValues(node);
+                    const { tag, args, nodes } = this._getNodeValues(node);
 
-                    tags.push({
-                        type: node.type === 'TagValue' ? 'tag' : 'object',
+                    lastTag = <
+                        AuxScriptTagDependency | AuxScriptFileDependency
+                    >{
+                        type: node.type === 'TagValue' ? 'tag' : 'file',
                         name: tag,
                         args: args.map(a => this._toJs(a)),
-                    });
+                        members: nodes.map(n => this._toJs(n)),
+                    };
+
+                    tags.push(lastTag);
+
+                    return VisitorOption.Skip;
+                } else if (node.type === 'MemberExpression') {
+                    if (node.object.type === 'ThisExpression') {
+                        lastTag = {
+                            type: 'this',
+                            members: [],
+                        };
+
+                        tags.push(lastTag);
+                    }
+                }
+            },
+            leave: (node: any, parent: any) => {
+                if (lastTag) {
+                    if (node.type === 'MemberExpression') {
+                        if (
+                            node.property.type === 'Identifier' &&
+                            !node.computed
+                        ) {
+                            members.push(node.property.name);
+                        } else if (node.property.type === 'Literal') {
+                            members.push(node.property.value);
+                        } else {
+                            members.push('*');
+                        }
+
+                        if (parent.type !== 'MemberExpression') {
+                            lastTag.members = members;
+                            lastTag = null;
+                            members = [];
+                        }
+                    }
                 }
             },
 
@@ -359,17 +435,25 @@ export class Transpiler {
  */
 export interface AuxScriptDependencies {
     code: string;
-    tags: AuxScriptDependenciesTags[];
+    tags: AuxScriptDependency[];
 }
 
-/**
- * Defines an interface for a tag that was recognized as a dependency.
- */
-export interface AuxScriptDependenciesTags {
+export type AuxScriptDependency =
+    | AuxScriptThisDependency
+    | AuxScriptTagDependency
+    | AuxScriptFileDependency;
+
+export interface AuxScriptThisDependency {
+    type: 'this';
+
     /**
-     * Whether the query was looking for objects or tag values.
+     * The members that are accessed on the dependency.
      */
-    type: 'object' | 'tag';
+    members: string[];
+}
+
+export interface AuxScriptTagDependency {
+    type: 'tag';
 
     /**
      * The name of the tag.
@@ -380,4 +464,28 @@ export interface AuxScriptDependenciesTags {
      * The arguments that were used in the tag query.
      */
     args: string[];
+
+    /**
+     * The members that are accessed on the dependency.
+     */
+    members: string[];
+}
+
+export interface AuxScriptFileDependency {
+    type: 'file';
+
+    /**
+     * The name of the tag.
+     */
+    name: string;
+
+    /**
+     * The arguments that were used in the tag query.
+     */
+    args: string[];
+
+    /**
+     * The members that are accessed on the dependency.
+     */
+    members: string[];
 }
