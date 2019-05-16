@@ -1,6 +1,6 @@
 import * as Acorn from 'acorn';
 import { generate, baseGenerator } from 'astring';
-import { replace } from 'estraverse';
+import { replace, traverse } from 'estraverse';
 import { assign } from 'lodash';
 import LRU from 'lru-cache';
 
@@ -212,6 +212,18 @@ export class Transpiler {
         return final;
     }
 
+    /**
+     * Gets the list of dependencies that the given code has.
+     * @param code
+     */
+    dependencies(code: string): AuxScriptDependencies {
+        const node = this._parser.parse(code);
+        return {
+            code: code,
+            tags: this._tagDependencies(node),
+        };
+    }
+
     private _replace(node: Acorn.Node): Acorn.Node {
         return <any>replace(<any>node, {
             enter: <any>((n: any) => {
@@ -223,35 +235,15 @@ export class Transpiler {
                 ) {
                     // _listTagValues('tag', filter)
 
-                    let currentNode = n.identifier;
-                    let identifier: any;
-                    let args: any[] = [];
-                    let nodes: any[] = [];
-
-                    while (currentNode.type === 'MemberExpression') {
-                        currentNode = currentNode.object;
-                    }
-
-                    if (currentNode.type === 'CallExpression') {
-                        identifier = currentNode.callee;
-                        args = currentNode.arguments;
-
-                        currentNode = n.identifier;
-
-                        while (currentNode.type === 'MemberExpression') {
-                            nodes.unshift(currentNode);
-                            currentNode = currentNode.object;
-                        }
-                    } else {
-                        identifier = n.identifier;
-                    }
-
-                    let tag: string;
-                    if (identifier.type === 'MemberExpression') {
-                        tag = this._toJs(identifier);
-                    } else {
-                        tag = identifier.name || identifier.value;
-                    }
+                    let {
+                        tag,
+                        args,
+                        nodes,
+                    }: {
+                        tag: string;
+                        args: any[];
+                        nodes: any[];
+                    } = this._getNodeValues(n);
 
                     const funcName =
                         n.type === 'TagValue'
@@ -302,9 +294,90 @@ export class Transpiler {
         });
     }
 
+    private _tagDependencies(node: Acorn.Node): AuxScriptDependenciesTags[] {
+        let tags: AuxScriptDependenciesTags[] = [];
+
+        traverse(<any>node, {
+            enter: (node: any) => {
+                if (node.type === 'TagValue' || node.type === 'ObjectValue') {
+                    const { tag, args } = this._getNodeValues(node);
+
+                    tags.push({
+                        type: node.type === 'TagValue' ? 'tag' : 'object',
+                        name: tag,
+                        args: args.map(a => this._toJs(a)),
+                    });
+                }
+            },
+
+            keys: {
+                ObjectValue: ['identifier'],
+                TagValue: ['identifier'],
+            },
+        });
+
+        return tags;
+    }
+
+    private _getNodeValues(n: any) {
+        let currentNode = n.identifier;
+        let identifier: any;
+        let args: any[] = [];
+        let nodes: any[] = [];
+        while (currentNode.type === 'MemberExpression') {
+            currentNode = currentNode.object;
+        }
+        if (currentNode.type === 'CallExpression') {
+            identifier = currentNode.callee;
+            args = currentNode.arguments;
+            currentNode = n.identifier;
+            while (currentNode.type === 'MemberExpression') {
+                nodes.unshift(currentNode);
+                currentNode = currentNode.object;
+            }
+        } else {
+            identifier = n.identifier;
+        }
+        let tag: string;
+        if (identifier.type === 'MemberExpression') {
+            tag = this._toJs(identifier);
+        } else {
+            tag = identifier.name || identifier.value;
+        }
+        return { tag, args, nodes };
+    }
+
     private _toJs(node: Acorn.Node): string {
         return generate(<any>node, {
             generator: exJsGenerator,
         });
     }
+}
+
+/**
+ * Defines an interface that represents the dependencies that an AUX Script might have.
+ */
+export interface AuxScriptDependencies {
+    code: string;
+    tags: AuxScriptDependenciesTags[];
+}
+
+/**
+ * Defines an interface for a tag that was recognized as a dependency.
+ */
+export interface AuxScriptDependenciesTags {
+    /**
+     * Whether the query was looking for objects or tag values.
+     */
+    type: 'object' | 'tag';
+
+    /**
+     * The name of the tag.
+     */
+    name: string;
+
+    /**
+     * The arguments that were used in the tag query.
+     */
+    args: string[];
 }
