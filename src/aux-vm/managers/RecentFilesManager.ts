@@ -54,7 +54,7 @@ export class RecentFilesManager {
      */
     set selectedRecentFile(file: File) {
         this._selectedRecentFile = file;
-        this._onUpdated.next();
+        this._updated();
     }
 
     /**

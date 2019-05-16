@@ -1,4 +1,4 @@
-import { RecentFilesManager } from './RecentFilesManager';
+import { RecentFilesManager, RecentsUpdatedEvent } from './RecentFilesManager';
 import { FileHelper } from './FileHelper';
 import { AuxCausalTree, createFile } from '@casual-simulation/aux-common';
 import { storedTree, site } from '@casual-simulation/causal-trees';
@@ -59,14 +59,28 @@ describe('RecentFilesManager', () => {
         });
 
         it('should send an updated event', () => {
-            let updates: number[] = [];
+            let updates: RecentsUpdatedEvent[] = [];
             recent.onUpdated.subscribe(_ => {
-                updates.push(1);
+                updates.push(_);
             });
 
             recent.addTagDiff('testFileId', 'testTag', 'newValue');
 
-            expect(updates).toEqual([1]);
+            expect(updates).toEqual([
+                {
+                    recentFiles: [
+                        {
+                            id: 'testFileId',
+                            tags: {
+                                ['testTag']: 'newValue',
+                                'aux._diff': true,
+                                'aux._diffTags': ['testTag'],
+                            },
+                        },
+                    ],
+                    selectedRecentFile: null,
+                },
+            ]);
         });
 
         it('should move reused IDs to the front of the list with the new value', () => {
@@ -236,13 +250,28 @@ describe('RecentFilesManager', () => {
                 test: 'abc',
                 'aux.color': 'red',
             });
-            let updates: number[] = [];
+            let updates: RecentsUpdatedEvent[] = [];
             recent.onUpdated.subscribe(_ => {
-                updates.push(1);
+                updates.push(_);
             });
             recent.addFileDiff(file);
 
-            expect(updates).toEqual([1]);
+            expect(updates).toEqual([
+                {
+                    recentFiles: [
+                        {
+                            id: 'diff-testId',
+                            tags: {
+                                test: 'abc',
+                                'aux.color': 'red',
+                                'aux._diff': true,
+                                'aux._diffTags': ['test', 'aux.color'],
+                            },
+                        },
+                    ],
+                    selectedRecentFile: null,
+                },
+            ]);
         });
 
         it('should trim to the max length', () => {
@@ -361,6 +390,39 @@ describe('RecentFilesManager', () => {
         });
     });
 
+    describe('selectedRecentFile', () => {
+        it('should send an update event', () => {
+            let updates: RecentsUpdatedEvent[] = [];
+            recent.onUpdated.subscribe(_ => {
+                updates.push(_);
+            });
+            recent.addTagDiff('fileId', 'tag', 'value');
+            recent.selectedRecentFile = recent.files[0];
+
+            expect(updates.length).toBe(2);
+            expect(updates[1]).toEqual({
+                recentFiles: [
+                    {
+                        id: 'fileId',
+                        tags: {
+                            tag: 'value',
+                            'aux._diff': true,
+                            'aux._diffTags': ['tag'],
+                        },
+                    },
+                ],
+                selectedRecentFile: {
+                    id: 'fileId',
+                    tags: {
+                        tag: 'value',
+                        'aux._diff': true,
+                        'aux._diffTags': ['tag'],
+                    },
+                },
+            });
+        });
+    });
+
     describe('clear()', () => {
         it('should clear the recent list', () => {
             recent.addTagDiff('fileId', 'tag', 'value');
@@ -374,14 +436,23 @@ describe('RecentFilesManager', () => {
         });
 
         it('should send an update event', () => {
-            let updates: number[] = [];
+            let updates: RecentsUpdatedEvent[] = [];
             recent.onUpdated.subscribe(_ => {
-                updates.push(1);
+                updates.push(_);
             });
             recent.addTagDiff('fileId', 'tag', 'value');
             recent.clear();
 
-            expect(updates).toEqual([1, 1]);
+            expect(updates.length).toBe(2);
+            expect(updates[1]).toEqual({
+                recentFiles: [
+                    {
+                        id: 'empty',
+                        tags: {},
+                    },
+                ],
+                selectedRecentFile: null,
+            });
         });
     });
 });
