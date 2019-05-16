@@ -61,10 +61,9 @@ export class PlayerSimulation3D extends Simulation3D {
         this._subs.push(
             (await this.simulation.fileChanged(userFile))
                 .pipe(
-                    tap(file => {
-                        const userInventoryContextValue = (<Object>file).tags[
-                            'aux._userInventoryContext'
-                        ];
+                    tap(update => {
+                        const userInventoryContextValue =
+                            update.file.tags['aux._userInventoryContext'];
                         if (
                             !this.inventoryContext ||
                             this.inventoryContext.context !==
@@ -81,7 +80,7 @@ export class PlayerSimulation3D extends Simulation3D {
                         }
 
                         const userMenuContextValue =
-                            file.tags['aux._userMenuContext'];
+                            update.file.tags['aux._userMenuContext'];
                         if (
                             !this.menuContext ||
                             this.menuContext.context !== userMenuContextValue
@@ -97,7 +96,7 @@ export class PlayerSimulation3D extends Simulation3D {
                         }
 
                         const userSimulationContextValue =
-                            file.tags['aux._userSimulationsContext'];
+                            update.file.tags['aux._userSimulationsContext'];
                         if (
                             !this.simulationContext ||
                             this.simulationContext.context !==
@@ -121,9 +120,10 @@ export class PlayerSimulation3D extends Simulation3D {
         this._subs.push(
             (await this.simulation.fileChanged(globalsFile))
                 .pipe(
-                    tap(file => {
+                    tap(update => {
                         // Scene background color.
-                        let sceneBackgroundColor = file.tags['aux.scene.color'];
+                        let sceneBackgroundColor =
+                            update.file.tags['aux.scene.color'];
                         this._sceneBackground = hasValue(sceneBackgroundColor)
                             ? new Color(sceneBackgroundColor)
                             : null;
@@ -181,10 +181,10 @@ export class PlayerSimulation3D extends Simulation3D {
             this._subs.push(
                 (await this.simulation.fileChanged(file))
                     .pipe(
-                        tap(file => {
+                        tap(update => {
                             // Update the context background color.
                             let contextBackgroundColor =
-                                file.tags['aux.context.color'];
+                                update.file.tags['aux.context.color'];
                             this._contextBackground = hasValue(
                                 contextBackgroundColor
                             )

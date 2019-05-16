@@ -17,6 +17,7 @@ import {
     FilterParseResult,
     FileLabelAnchor,
     AsyncCalculationContextWrapper,
+    UpdatedFile,
 } from '@casual-simulation/aux-common';
 import { Observable, SubscriptionLike } from 'rxjs';
 import {
@@ -195,11 +196,11 @@ export class AsyncSimulationWrapper extends AsyncCalculationContextWrapper
         return this._sim.socketManager.toggleForceOffline();
     }
 
-    async fileChanged(file: AuxObject): Promise<Observable<AuxObject>> {
+    async fileChanged(file: AuxObject): Promise<Observable<UpdatedFile>> {
         return this._sim.watcher.fileChanged(file);
     }
 
-    get userFileChanged(): Observable<AuxObject> {
+    get userFileChanged(): Observable<UpdatedFile> {
         return this._sim.watcher.fileChanged(this._sim.helper.userFile);
     }
 
@@ -211,7 +212,7 @@ export class AsyncSimulationWrapper extends AsyncCalculationContextWrapper
         return this._sim.watcher.filesRemoved;
     }
 
-    get filesUpdated(): Observable<AuxObject[]> {
+    get filesUpdated(): Observable<UpdatedFile[]> {
         return this._sim.watcher.filesUpdated;
     }
 

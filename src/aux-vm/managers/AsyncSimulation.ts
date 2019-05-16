@@ -21,6 +21,7 @@ import {
     SelectionMode,
     FileDragMode,
     AsyncCalculationContext,
+    UpdatedFile,
 } from '@casual-simulation/aux-common';
 import { Observable, SubscriptionLike } from 'rxjs';
 import { FilesUpdatedEvent } from './FilePanelManager';
@@ -325,7 +326,7 @@ export interface AsyncSimulation
     /**
      * Gets an observable that resolves whenever a file is updated.
      */
-    filesUpdated: Observable<AuxFile[]>;
+    filesUpdated: Observable<UpdatedFile[]>;
 
     /**
      * Gets the observable list of local events that have been processed by this file helper.
@@ -364,11 +365,11 @@ export interface AsyncSimulation
     /**
      * Gets an observable that resolves whenever the user's file changes.
      */
-    userFileChanged: Observable<AuxObject>;
+    userFileChanged: Observable<UpdatedFile>;
 
     /**
      * Creates an observable that resolves whenever the given file changes.
      * @param file The file to watch.
      */
-    fileChanged(file: AuxObject): Promise<Observable<AuxObject>>;
+    fileChanged(file: AuxObject): Promise<Observable<UpdatedFile>>;
 }

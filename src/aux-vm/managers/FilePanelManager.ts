@@ -168,7 +168,7 @@ export default class FilePanelManager implements SubscriptionLike {
             ),
             this._watcher.filesUpdated.pipe(
                 flatMap(files => files),
-                map(f => f.id)
+                map(f => f.file.id)
             ),
             this._watcher.filesRemoved,
             this._recent.onUpdated,

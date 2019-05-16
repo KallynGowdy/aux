@@ -83,7 +83,7 @@ export abstract class Simulation3D extends Object3D
             this.simulation.filesUpdated
                 .pipe(
                     rxFlatMap(files => files),
-                    concatMap(file => this._fileUpdated(file, false))
+                    concatMap(update => this._fileUpdated(update.file, false))
                 )
                 .subscribe()
         );

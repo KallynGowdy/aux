@@ -169,11 +169,11 @@ export default class Home extends Vue {
                 await this.fileManager.getUserFile()
             ))
                 .pipe(
-                    tap(file => {
-                        this.mode = getUserMode(file);
+                    tap(update => {
+                        this.mode = getUserMode(update.file);
 
                         let previousSelectionMode = this.selectionMode;
-                        this.selectionMode = getSelectionMode(file);
+                        this.selectionMode = getSelectionMode(update.file);
                         // if (
                         //     previousSelectionMode !== this.selectionMode &&
                         //     this.selectionMode === 'multi'

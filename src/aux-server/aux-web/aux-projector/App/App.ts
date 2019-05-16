@@ -267,10 +267,10 @@ export default class App extends Vue {
                 subs.push(
                     fileManager.userFileChanged
                         .pipe(
-                            tap(file => {
-                                this.userMode = this._calculateUserMode(<
-                                    Object
-                                >file);
+                            tap(update => {
+                                this.userMode = this._calculateUserMode(
+                                    update.file
+                                );
                             })
                         )
                         .subscribe()
