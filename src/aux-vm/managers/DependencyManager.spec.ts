@@ -774,5 +774,120 @@ describe('DependencyManager', () => {
                 test3: new Set(['formula3']),
             });
         });
+
+        it('should handle nested dependencies', async () => {
+            let subject = new DependencyManager();
+
+            let tree = new AuxCausalTree(storedTree(site(1)));
+
+            await tree.root();
+
+            await tree.addFile(
+                createFile('test', {
+                    formula: '=#formula2',
+                })
+            );
+
+            await tree.addFile(
+                createFile('test2', {
+                    formula2: '=@formula3()',
+                })
+            );
+
+            await tree.addFile(
+                createFile('test3', {
+                    formula3: '=@name()',
+                })
+            );
+
+            await tree.addFile(
+                createFile('test4', {
+                    name: 'file4',
+                })
+            );
+
+            let updates = subject.addFile(tree.value['test']);
+            // expect(updates).toEqual({});
+
+            updates = subject.addFile(tree.value['test2']);
+            // expect(updates).toEqual({});
+
+            updates = subject.addFile(tree.value['test3']);
+
+            await tree.updateFile(tree.value['test3'], {
+                tags: {
+                    name: 'newName',
+                },
+            });
+
+            updates = subject.updateFile({
+                file: tree.value['test3'],
+                tags: ['name'],
+            });
+
+            expect(updates).toEqual({
+                test: new Set(['formula']),
+                test2: new Set(['formula2']),
+                test3: new Set(['formula3']),
+            });
+        });
+
+        it('should handle nested dependencies and this references', async () => {
+            let subject = new DependencyManager();
+
+            let tree = new AuxCausalTree(storedTree(site(1)));
+
+            await tree.root();
+
+            await tree.addFile(
+                createFile('test', {
+                    val: '=this.formula',
+                    formula: '=#formula2',
+                })
+            );
+
+            await tree.addFile(
+                createFile('test2', {
+                    formula2: '=@formula3()',
+                })
+            );
+
+            await tree.addFile(
+                createFile('test3', {
+                    formula3: '=@name()',
+                })
+            );
+
+            await tree.addFile(
+                createFile('test4', {
+                    name: 'file4',
+                })
+            );
+
+            let updates = subject.addFile(tree.value['test']);
+            // expect(updates).toEqual({});
+
+            updates = subject.addFile(tree.value['test2']);
+            // expect(updates).toEqual({});
+
+            updates = subject.addFile(tree.value['test3']);
+
+            await tree.updateFile(tree.value['test3'], {
+                tags: {
+                    name: 'newName',
+                },
+            });
+
+            updates = subject.updateFile({
+                file: tree.value['test3'],
+                tags: ['name'],
+            });
+
+            expect(updates).toEqual({
+                test: new Set(['val', 'formula']),
+                test2: new Set(['formula2']),
+                test3: new Set(['formula3']),
+            });
+        });
     });
 });

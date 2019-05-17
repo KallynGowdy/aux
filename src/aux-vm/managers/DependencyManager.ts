@@ -203,12 +203,7 @@ export class DependencyManager {
                 }
             }
 
-            const dependents = update.tags.map(t =>
-                this.getDependents(t, update.file.id)
-            );
-            const updates = reduce(dependents, (first, second) =>
-                this._mergeDependents(first, second)
-            );
+            const updates = this._resolveDependencies(update);
 
             return updates;
         } else {
@@ -218,6 +213,74 @@ export class DependencyManager {
         }
 
         return {};
+    }
+
+    private _resolveDependencies(update: UpdatedFile) {
+        const dependents = update.tags.map(t =>
+            this.getDependents(t, update.file.id)
+        );
+        const updates = reduce(dependents, (first, second) =>
+            this._mergeDependents(first, second)
+        );
+
+        return this._deepDependencies(update.tags, updates, 0);
+    }
+
+    private _deepDependencies(
+        tags: string[],
+        update: FileDependentInfo,
+        depth: number
+    ): FileDependentInfo {
+        // TODO: Put in max depth variable
+        if (depth > 10) {
+            return update;
+        }
+
+        let finalUpdate = update;
+
+        let deepTags: string[] = [];
+        for (let key in update) {
+            const fileTags = [...update[key]];
+
+            const dependents = fileTags.map(t => this.getDependents(t, key));
+            finalUpdate = reduce(
+                dependents,
+                (first, second) => this._mergeDependents(first, second),
+                finalUpdate
+            );
+        }
+
+        let hasNewTags = false;
+        for (let tag of deepTags) {
+            if (tags.indexOf(tag) < 0) {
+                hasNewTags = true;
+                break;
+            }
+        }
+
+        if (!hasNewTags) {
+            return update;
+        }
+
+        const tagsArray = [...deepTags];
+        const dependents = tagsArray.map(t => this.getDependents(t));
+        const updates = reduce(
+            dependents,
+            (first, second) => this._mergeDependents(first, second),
+            update
+        );
+
+        return this._deepDependencies(tagsArray, updates, depth + 1);
+    }
+
+    private _dependentTags(update: FileDependentInfo): Set<string> {
+        let tags: string[] = [];
+        for (let key in update) {
+            const fileTags = update[key];
+            tags.push(...fileTags);
+        }
+
+        return new Set(tags);
     }
 
     /**
