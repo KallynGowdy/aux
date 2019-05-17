@@ -7,8 +7,9 @@ import {
     isFormula,
     AuxScriptDependency,
     AuxScriptDependencies,
+    AuxObject,
 } from '@casual-simulation/aux-common';
-import { uniq, mergeWith } from 'lodash';
+import { uniq, mergeWith, reduce } from 'lodash';
 
 /**
  * Defines an interface that represents the list of dependencies a file has.
@@ -28,6 +29,8 @@ export interface FileDependentInfo {
  * Defines a class that is able to track dependencies between files.
  */
 export class DependencyManager {
+    private _fileIdMap: Map<string, AuxObject>;
+
     /**
      * A map of tag names to IDs of files that contain said tag name.
      */
@@ -53,6 +56,7 @@ export class DependencyManager {
     constructor() {
         this._tagMap = new Map();
         this._fileMap = new Map();
+        this._fileIdMap = new Map();
         this._dependencyMap = new Map();
         this._dependentMap = new Map();
 
@@ -63,9 +67,14 @@ export class DependencyManager {
      * Adds the given file to the dependency manager for tracking.
      * @param file The file to add.
      */
-    addFile(file: File): void {
+    addFile(file: AuxObject): FileDependentInfo {
         const tags = tagsOnFile(file);
         let deps: FileDependencyInfo = {};
+
+        const dependents = tags.map(t => this.getDependents(t));
+        const updates = reduce(dependents, (first, second) =>
+            this._mergeDependents(first, second)
+        );
 
         for (let tag of tags) {
             const val = file.tags[tag];
@@ -84,16 +93,20 @@ export class DependencyManager {
 
         this._dependencyMap.set(file.id, deps);
         this._fileMap.set(file.id, tags);
+        this._fileIdMap.set(file.id, file);
+
+        return updates;
     }
 
     /**
      * Removes the given file from the dependency manager.
      * @param file The file to remove.
      */
-    removeFile(file: File): void {
+    removeFile(file: AuxObject): FileDependentInfo {
         const tags = this._fileMap.get(file.id);
 
         if (tags) {
+            this._fileIdMap.delete(file.id);
             this._fileMap.delete(file.id);
             const dependencies = this.getDependencies(file.id);
             if (dependencies) {
@@ -113,14 +126,24 @@ export class DependencyManager {
                     }
                 }
             }
+
+            const dependents = tags.map(t => this.getDependents(t));
+            const updates = reduce(dependents, (first, second) =>
+                this._mergeDependents(first, second)
+            );
+
+            return updates;
         }
+
+        return {};
     }
 
     /**
      * Processes the given file update.
      * @param update The update.
      */
-    updateFile(update: UpdatedFile) {
+    updateFile(update: UpdatedFile): FileDependentInfo {
+        this._fileIdMap.set(update.file.id, update.file);
         const tags = this._fileMap.get(update.file.id);
         if (tags) {
             const fileTags = tagsOnFile(update.file);
@@ -179,11 +202,22 @@ export class DependencyManager {
                     }
                 }
             }
+
+            const dependents = update.tags.map(t =>
+                this.getDependents(t, update.file.id)
+            );
+            const updates = reduce(dependents, (first, second) =>
+                this._mergeDependents(first, second)
+            );
+
+            return updates;
         } else {
             console.warn(
                 '[DependencyManager] Trying to update file before it was added!'
             );
         }
+
+        return {};
     }
 
     /**
@@ -204,13 +238,20 @@ export class DependencyManager {
         if (id) {
             const file = this._dependentMap.get(`${id}:${tag}`);
 
-            return mergeWith(general, file, (first, second) => {
-                if (first instanceof Set && second instanceof Set) {
-                    return new Set([...first, ...second]);
-                }
-            });
+            return this._mergeDependents(general, file);
         }
         return general;
+    }
+
+    private _mergeDependents(
+        general: FileDependentInfo,
+        file: FileDependentInfo
+    ): FileDependentInfo {
+        return mergeWith(general, file, (first, second) => {
+            if (first instanceof Set && second instanceof Set) {
+                return new Set([...first, ...second]);
+            }
+        });
     }
 
     /**

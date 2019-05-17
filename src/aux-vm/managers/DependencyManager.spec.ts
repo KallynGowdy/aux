@@ -207,6 +207,132 @@ describe('DependencyManager', () => {
                 ])
             );
         });
+
+        it('should return a list of affected files for files with tag expressions', async () => {
+            let subject = new DependencyManager();
+
+            let tree = new AuxCausalTree(storedTree(site(1)));
+
+            await tree.root();
+
+            await tree.addFile(
+                createFile('test', {
+                    control: 'abc',
+                    formula: '=#sum',
+                })
+            );
+
+            await tree.addFile(
+                createFile('test2', {
+                    control: 'abc2',
+                    formula2: '=#sum',
+                })
+            );
+
+            await tree.addFile(
+                createFile('test3', {
+                    sum: 55,
+                })
+            );
+
+            let updates = subject.addFile(tree.value['test']);
+            expect(updates).toEqual({});
+
+            updates = subject.addFile(tree.value['test2']);
+            expect(updates).toEqual({});
+
+            updates = subject.addFile(tree.value['test3']);
+
+            expect(updates).toEqual({
+                test: new Set(['formula']),
+                test2: new Set(['formula2']),
+            });
+        });
+
+        it('should return a list of affected files for files with file expressions', async () => {
+            let subject = new DependencyManager();
+
+            let tree = new AuxCausalTree(storedTree(site(1)));
+
+            await tree.root();
+
+            await tree.addFile(
+                createFile('test', {
+                    control: 'abc',
+                    formula: '=@name',
+                })
+            );
+
+            await tree.addFile(
+                createFile('test2', {
+                    control: 'abc2',
+                    formula2: '=@name().bob',
+                })
+            );
+
+            await tree.addFile(
+                createFile('test3', {
+                    name: 'file3',
+                    bob: true,
+                })
+            );
+
+            let updates = subject.addFile(tree.value['test']);
+            expect(updates).toEqual({});
+
+            updates = subject.addFile(tree.value['test2']);
+            expect(updates).toEqual({});
+
+            updates = subject.addFile(tree.value['test3']);
+
+            expect(updates).toEqual({
+                test: new Set(['formula']),
+                test2: new Set(['formula2']),
+            });
+        });
+
+        it('should not include the new file in the updates', async () => {
+            let subject = new DependencyManager();
+
+            let tree = new AuxCausalTree(storedTree(site(1)));
+
+            await tree.root();
+
+            await tree.addFile(
+                createFile('test', {
+                    control: 'abc',
+                    formula: '=@name',
+                })
+            );
+
+            await tree.addFile(
+                createFile('test2', {
+                    control: 'abc2',
+                    formula2: '=@name().bob',
+                })
+            );
+
+            await tree.addFile(
+                createFile('test3', {
+                    name: 'file3',
+                    bob: true,
+                    formula3: '=@name',
+                })
+            );
+
+            let updates = subject.addFile(tree.value['test']);
+            expect(updates).toEqual({});
+
+            updates = subject.addFile(tree.value['test2']);
+            expect(updates).toEqual({});
+
+            updates = subject.addFile(tree.value['test3']);
+
+            expect(updates).toEqual({
+                test: new Set(['formula']),
+                test2: new Set(['formula2']),
+            });
+        });
     });
 
     describe('removeFile()', () => {
@@ -228,11 +354,7 @@ describe('DependencyManager', () => {
             subject.addFile(tree.value['test']);
 
             // Should still remove the 'hello' tag.
-            subject.removeFile(
-                createFile('test', {
-                    tag: 123,
-                })
-            );
+            subject.removeFile(tree.value['test']);
 
             const tags = subject.getTagMap();
             const files = subject.getFileMap();
@@ -245,6 +367,138 @@ describe('DependencyManager', () => {
             expect(files).toEqual(new Map([]));
             expect(dependencies).toBe(undefined);
             expect(dependents).toEqual({});
+        });
+
+        it('should return a list of affected files for files with tag expressions', async () => {
+            let subject = new DependencyManager();
+
+            let tree = new AuxCausalTree(storedTree(site(1)));
+
+            await tree.root();
+
+            await tree.addFile(
+                createFile('test', {
+                    control: 'abc',
+                    formula: '=#sum',
+                })
+            );
+
+            await tree.addFile(
+                createFile('test2', {
+                    control: 'abc2',
+                    formula2: '=#sum',
+                })
+            );
+
+            await tree.addFile(
+                createFile('test3', {
+                    sum: 55,
+                })
+            );
+
+            let updates = subject.addFile(tree.value['test']);
+            expect(updates).toEqual({});
+
+            updates = subject.addFile(tree.value['test2']);
+            expect(updates).toEqual({});
+
+            updates = subject.addFile(tree.value['test3']);
+
+            updates = subject.removeFile(tree.value['test3']);
+
+            expect(updates).toEqual({
+                test: new Set(['formula']),
+                test2: new Set(['formula2']),
+            });
+        });
+
+        it('should return a list of affected files for files with file expressions', async () => {
+            let subject = new DependencyManager();
+
+            let tree = new AuxCausalTree(storedTree(site(1)));
+
+            await tree.root();
+
+            await tree.addFile(
+                createFile('test', {
+                    control: 'abc',
+                    formula: '=@name',
+                })
+            );
+
+            await tree.addFile(
+                createFile('test2', {
+                    control: 'abc2',
+                    formula2: '=@name().bob',
+                })
+            );
+
+            await tree.addFile(
+                createFile('test3', {
+                    name: 'file3',
+                    bob: true,
+                })
+            );
+
+            let updates = subject.addFile(tree.value['test']);
+            expect(updates).toEqual({});
+
+            updates = subject.addFile(tree.value['test2']);
+            expect(updates).toEqual({});
+
+            updates = subject.addFile(tree.value['test3']);
+
+            updates = subject.removeFile(tree.value['test3']);
+
+            expect(updates).toEqual({
+                test: new Set(['formula']),
+                test2: new Set(['formula2']),
+            });
+        });
+
+        it('should not include the removed file in the updates', async () => {
+            let subject = new DependencyManager();
+
+            let tree = new AuxCausalTree(storedTree(site(1)));
+
+            await tree.root();
+
+            await tree.addFile(
+                createFile('test', {
+                    control: 'abc',
+                    formula: '=@name',
+                })
+            );
+
+            await tree.addFile(
+                createFile('test2', {
+                    control: 'abc2',
+                    formula2: '=@name().bob',
+                })
+            );
+
+            await tree.addFile(
+                createFile('test3', {
+                    name: 'file3',
+                    bob: true,
+                    formula3: '=@name',
+                })
+            );
+
+            let updates = subject.addFile(tree.value['test']);
+            expect(updates).toEqual({});
+
+            updates = subject.addFile(tree.value['test2']);
+            expect(updates).toEqual({});
+
+            updates = subject.addFile(tree.value['test3']);
+
+            updates = subject.removeFile(tree.value['test3']);
+
+            expect(updates).toEqual({
+                test: new Set(['formula']),
+                test2: new Set(['formula2']),
+            });
         });
     });
 
@@ -353,6 +607,172 @@ describe('DependencyManager', () => {
                     ['abc', {}],
                 ])
             );
+        });
+
+        it('should return a list of affected files for files with tag expressions', async () => {
+            let subject = new DependencyManager();
+
+            let tree = new AuxCausalTree(storedTree(site(1)));
+
+            await tree.root();
+
+            await tree.addFile(
+                createFile('test', {
+                    control: 'abc',
+                    formula: '=#sum',
+                })
+            );
+
+            await tree.addFile(
+                createFile('test2', {
+                    control: 'abc2',
+                    formula2: '=#sum',
+                })
+            );
+
+            await tree.addFile(
+                createFile('test3', {
+                    sum: 55,
+                    formula3: '=this.sum',
+                })
+            );
+
+            let updates = subject.addFile(tree.value['test']);
+            expect(updates).toEqual({});
+
+            updates = subject.addFile(tree.value['test2']);
+            expect(updates).toEqual({});
+
+            updates = subject.addFile(tree.value['test3']);
+
+            await tree.updateFile(tree.value['test3'], {
+                tags: {
+                    sum: 44,
+                    formula4: '=this.sum + 5',
+                },
+            });
+
+            updates = subject.updateFile({
+                file: tree.value['test3'],
+                tags: ['sum', 'formula4'],
+            });
+
+            expect(updates).toEqual({
+                test: new Set(['formula']),
+                test2: new Set(['formula2']),
+                test3: new Set(['formula3', 'formula4']),
+            });
+        });
+
+        it('should return a list of affected files for files with file expressions', async () => {
+            let subject = new DependencyManager();
+
+            let tree = new AuxCausalTree(storedTree(site(1)));
+
+            await tree.root();
+
+            await tree.addFile(
+                createFile('test', {
+                    control: 'abc',
+                    formula: '=@name',
+                })
+            );
+
+            await tree.addFile(
+                createFile('test2', {
+                    control: 'abc2',
+                    formula2: '=@name().extra',
+                })
+            );
+
+            await tree.addFile(
+                createFile('test3', {
+                    name: 'file3',
+                    abc: 5,
+                    formula3: '=this.name',
+                })
+            );
+
+            let updates = subject.addFile(tree.value['test']);
+            expect(updates).toEqual({});
+
+            updates = subject.addFile(tree.value['test2']);
+            expect(updates).toEqual({});
+
+            updates = subject.addFile(tree.value['test3']);
+
+            await tree.updateFile(tree.value['test3'], {
+                tags: {
+                    name: 'awesomeFile',
+                    formula4: '=this.abc + 5',
+                },
+            });
+
+            updates = subject.updateFile({
+                file: tree.value['test3'],
+                tags: ['name', 'formula4'],
+            });
+
+            expect(updates).toEqual({
+                test: new Set(['formula']),
+                test2: new Set(['formula2']),
+                test3: new Set(['formula3']),
+            });
+        });
+
+        it('should handle removing a files tag that has dependencies', async () => {
+            let subject = new DependencyManager();
+
+            let tree = new AuxCausalTree(storedTree(site(1)));
+
+            await tree.root();
+
+            await tree.addFile(
+                createFile('test', {
+                    control: 'abc',
+                    formula: '=@name',
+                })
+            );
+
+            await tree.addFile(
+                createFile('test2', {
+                    control: 'abc2',
+                    formula2: '=@name().extra',
+                })
+            );
+
+            await tree.addFile(
+                createFile('test3', {
+                    name: 'file3',
+                    abc: 5,
+                    formula3: '=this.name',
+                })
+            );
+
+            let updates = subject.addFile(tree.value['test']);
+            expect(updates).toEqual({});
+
+            updates = subject.addFile(tree.value['test2']);
+            expect(updates).toEqual({});
+
+            updates = subject.addFile(tree.value['test3']);
+
+            await tree.updateFile(tree.value['test3'], {
+                tags: {
+                    name: null,
+                },
+            });
+
+            updates = subject.updateFile({
+                file: tree.value['test3'],
+                tags: ['name'],
+            });
+
+            expect(updates).toEqual({
+                test: new Set(['formula']),
+                test2: new Set(['formula2']),
+                test3: new Set(['formula3']),
+            });
         });
     });
 });
