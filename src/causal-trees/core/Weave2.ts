@@ -23,7 +23,7 @@ export interface LinkedAtom<TOp extends AtomOp> {
  * Defines a weave.
  * That is, the depth-first preorder traversal of a causal tree.
  */
-export class Weave<TOp extends AtomOp> {
+export class Weave2<TOp extends AtomOp> {
     private _root: LinkedAtom<TOp>;
     private _sites: Map<number, Map<number, LinkedAtom<TOp>>>;
 
@@ -114,6 +114,10 @@ export class Weave<TOp extends AtomOp> {
             site.set(atom.id.timestamp, this.root);
             return [atom, null];
         } else {
+            const existing = this.getLink(atom.id);
+            if (existing) {
+                return [null, null];
+            }
             const cause = this.getLink(atom.cause);
             if (!cause) {
                 return [
@@ -123,15 +127,6 @@ export class Weave<TOp extends AtomOp> {
                         reason: 'cause_not_found',
                     },
                 ];
-            }
-
-            const siteIndex = atom.id.timestamp;
-
-            if (site.has(siteIndex)) {
-                const existingAtom = site.get(siteIndex);
-                if (existingAtom && idEquals(existingAtom.atom.id, atom.id)) {
-                    return [<Atom<T>>existingAtom.atom, null];
-                }
             }
 
             let current = cause;
@@ -156,8 +151,7 @@ export class Weave<TOp extends AtomOp> {
             };
 
             current.next = link;
-
-            site.set(siteIndex, link);
+            site.set(atom.id.timestamp, link);
             return [atom, null];
         }
     }
@@ -306,7 +300,7 @@ export class Weave<TOp extends AtomOp> {
     getWeft(
         version: WeaveSiteVersion,
         preserveChildren: boolean = false
-    ): Weave<TOp> {
+    ): Weave2<TOp> {
         // let newWeave = this.copy();
 
         // if (preserveChildren) {
@@ -380,7 +374,7 @@ export class Weave<TOp extends AtomOp> {
      * of parent atoms.
      * @param parents The list of atoms that should be kept in the weave.
      */
-    subweave(...parents: Atom<TOp>[]): Weave<TOp> {
+    subweave(...parents: Atom<TOp>[]): Weave2<TOp> {
         const weaves = parents.map(atom => {
             const children = this.decendants(atom);
             let chain = this.referenceChain(atom);
@@ -388,7 +382,7 @@ export class Weave<TOp extends AtomOp> {
             return [...chain, ...children];
         });
 
-        let newWeave = new Weave<TOp>();
+        let newWeave = new Weave2<TOp>();
         for (let i = 0; i < weaves.length; i++) {
             let weave = weaves[i];
             const [, rejected] = newWeave.import(weave);
@@ -406,8 +400,8 @@ export class Weave<TOp extends AtomOp> {
     /**
      * Copies this weave and returns the clone.
      */
-    copy(): Weave<TOp> {
-        let newWeave = new Weave<TOp>();
+    copy(): Weave2<TOp> {
+        let newWeave = new Weave2<TOp>();
         newWeave.import([...this.atoms]);
         return newWeave;
     }
@@ -550,7 +544,7 @@ export class Weave<TOp extends AtomOp> {
      * Gets the list of atoms for a site.
      * @param site The site identifier.
      */
-    getSite(siteId: number): Map<number, LinkedAtom<TOp>> {
+    private _getSite(siteId: number): Map<number, LinkedAtom<TOp>> {
         let site = this._sites.get(siteId);
         if (typeof site === 'undefined') {
             site = new Map();
@@ -617,8 +611,8 @@ export class Weave<TOp extends AtomOp> {
      * If the array was obtained from Weave.atoms, then it will be in the correct order.
      * @param refs The atom references that the new weave should be built from.
      */
-    static buildFromArray<TOp extends AtomOp>(refs: Atom<TOp>[]): Weave<TOp> {
-        let weave = new Weave<TOp>();
+    static buildFromArray<TOp extends AtomOp>(refs: Atom<TOp>[]): Weave2<TOp> {
+        let weave = new Weave2<TOp>();
         weave.import(refs);
         return weave;
     }
