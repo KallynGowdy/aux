@@ -196,7 +196,7 @@ export interface BotTags {
     [`auxContextPlayerPannableMaxY`]?: number | null;
     ['auxContextPlayerZoomable']?: number | null;
     [`auxContextPlayerZoomableMin`]?: number | null;
-    [`auxContextZoomableMax`]?: number | null;
+    [`auxContextPlayerZoomableMax`]?: number | null;
     ['auxContextPlayerRotatable']?: number | null;
 
     // Stripe tags
@@ -627,7 +627,7 @@ export const KNOWN_TAGS: string[] = [
     'auxContextPlayerZoomable',
 
     `auxContextPlayerZoomableMin`,
-    `auxContextZoomableMax`,
+    `auxContextPlayerZoomableMax`,
 
     'auxContextPlayerRotatable',
     'auxChannelColor',
