@@ -21,6 +21,7 @@
         -   `auxContextPannableMinY` -> `auxContextPlayerPannableMinY`
         -   `auxContextPannableMaxY` -> `auxContextPlayerPannableMaxY`
         -   `auxContextRotatable` -> `auxContextPlayerRotatable`
+        -   `auxContextZoomable` -> `auxContextPlayerZoomable`
 -   Improvements
     -   Added `onModDropEnter` and `onModDropExit` listeners for when a mod is dragged onto or off of a bot.
         -   The bot that the mod will be applied to recieves the `onModDropEnter` and `onModDropExit` events.

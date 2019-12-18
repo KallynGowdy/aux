@@ -194,7 +194,7 @@ export interface BotTags {
     [`auxContextPlayerPannableMaxX`]?: number | null;
     [`auxContextPlayerPannableMinY`]?: number | null;
     [`auxContextPlayerPannableMaxY`]?: number | null;
-    ['auxContextZoomable']?: number | null;
+    ['auxContextPlayerZoomable']?: number | null;
     [`auxContextZoomableMin`]?: number | null;
     [`auxContextZoomableMax`]?: number | null;
     ['auxContextPlayerRotatable']?: number | null;
@@ -624,7 +624,7 @@ export const KNOWN_TAGS: string[] = [
     `auxContextPlayerPannableMinY`,
     `auxContextPlayerPannableMaxY`,
 
-    'auxContextZoomable',
+    'auxContextPlayerZoomable',
 
     `auxContextZoomableMin`,
     `auxContextZoomableMax`,

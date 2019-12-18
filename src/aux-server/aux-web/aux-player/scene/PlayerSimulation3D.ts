@@ -483,7 +483,7 @@ export class PlayerSimulation3D extends Simulation3D {
                             this._zoomable = calculateBooleanTagValue(
                                 calc,
                                 bot,
-                                `auxContextZoomable`,
+                                `auxContextPlayerZoomable`,
                                 true
                             );
 
