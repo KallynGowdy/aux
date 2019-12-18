@@ -190,7 +190,7 @@ export interface BotTags {
     ['auxContextInventoryZoomable']?: boolean;
     ['auxContextInventoryVisible']?: unknown;
     ['auxContextPlayerPannable']?: number | null;
-    [`auxContextPannableMinX`]?: number | null;
+    [`auxContextPlayerPannableMinX`]?: number | null;
     [`auxContextPannableMaxX`]?: number | null;
     [`auxContextPannableMinY`]?: number | null;
     [`auxContextPannableMaxY`]?: number | null;
@@ -618,7 +618,7 @@ export const KNOWN_TAGS: string[] = [
 
     'auxContextPlayerPannable',
 
-    `auxContextPannableMinX`,
+    `auxContextPlayerPannableMinX`,
     `auxContextPannableMaxX`,
 
     `auxContextPannableMinY`,

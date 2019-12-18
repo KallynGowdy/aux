@@ -16,6 +16,7 @@
     -   Renamed the `diffs` property on the `onModDrop` argument to `mod`.
     -   Renamed the following tags:
         -   `auxContextPannable` -> `auxContextPlayerPannable`
+        -   `auxContextPannableMinX` -> `auxContextPlayerPannableMinX`
         -   `auxContextRotatable` -> `auxContextPlayerRotatable`
 -   Improvements
     -   Added `onModDropEnter` and `onModDropExit` listeners for when a mod is dragged onto or off of a bot.
