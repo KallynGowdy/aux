@@ -504,7 +504,7 @@ export class PlayerSimulation3D extends Simulation3D {
                             this._rotatable = calculateBooleanTagValue(
                                 calc,
                                 bot,
-                                `auxContextRotatable`,
+                                `auxContextPlayerRotatable`,
                                 true
                             );
 
