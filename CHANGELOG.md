@@ -18,6 +18,7 @@
         -   `auxContextPannable` -> `auxContextPlayerPannable`
         -   `auxContextPannableMinX` -> `auxContextPlayerPannableMinX`
         -   `auxContextPannableMaxX` -> `auxContextPlayerPannableMaxX`
+        -   `auxContextPannableMinY` -> `auxContextPlayerPannableMinY`
         -   `auxContextPannableMaxY` -> `auxContextPlayerPannableMaxY`
         -   `auxContextRotatable` -> `auxContextPlayerRotatable`
 -   Improvements
