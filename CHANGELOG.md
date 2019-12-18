@@ -17,6 +17,7 @@
     -   Renamed the following tags:
         -   `auxContextPannable` -> `auxContextPlayerPannable`
         -   `auxContextPannableMinX` -> `auxContextPlayerPannableMinX`
+        -   `auxContextPannableMaxX` -> `auxContextPlayerPannableMaxX`
         -   `auxContextRotatable` -> `auxContextPlayerRotatable`
 -   Improvements
     -   Added `onModDropEnter` and `onModDropExit` listeners for when a mod is dragged onto or off of a bot.
