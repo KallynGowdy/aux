@@ -1,5 +1,20 @@
 # AUX Changelog
 
+## V0.11.20
+
+### Date: TBD
+
+### Changes:
+
+-   Improvements
+    -   Added the `player.showRun()` and `player.hideRun()` script functions.
+        -   `player.showRun(prefill)` shows the "Run" bar in AuxPlayer.
+            -   `prefill` is a script that should be autofilled into the run bar. (Optional)
+        -   `player.hideRun()` hides the "Run" bar in AuxPlayer.
+    -   Added the `player.run(script)` function to execute the given script.
+        -   The given script is queued and run at the next available time.
+    -   Added the `@onRun` listener that is executed when a script is run from the "Run" bar or via `player.run()`.
+
 ## V0.11.19
 
 ### Date: 12/31/2019
