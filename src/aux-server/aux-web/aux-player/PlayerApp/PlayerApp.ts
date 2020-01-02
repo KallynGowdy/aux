@@ -36,6 +36,7 @@ import {
     ON_CHANNEL_UNSUBSCRIBED_ACTION_NAME,
     parseSimulationId,
     CameraType,
+    newSelectionId,
 } from '@casual-simulation/aux-common';
 import SnackbarOptions from '../../shared/SnackbarOptions';
 import { copyToClipboard, navigateToUrl } from '../../shared/SharedUtils';
@@ -88,6 +89,8 @@ import BotSearch from '../../shared/vue-components/BotSearch/BotSearch';
     },
 })
 export default class PlayerApp extends Vue {
+    @Provide() playerApp = this;
+
     showNavigation: boolean = false;
     showConfirmDialog: boolean = false;
     showAlertDialog: boolean = false;
@@ -219,6 +222,15 @@ export default class PlayerApp extends Vue {
 
     get isAdmin() {
         return this.loginInfo && this.loginInfo.roles.indexOf(ADMIN_ROLE) >= 0;
+    }
+
+    getUIHtmlElements(): HTMLElement[] {
+        let queue = <BotSearch>this.$refs.searchBar;
+
+        if (queue) {
+            return queue.uiHtmlElements();
+        }
+        return [];
     }
 
     /**
@@ -620,12 +632,27 @@ export default class PlayerApp extends Vue {
                 } else if (e.type === 'send_webhook') {
                     sendWebhook(simulation, e);
                 } else if (e.type === 'show_run_bar') {
-                    this.showRunBar = e.visible;
-                    this.runBarPrefill = e.prefill;
-                    const searchBar = this.$refs.searchBar as BotSearch;
-                    if (searchBar) {
-                        searchBar.setPrefill(e.prefill);
+                    await this._displayRunBar(simulation, e.visible, e.prefill);
+                } else if (e.type === 'set_selection') {
+                    if (!this.showRunBar) {
+                        await this._displayRunBar(simulation, true, undefined);
                     }
+                    if ('context' in e) {
+                        await simulation.selection.setSelection(e.context);
+                    } else if ('bot' in e) {
+                        await simulation.selection.clearSelection();
+                        await simulation.selection.selectBot(e.bot, false);
+                    } else if ('bots' in e) {
+                        await simulation.selection.setSelectedBots(e.bots);
+                    } else if ('mod' in e) {
+                        simulation.recent.addBotDiff(e.mod);
+                    } else {
+                        await simulation.selection.setSelection(
+                            newSelectionId()
+                        );
+                    }
+                } else if (e.type === 'clear_selection') {
+                    await simulation.selection.clearSelection();
                 }
             }),
             simulation.connection.connectionStateChanged.subscribe(
@@ -748,6 +775,26 @@ export default class PlayerApp extends Vue {
         this.simulations.push(info);
 
         this._updateQuery();
+    }
+
+    private async _displayRunBar(
+        simulation: BrowserSimulation,
+        visible: boolean,
+        prefill: string
+    ) {
+        this.showRunBar = visible;
+        this.runBarPrefill = prefill;
+        const searchBar = this.$refs.searchBar as BotSearch;
+        if (searchBar) {
+            searchBar.setPrefill(prefill);
+        }
+
+        if (!visible) {
+            await simulation.selection.clearSelection();
+            simulation.botPanel.isOpen = false;
+        }
+
+        EventBus.$emit('showRunBar', visible);
     }
 
     private _showQRCode(code: string) {

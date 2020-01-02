@@ -6,6 +6,7 @@ import { default as CameraTypeVue } from '../../shared/vue-components/CameraType
 import CameraHome from '../../shared/vue-components/CameraHome/CameraHome';
 import { Game } from '../scene/Game';
 import { SubscriptionLike } from 'rxjs';
+import { EventBus } from '../EventBus';
 
 export interface SidebarItem {
     id: string;
@@ -43,6 +44,9 @@ export default class BaseGameView extends Vue implements IGameView {
         this.resize = this.resize.bind(this);
         window.addEventListener('resize', this.resize);
         window.addEventListener('vrdisplaypresentchange', this.resize);
+        EventBus.$on('resizeGameView', () => {
+            this.resize();
+        });
 
         this._game = this.createGame();
     }

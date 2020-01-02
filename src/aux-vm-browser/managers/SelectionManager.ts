@@ -100,6 +100,23 @@ export default class SelectionManager {
     }
 
     /**
+     * Sets the selection.
+     * @param selectionId The ID of the selection.
+     */
+    async setSelection(selectionId: string) {
+        await this._helper.transaction(
+            botUpdated(this._helper.userBot.id, {
+                tags: {
+                    ['_auxSelection']: selectionId,
+                    ['_auxSelectionMode']: 'multi',
+                },
+            })
+        );
+
+        this._userChangedSelection.next();
+    }
+
+    /**
      * Clears the selection for the current user.
      */
     async clearSelection() {
@@ -150,7 +167,7 @@ export default class SelectionManager {
         await this._helper.updateBot(user, {
             tags: {
                 ...update.tags,
-                _auxSelectionMode: 'single',
+                _auxSelectionMode: null,
             },
         });
     }

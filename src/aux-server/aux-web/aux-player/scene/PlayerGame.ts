@@ -387,7 +387,11 @@ export class PlayerGame extends Game {
         // return [...this.inventorySimulations];
     }
     getUIHtmlElements(): HTMLElement[] {
-        return [<HTMLElement>this.gameView.$refs.inventory];
+        return [
+            ...this.gameView.home.getUIHtmlElements(),
+            ...this.gameView.playerApp.getUIHtmlElements(),
+            <HTMLElement>this.gameView.$refs.inventory,
+        ];
     }
     getInventoryViewport(): Viewport {
         return this.inventoryViewport;

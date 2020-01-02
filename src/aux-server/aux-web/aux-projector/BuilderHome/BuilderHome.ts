@@ -50,7 +50,6 @@ export default class BuilderHome extends Vue {
     isSearch: boolean = false;
     setLargeSheet: boolean = false;
     isDiff: boolean = false;
-    tags: string[] = [];
     updateTime: number = -1;
     selectionMode: SelectionMode = DEFAULT_SELECTION_MODE;
     isOpen: boolean = false;
@@ -131,7 +130,6 @@ export default class BuilderHome extends Vue {
             this.isOpen = false;
             this.isVis = true;
             this.bots = [];
-            this.tags = [];
             this.updateTime = -1;
 
             subs.push(

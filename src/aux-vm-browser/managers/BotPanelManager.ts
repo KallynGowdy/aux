@@ -171,6 +171,9 @@ export class BotPanelManager implements SubscriptionLike {
                 .pipe(
                     withLatestFrom(this._botsUpdated),
                     tap(([, e]) => {
+                        if (this._selection.mode === 'none') {
+                            this.isOpen = false;
+                        }
                         if (this._selection.mode === 'single') {
                             if (e.bots.length > 0) {
                                 if (this.newDiff) {

@@ -10,6 +10,8 @@ import { Game } from '../../shared/scene/Game';
 import { map, tap, combineLatest } from 'rxjs/operators';
 import { ContextItem } from '../ContextItem';
 import { ItemContext } from '../ItemContext';
+import PlayerHome from '../PlayerHome/PlayerHome';
+import { EventBus } from 'aux-web/shared/EventBus';
 
 @Component({
     components: {
@@ -30,6 +32,10 @@ export default class PlayerGameView extends BaseGameView implements IGameView {
     @Inject() addSidebarItem: PlayerApp['addSidebarItem'];
     @Inject() removeSidebarItem: PlayerApp['removeSidebarItem'];
     @Inject() removeSidebarGroup: PlayerApp['removeSidebarGroup'];
+
+    @Inject() home: PlayerHome;
+    @Inject() playerApp: PlayerApp;
+
     @Prop() context: string;
 
     lastMenuCount: number = null;

@@ -301,7 +301,7 @@ describe('SelectionManager', () => {
                     tags: {
                         _auxEditingBot: null,
                         _auxSelection: null,
-                        _auxSelectionMode: 'single',
+                        _auxSelectionMode: null,
                     },
                 }),
             ]);
