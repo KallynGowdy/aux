@@ -14,6 +14,14 @@
     -   Added the `player.run(script)` function to execute the given script.
         -   The given script is queued and run at the next available time.
     -   Added the `@onRun` listener that is executed when a script is run from the "Run" bar or via `player.run()`.
+    -   Added the `player.selection()` function that can be used to set a player's selection.
+        -   Will show the "Run" bar automatically.
+        -   Passing in a context will set the selection to the context.
+        -   Passing in a bot will set the selection to the bot.
+        -   Passing in an array of bots will create a new context, select it, and add all the bots to the context.
+        -   Passing in a mod will set the selection to the mod.
+        -   Passing in nothing will create a new context, and select it.
+    -   Added the `player.deselect()` function that can be used to clear a player's selection.
 
 ## V0.11.19
 
