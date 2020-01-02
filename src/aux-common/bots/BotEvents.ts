@@ -72,7 +72,13 @@ export type ExtraActions =
     | SetupChannelAction
     | SetClipboardAction
     | ShowRunBarAction
-    | RunScriptAction;
+    | RunScriptAction
+    | SetSelectionToContextAction
+    | SetSelectionToBotsAction
+    | SetSelectionToBotAction
+    | SetSelectionToModAction
+    | SetSelectionToNewContextAction
+    | ClearSelectionAction;
 
 /**
  * Defines a bot event that indicates a bot was added to the state.
@@ -959,6 +965,68 @@ export interface RunScriptAction {
 }
 
 /**
+ * Defines an event that sets the user's selection to the given context.
+ */
+export interface SetSelectionToContextAction {
+    type: 'set_selection';
+
+    /**
+     * The context that the selection should be set to.
+     */
+    context: string;
+}
+
+/**
+ * Defines an event that sets the user's selection to the given bots.
+ */
+export interface SetSelectionToBotsAction {
+    type: 'set_selection';
+
+    /**
+     * The bots that should be selected.
+     */
+    bots: Bot[];
+}
+
+/**
+ * Defines an event that sets the user's selection to the given bot.
+ */
+export interface SetSelectionToBotAction {
+    type: 'set_selection';
+
+    /**
+     * The bot that should be selected.
+     */
+    bot: Bot;
+}
+
+/**
+ * Defines an event that sets the user's selection to the given mod.
+ */
+export interface SetSelectionToModAction {
+    type: 'set_selection';
+
+    /**
+     * The mod that should be selected.
+     */
+    mod: BotTags;
+}
+
+/**
+ * Defines an event that sets the user's selection to a new unique context.
+ */
+export interface SetSelectionToNewContextAction {
+    type: 'set_selection';
+}
+
+/**
+ * Defines an event that clears the user's selection.
+ */
+export interface ClearSelectionAction {
+    type: 'clear_selection';
+}
+
+/**
  * Creates a new AddBotAction.
  * @param bot The bot that was added.
  */
@@ -1594,5 +1662,69 @@ export function runScript(script: string): RunScriptAction {
     return {
         type: 'run_script',
         script,
+    };
+}
+
+/**
+ * Creates a SetSelectionToContextAction.
+ * @param context The context that should be selected.
+ */
+export function setSelectionToContext(
+    context: string
+): SetSelectionToContextAction {
+    return {
+        type: 'set_selection',
+        context,
+    };
+}
+
+/**
+ * Creates a SetSelectionToBotsAction.
+ * @param bots The bots that should be selected.
+ */
+export function setSelectionToBots(bots: Bot[]): SetSelectionToBotsAction {
+    return {
+        type: 'set_selection',
+        bots,
+    };
+}
+
+/**
+ * Creates a SetSelectionToBotAction.
+ * @param bot The bot that should be selected.
+ */
+export function setSelectionToBot(bot: Bot): SetSelectionToBotAction {
+    return {
+        type: 'set_selection',
+        bot,
+    };
+}
+
+/**
+ * Creates a SetSelectionToModAction.
+ * @param mod The mod that should be selected.
+ */
+export function setSelectionToMod(mod: BotTags): SetSelectionToModAction {
+    return {
+        type: 'set_selection',
+        mod,
+    };
+}
+
+/**
+ * Creates a SetSelectionToNewContextAction.
+ */
+export function setSelectionToNewContext(): SetSelectionToNewContextAction {
+    return {
+        type: 'set_selection',
+    };
+}
+
+/**
+ * Creates a ClearSelectionAction.
+ */
+export function clearSelection(): ClearSelectionAction {
+    return {
+        type: 'clear_selection',
     };
 }

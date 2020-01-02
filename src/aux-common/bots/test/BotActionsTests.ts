@@ -38,6 +38,12 @@ import {
     showRun,
     hideRun,
     runScript,
+    setSelectionToContext,
+    setSelectionToBots,
+    setSelectionToBot,
+    setSelectionToMod,
+    setSelectionToNewContext,
+    clearSelection,
 } from '../BotEvents';
 import { createBot, getActiveObjects } from '../BotCalculations';
 import { getBotsForAction } from '../BotsChannel';
@@ -3938,6 +3944,206 @@ export function botActionsTests(
                 expect(result.hasUserDefinedEvents).toBe(true);
 
                 expect(result.events).toEqual([runScript('abc')]);
+            });
+        });
+
+        describe('player.selection()', () => {
+            it('should issue a SetSelectionToContextAction when given a string', () => {
+                const state: BotsState = {
+                    thisBot: {
+                        id: 'thisBot',
+                        tags: {
+                            test: '@player.selection("abc")',
+                        },
+                    },
+                };
+
+                // specify the UUID to use next
+                uuidMock.mockReturnValue('uuid-0');
+                const botAction = action('test', ['thisBot']);
+                const result = calculateActionEvents(
+                    state,
+                    botAction,
+                    createSandbox
+                );
+
+                expect(result.hasUserDefinedEvents).toBe(true);
+
+                expect(result.events).toEqual([setSelectionToContext('abc')]);
+            });
+
+            it('should issue a SetSelectionToBotsAction when given an array of bots', () => {
+                const state: BotsState = {
+                    thisBot: {
+                        id: 'thisBot',
+                        tags: {
+                            test: '@player.selection(getBots("color", "blue"))',
+                        },
+                    },
+                    thatBot: {
+                        id: 'thatBot',
+                        tags: {
+                            color: 'blue',
+                        },
+                    },
+                    otherBot: {
+                        id: 'otherBot',
+                        tags: {
+                            color: 'blue',
+                        },
+                    },
+                };
+
+                // specify the UUID to use next
+                uuidMock.mockReturnValue('uuid-0');
+                const botAction = action('test', ['thisBot']);
+                const result = calculateActionEvents(
+                    state,
+                    botAction,
+                    createSandbox
+                );
+
+                expect(result.hasUserDefinedEvents).toBe(true);
+
+                expect(result.events).toEqual([
+                    setSelectionToBots([state['otherBot'], state['thatBot']]),
+                ]);
+            });
+
+            it('should issue a SetSelectionToBotAction when given a bot', () => {
+                const state: BotsState = {
+                    thisBot: {
+                        id: 'thisBot',
+                        tags: {
+                            test: '@player.selection(getBot("id", "thatBot"))',
+                        },
+                    },
+                    thatBot: {
+                        id: 'thatBot',
+                        tags: {
+                            color: 'blue',
+                        },
+                    },
+                    otherBot: {
+                        id: 'otherBot',
+                        tags: {
+                            color: 'blue',
+                        },
+                    },
+                };
+
+                // specify the UUID to use next
+                uuidMock.mockReturnValue('uuid-0');
+                const botAction = action('test', ['thisBot']);
+                const result = calculateActionEvents(
+                    state,
+                    botAction,
+                    createSandbox
+                );
+
+                expect(result.hasUserDefinedEvents).toBe(true);
+
+                expect(result.events).toEqual([
+                    setSelectionToBot(state['thatBot']),
+                ]);
+            });
+
+            it('should issue a SetSelectionToModAction when given a mod', () => {
+                const state: BotsState = {
+                    thisBot: {
+                        id: 'thisBot',
+                        tags: {
+                            test: '@player.selection({ color: "red" })',
+                        },
+                    },
+                };
+
+                // specify the UUID to use next
+                uuidMock.mockReturnValue('uuid-0');
+                const botAction = action('test', ['thisBot']);
+                const result = calculateActionEvents(
+                    state,
+                    botAction,
+                    createSandbox
+                );
+
+                expect(result.hasUserDefinedEvents).toBe(true);
+
+                expect(result.events).toEqual([
+                    setSelectionToMod({ color: 'red' }),
+                ]);
+            });
+
+            it('should issue a SetSelectionToEmptyAction when given nothing', () => {
+                const state: BotsState = {
+                    thisBot: {
+                        id: 'thisBot',
+                        tags: {
+                            test: '@player.selection()',
+                        },
+                    },
+                };
+
+                // specify the UUID to use next
+                uuidMock.mockReturnValue('uuid-0');
+                const botAction = action('test', ['thisBot']);
+                const result = calculateActionEvents(
+                    state,
+                    botAction,
+                    createSandbox
+                );
+
+                expect(result.hasUserDefinedEvents).toBe(true);
+
+                expect(result.events).toEqual([setSelectionToNewContext()]);
+            });
+
+            it('should do nothing if given a number', () => {
+                const state: BotsState = {
+                    thisBot: {
+                        id: 'thisBot',
+                        tags: {
+                            test: '@player.selection(10)',
+                        },
+                    },
+                };
+
+                // specify the UUID to use next
+                uuidMock.mockReturnValue('uuid-0');
+                const botAction = action('test', ['thisBot']);
+                const result = calculateActionEvents(
+                    state,
+                    botAction,
+                    createSandbox
+                );
+
+                expect(result.hasUserDefinedEvents).toBe(false);
+                expect(result.events).toEqual([]);
+            });
+        });
+
+        describe('player.deselect()', () => {
+            it('should issue a ClearSelectionAction', () => {
+                const state: BotsState = {
+                    thisBot: {
+                        id: 'thisBot',
+                        tags: {
+                            test: '@player.deselect()',
+                        },
+                    },
+                };
+
+                // specify the UUID to use next
+                uuidMock.mockReturnValue('uuid-0');
+                const botAction = action('test', ['thisBot']);
+                const result = calculateActionEvents(
+                    state,
+                    botAction,
+                    createSandbox
+                );
+
+                expect(result.hasUserDefinedEvents).toBe(true);
+                expect(result.events).toEqual([clearSelection()]);
             });
         });
 

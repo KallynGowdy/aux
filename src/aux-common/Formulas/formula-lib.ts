@@ -52,6 +52,12 @@ import {
     showRun as calcShowRun,
     hideRun as calcHideRun,
     runScript,
+    setSelectionToContext,
+    setSelectionToBots,
+    setSelectionToBot,
+    setSelectionToMod,
+    setSelectionToNewContext,
+    clearSelection,
 } from '../bots/BotEvents';
 import { calculateActionResultsUsingContext } from '../bots/BotsChannel';
 import uuid from 'uuid/v4';
@@ -1958,6 +1964,52 @@ function run(script: string) {
 }
 
 /**
+ * Selects all the bots in the given context.
+ * @param context The context that should be selected.
+ */
+function selection(context: string): any;
+/**
+ * Selects the given list of bots.
+ * @param bots The bots that should be selected.
+ */
+function selection(bots: Bot[]): any;
+/**
+ * Selects the given bot.
+ * @param bot The bot to select.
+ */
+function selection(bot: Bot): any;
+/**
+ * Selects the given mod.
+ * @param mod The mod that should be selected.
+ */
+function selection(mod: Mod): any;
+/**
+ * Sets the player's selection to the given context or list of bots.
+ * @param contextOrBots The context or list of bots that should be selected.
+ */
+function selection(contextOrBots: string | Bot[] | Bot | Mod) {
+    if (typeof contextOrBots === 'string') {
+        return addAction(setSelectionToContext(contextOrBots));
+    } else if (Array.isArray(contextOrBots)) {
+        return addAction(setSelectionToBots(contextOrBots.map(unwrapBotOrMod)));
+    } else if (isBot(contextOrBots)) {
+        return addAction(setSelectionToBot(unwrapBotOrMod(contextOrBots)));
+    } else if (typeof contextOrBots === 'object') {
+        return addAction(setSelectionToMod(unwrapBotOrMod(contextOrBots)));
+    } else if (arguments.length === 0) {
+        return addAction(setSelectionToNewContext());
+    }
+    return null;
+}
+
+/**
+ * Clears the player's selection.
+ */
+function deselect() {
+    return addAction(clearSelection());
+}
+
+/**
  * Loads the channel with the given ID.
  * @param id The ID of the channel to load.
  */
@@ -2001,12 +2053,12 @@ function echo(message: string) {
     actions.push(calcRemote(calcEcho(message)));
 }
 
-function unwrapBotOrMod(botOrMod: Mod) {
+function unwrapBotOrMod(botOrMod: Mod): NormalBot {
     if (isScriptBot(botOrMod)) {
         const calc = getCalculationContext();
         return calc.sandbox.interface.unwrapBot(botOrMod);
     } else {
-        return botOrMod;
+        return botOrMod as NormalBot;
     }
 }
 
@@ -2146,6 +2198,8 @@ const player = {
     showRun,
     hideRun,
     run,
+    selection,
+    deselect,
 
     openDevConsole,
 };
