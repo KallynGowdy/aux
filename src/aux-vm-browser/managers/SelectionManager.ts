@@ -10,6 +10,7 @@ import {
     botUpdated,
     PrecalculatedBot,
     Bot,
+    hasValue,
 } from '@casual-simulation/aux-common';
 import { Subject, Observable } from 'rxjs';
 import { BotPanelManager } from './BotPanelManager';

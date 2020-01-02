@@ -261,7 +261,7 @@ export interface WorkspaceHex {
 /**
  * Defines the possible selection modes a user can be in.
  */
-export type SelectionMode = 'single' | 'multi';
+export type SelectionMode = 'single' | 'multi' | 'none';
 
 /**
  * Defines the possible shapes that a bot can appear as.
@@ -314,7 +314,7 @@ export type ContextVisualizeMode = true | false | 'surface';
 /**
  * The default selection mode.
  */
-export const DEFAULT_SELECTION_MODE: SelectionMode = 'single';
+export const DEFAULT_SELECTION_MODE: SelectionMode = 'none';
 
 /**
  * The default bot shape.

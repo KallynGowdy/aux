@@ -60,6 +60,7 @@ import {
     isScript,
     parseScript,
     getBotTag,
+    getSelectionMode,
 } from './BotCalculations';
 import {
     Bot,
@@ -1190,6 +1191,31 @@ describe('BotCalculations', () => {
 
         it.each(cases)('should map %s to %s', (given, expected) => {
             expect(normalizeAUXBotURL(given)).toBe(expected);
+        });
+    });
+
+    describe('getSelectionMode()', () => {
+        it('should return none when not set', () => {
+            const bot = createBot('test', {});
+            const mode = getSelectionMode(bot);
+
+            expect(mode).toBe('none');
+        });
+
+        const cases = [
+            ['none', 'none'],
+            ['single', 'single'],
+            ['multi', 'multi'],
+            ['none', 'abc'],
+        ];
+
+        it.each(cases)('should return %s when set to %s', (expected, given) => {
+            const bot = createBot('test', {
+                ['_auxSelectionMode']: given,
+            });
+            const mode = getSelectionMode(bot);
+
+            expect(mode).toBe(expected);
         });
     });
 

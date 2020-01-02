@@ -1970,7 +1970,11 @@ export function normalizeAUXBotURL(url: string): string {
  * @param bot The bot.
  */
 export function getSelectionMode(bot: Bot): SelectionMode {
-    return bot.tags['_auxSelectionMode'] || DEFAULT_SELECTION_MODE;
+    const mode = bot.tags['_auxSelectionMode'] || DEFAULT_SELECTION_MODE;
+    if (['single', 'multi', 'none'].indexOf(mode) >= 0) {
+        return mode;
+    }
+    return DEFAULT_SELECTION_MODE;
 }
 
 /**
