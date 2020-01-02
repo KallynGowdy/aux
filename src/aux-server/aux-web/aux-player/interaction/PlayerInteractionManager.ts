@@ -23,6 +23,16 @@ import { PlayerEmptyClickOperation } from './ClickOperation/PlayerEmptyClickOper
 import { PlayerGame } from '../scene/PlayerGame';
 import { VRController3D } from '../../shared/scene/vr/VRController3D';
 import { ContextGroup3D } from '../../shared/scene/ContextGroup3D';
+import MiniBot from '../../shared/vue-components/MiniBot/MiniBot';
+import BotTagMini from '../../shared/vue-components/BotTagMini/BotTagMini';
+import BotTag from '../../shared/vue-components/BotTag/BotTag';
+import BotTable from '../../shared/vue-components/BotTable/BotTable';
+import BotID from '../../shared/vue-components/BotID/BotID';
+import { PlayerModClickOperation } from './ClickOperation/PlayerModClickOperation';
+import { PlayerMiniBotClickOperation } from './ClickOperation/PlayerMiniBotClickOperation';
+import { PlayerNewBotClickOperation } from './ClickOperation/PlayerNewBotClickOperation';
+import { PlayerBotIDClickOperation } from './ClickOperation/PlayerBotIDClickOperation';
+import { PlayerModDragOperation } from './DragOperation/PlayerModDragOperation';
 
 export class PlayerInteractionManager extends BaseInteractionManager {
     // This overrides the base class Game.
@@ -189,7 +199,146 @@ export class PlayerInteractionManager extends BaseInteractionManager {
         return new PlayerEmptyClickOperation(this._game, this, vrController);
     }
 
-    createHtmlElementClickOperation(element: HTMLElement): IOperation {
+    createHtmlElementClickOperation(
+        element: HTMLElement,
+        vrController: VRController3D | null
+    ): IOperation {
+        const simulation = appManager.simulationManager.primary;
+        if (simulation.selection.mode === 'none') {
+            return null;
+        }
+        const simulation3D = this._game.findPlayerSimulation3D(simulation);
+        const inventorySimulation3D = this._game.findInventorySimulation3D(
+            simulation
+        );
+
+        const vueElement: any = Input.getVueParent(element);
+
+        if (
+            vueElement instanceof MiniBot &&
+            !(vueElement.$parent instanceof BotTagMini)
+        ) {
+            const bot = vueElement.bot;
+            if (vueElement.diffball) {
+                return new PlayerModClickOperation(
+                    simulation3D,
+                    inventorySimulation3D,
+                    this,
+                    bot.tags,
+                    vrController
+                );
+            }
+
+            return new PlayerMiniBotClickOperation(
+                simulation3D,
+                inventorySimulation3D,
+                this,
+                bot,
+                vrController
+            );
+        } else if (vueElement instanceof BotTag && vueElement.allowCloning) {
+            const tag = vueElement.tag;
+            const table = vueElement.$parent;
+            if (table instanceof BotTable) {
+                if (table.bots.length === 1) {
+                    const bot = table.bots[0];
+                    const mod = {
+                        [tag]: bot.tags[tag],
+                    };
+
+                    return new PlayerModDragOperation(
+                        simulation3D,
+                        inventorySimulation3D,
+                        this,
+                        mod,
+                        vrController
+                    );
+                } else {
+                    console.log('not valid');
+                }
+            } else {
+                console.log('Not table');
+            }
+        } else if (vueElement instanceof BotID) {
+            const state = simulation3D.simulation.helper.botsState;
+            const table = vueElement.$parent;
+
+            if (state[vueElement.bots.id]) {
+                if (table instanceof BotTable) {
+                    return new PlayerBotIDClickOperation(
+                        simulation3D,
+                        inventorySimulation3D,
+                        this,
+                        vueElement.bots,
+                        vrController,
+                        table
+                    );
+                } else {
+                    return new PlayerBotIDClickOperation(
+                        simulation3D,
+                        inventorySimulation3D,
+                        this,
+                        vueElement.bots,
+                        vrController
+                    );
+                }
+            } else {
+                return new PlayerNewBotClickOperation(
+                    simulation3D,
+                    inventorySimulation3D,
+                    this,
+                    vueElement.bots,
+                    vrController
+                );
+            }
+        } else if (
+            vueElement instanceof MiniBot &&
+            vueElement.$parent instanceof BotTagMini
+        ) {
+            const state = simulation3D.simulation.helper.botsState;
+            const table = vueElement.$parent.$parent;
+            const bot = vueElement.bot;
+
+            if (vueElement.createMod) {
+                return new PlayerModClickOperation(
+                    simulation3D,
+                    inventorySimulation3D,
+                    this,
+                    bot.tags,
+                    vrController
+                );
+            }
+
+            if (state[bot.id]) {
+                return new PlayerBotIDClickOperation(
+                    simulation3D,
+                    inventorySimulation3D,
+                    this,
+                    bot,
+                    vrController,
+                    table instanceof BotTable ? table : undefined
+                );
+            }
+
+            if (vueElement.diffball) {
+                return new PlayerModClickOperation(
+                    simulation3D,
+                    inventorySimulation3D,
+                    this,
+                    bot.tags,
+                    vrController
+                );
+            }
+
+            return new PlayerNewBotClickOperation(
+                simulation3D,
+                inventorySimulation3D,
+                this,
+                bot,
+                vrController
+            );
+        }
+
         return null;
     }
 

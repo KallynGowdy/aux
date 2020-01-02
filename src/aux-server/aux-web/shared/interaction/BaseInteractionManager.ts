@@ -41,6 +41,7 @@ import {
     VRController_DefaultColor,
 } from '../scene/vr/VRController3D';
 import { ContextGroup3D } from '../scene/ContextGroup3D';
+import { InteractionManager } from './InteractionManager';
 
 interface HoveredBot {
     /**
@@ -59,7 +60,7 @@ interface HoveredBot {
     frame: number;
 }
 
-export abstract class BaseInteractionManager {
+export abstract class BaseInteractionManager implements InteractionManager {
     protected _game: Game;
     protected _cameraRigControllers: CameraRigControls[];
     protected _tapCodeManager: TapCodeManager;
@@ -642,7 +643,8 @@ export abstract class BaseInteractionManager {
         await bot.contextGroup.simulation3D.simulation.selection.selectBot(
             <AuxBot>bot.bot,
             shouldMultiSelect,
-            bot.contextGroup.simulation3D.simulation.botPanel
+            bot.contextGroup.simulation3D.simulation.botPanel,
+            false
         );
     }
 

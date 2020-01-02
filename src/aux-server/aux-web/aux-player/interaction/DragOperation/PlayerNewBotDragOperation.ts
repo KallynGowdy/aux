@@ -1,44 +1,66 @@
-import { BaseBotDragOperation } from '../../../shared/interaction/DragOperation/BaseBotDragOperation';
+import { Physics } from '../../../shared/scene/Physics';
 import {
     Bot,
-    BotCalculationContext,
-    BotAction,
-    isBotMovable,
-    merge,
-    createBot,
-    botAdded,
     PartialBot,
+    botAdded,
+    BotAction,
+    BotTags,
+} from '@casual-simulation/aux-common/bots';
+import {
+    createBot,
+    BotCalculationContext,
     CREATE_ACTION_NAME,
-    BotDragMode,
 } from '@casual-simulation/aux-common';
-import { PlayerInteractionManager } from '../PlayerInteractionManager';
-import { PlayerSimulation3D } from '../../scene/PlayerSimulation3D';
+import { merge } from '@casual-simulation/aux-common/utils';
+import { AuxBot3D } from '../../../shared/scene/AuxBot3D';
+import { Simulation3D } from '../../../shared/scene/Simulation3D';
+import { VRController3D } from '../../../shared/scene/vr/VRController3D';
+import { Vector2 } from 'three';
+import { IOperation } from '../../../shared/interaction/IOperation';
+import { BaseBotDragOperation } from 'aux-web/shared/interaction/DragOperation/BaseBotDragOperation';
 import { PlayerBotDragOperation } from './PlayerBotDragOperation';
 import { InventorySimulation3D } from '../../scene/InventorySimulation3D';
-import { VRController3D } from '../../../shared/scene/vr/VRController3D';
+import { PlayerSimulation3D } from '../../scene/PlayerSimulation3D';
+import { PlayerInteractionManager } from '../PlayerInteractionManager';
 
+/**
+ * New Bot Drag Operation handles dragging of new bots from the bot queue.
+ */
 export class PlayerNewBotDragOperation extends PlayerBotDragOperation {
+    public static readonly FreeDragDistance: number = 6;
+
     private _botAdded: boolean;
 
     /**
      * Create a new drag rules.
      */
     constructor(
-        playerSimulation: PlayerSimulation3D,
-        inventorySimulation: InventorySimulation3D,
+        simulation3D: PlayerSimulation3D,
+        inventory3D: InventorySimulation3D,
         interaction: PlayerInteractionManager,
-        bot: Bot,
-        context: string,
-        vrController: VRController3D | null
+        duplicatedBot: Bot,
+        originalBot: Bot,
+        vrController: VRController3D | null,
+        fromCoord: Vector2
     ) {
         super(
-            playerSimulation,
-            inventorySimulation,
+            simulation3D,
+            inventory3D,
             interaction,
-            [bot],
-            context,
-            vrController
+            [duplicatedBot],
+            null,
+            vrController,
+            fromCoord,
+            false
         );
+    }
+
+    protected _createBotDragOperation(bot: Bot): IOperation {
+        return null;
+    }
+
+    protected _createModDragOperation(mod: BotTags): IOperation {
+        return null;
     }
 
     protected _updateBot(bot: Bot, data: PartialBot): BotAction {
@@ -56,17 +78,7 @@ export class PlayerNewBotDragOperation extends PlayerBotDragOperation {
     }
 
     protected _onDragReleased(calc: BotCalculationContext): void {
-        if (this._botAdded) {
-            this.simulation.helper.action(CREATE_ACTION_NAME, this._bots);
-        }
+        this.simulation.helper.action(CREATE_ACTION_NAME, this._bots);
         super._onDragReleased(calc);
-    }
-
-    protected _canDragWithinContext(mode: BotDragMode): boolean {
-        return true;
-    }
-
-    protected _canDragOutOfContext(mode: BotDragMode): boolean {
-        return true;
     }
 }

@@ -11,6 +11,7 @@ import {
     PrecalculatedBot,
     Bot,
     hasValue,
+    setBotSelectionState,
 } from '@casual-simulation/aux-common';
 import { Subject, Observable } from 'rxjs';
 import { BotPanelManager } from './BotPanelManager';
@@ -55,7 +56,8 @@ export default class SelectionManager {
     async selectBot(
         bot: Bot,
         multiSelect: boolean = false,
-        botManager: BotPanelManager = null
+        botManager: BotPanelManager = null,
+        toggleSelection: boolean = true
     ) {
         if (
             multiSelect ||
@@ -64,7 +66,8 @@ export default class SelectionManager {
             await this._selectBotForUser(
                 bot,
                 this._helper.userBot,
-                multiSelect
+                multiSelect,
+                toggleSelection
             );
         } else {
             if (botManager != null) {
@@ -175,7 +178,8 @@ export default class SelectionManager {
     private async _selectBotForUser(
         bot: Bot,
         user: PrecalculatedBot,
-        multiSelect: boolean
+        multiSelect: boolean,
+        toggleSelection: boolean = true
     ) {
         if (SelectionManager._debug) {
             console.log('[SelectionManager] Select Bot:', bot.id);
@@ -190,7 +194,9 @@ export default class SelectionManager {
                 await this._helper.updateBot(user, update);
             }
             if (id) {
-                const update = toggleBotSelection(bot, id, user.id);
+                const update = toggleSelection
+                    ? toggleBotSelection(bot, id, user.id)
+                    : setBotSelectionState(bot, id, true);
                 await this._helper.updateBot(bot, update);
             }
         } else {

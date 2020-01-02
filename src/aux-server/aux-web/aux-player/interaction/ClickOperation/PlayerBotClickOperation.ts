@@ -17,7 +17,6 @@ import { BaseBotDragOperation } from '../../../shared/interaction/DragOperation/
 import { PlayerBotDragOperation } from '../DragOperation/PlayerBotDragOperation';
 import dropWhile from 'lodash/dropWhile';
 import { PlayerSimulation3D } from '../../scene/PlayerSimulation3D';
-import { PlayerNewBotDragOperation } from '../DragOperation/PlayerNewBotDragOperation';
 import { InventorySimulation3D } from '../../scene/InventorySimulation3D';
 import { Simulation3D } from '../../../shared/scene/Simulation3D';
 import { PlayerGame } from '../../scene/PlayerGame';
@@ -44,15 +43,21 @@ export class PlayerBotClickOperation extends BaseBotClickOperation {
     protected _performClick(calc: BotCalculationContext): void {
         const bot3D: AuxBot3D = <AuxBot3D>this._bot3D;
 
-        this.faceClicked.context = bot3D.context;
-
-        this.simulation.helper.action('onClick', [this._bot], this.faceClicked);
-
-        this.simulation.helper.action('onAnyBotClicked', null, {
-            face: this.faceClicked.face,
-            bot: this._bot,
-            context: bot3D.context,
-        });
+        if (this.simulation.selection.mode !== 'none') {
+            this._interaction.selectBot(bot3D);
+        } else {
+            this.faceClicked.context = bot3D.context;
+            this.simulation.helper.action(
+                'onClick',
+                [this._bot],
+                this.faceClicked
+            );
+            this.simulation.helper.action('onAnyBotClicked', null, {
+                face: this.faceClicked.face,
+                bot: this._bot,
+                context: bot3D.context,
+            });
+        }
     }
 
     protected _createDragOperation(

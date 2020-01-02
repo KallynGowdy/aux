@@ -651,6 +651,7 @@ export default class PlayerApp extends Vue {
                             newSelectionId()
                         );
                     }
+                    simulation.botPanel.isOpen = true;
                 } else if (e.type === 'clear_selection') {
                     await simulation.selection.clearSelection();
                 }

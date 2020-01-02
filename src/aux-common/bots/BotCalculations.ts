@@ -646,6 +646,24 @@ export function toggleBotSelection(
 }
 
 /**
+ * Gets a partial bot that toggles whether the given bot is apart of the given selection.
+ * @param bot The bot.
+ * @param selectionId The ID of the selection.
+ * @param userId The User that is adding the bot to the selection.
+ */
+export function setBotSelectionState(
+    bot: Object,
+    selectionId: string,
+    selected: boolean
+) {
+    return {
+        tags: {
+            [selectionId]: selected,
+        },
+    };
+}
+
+/**
  * Creates a new selection id.
  */
 export function newSelectionId() {
