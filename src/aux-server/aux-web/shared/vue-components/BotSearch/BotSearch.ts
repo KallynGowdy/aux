@@ -28,6 +28,7 @@ export default class BotSearch extends Vue {
     bots: Bot[] = [];
     recentBot: Bot = null;
     search: string = '';
+    hasSelection: boolean = false;
 
     @Prop({ default: null }) prefill: string;
 
@@ -43,12 +44,6 @@ export default class BotSearch extends Vue {
         );
     }
 
-    @Watch('search')
-    onSearchChanged() {
-        appManager.simulationManager.primary.botPanel.search = this.search;
-        appManager.simulationManager.primary.botPanel.isOpen = true;
-    }
-
     setPrefill(prefill: string) {
         if (!prefill) {
             return;
@@ -60,19 +55,24 @@ export default class BotSearch extends Vue {
 
     get placeholder() {
         if (this.bots.length > 0) {
-            let val = formatValue(this.bots);
-
-            if (!this.bots.every(f => this.isEmptyOrDiff(f))) {
+            if (this.hasRealBots) {
+                let val = formatValue(this.bots);
                 if (val.length > 50) {
                     val = val.substring(0, 50) + '..';
                 }
                 return val;
             } else {
-                return 'Search / Run';
+                return 'Run';
             }
         } else {
-            return 'Search / Run';
+            return 'Run';
         }
+    }
+
+    get hasRealBots() {
+        return (
+            this.bots.length > 0 && !this.bots.every(f => this.isEmptyOrDiff(f))
+        );
     }
 
     constructor() {
@@ -115,8 +115,10 @@ export default class BotSearch extends Vue {
                     this.search = search;
                 }),
                 botManager.recent.onUpdated.subscribe(() => {
+                    this.hasSelection = botManager.selection.mode !== 'none';
                     this.recentBot = botManager.recent.bot;
                 })
+                // botManager.selection.userChangedSelection
             );
             return subs;
         });
