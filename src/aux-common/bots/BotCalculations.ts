@@ -27,6 +27,8 @@ import {
     BotPositioningMode,
     BotSpace,
     BOT_SPACE_TAG,
+    RunMode,
+    DEFAULT_RUN_MODE,
 } from './Bot';
 
 import {
@@ -1989,10 +1991,22 @@ export function normalizeAUXBotURL(url: string): string {
  */
 export function getSelectionMode(bot: Bot): SelectionMode {
     const mode = bot.tags['_auxSelectionMode'] || DEFAULT_SELECTION_MODE;
-    if (['single', 'multi', 'none'].indexOf(mode) >= 0) {
+    if (['single', 'multi'].indexOf(mode) >= 0) {
         return mode;
     }
     return DEFAULT_SELECTION_MODE;
+}
+
+/**
+ * Gets the user run mode value from the given bot.
+ * @param bot The bot.
+ */
+export function getRunMode(bot: Bot): RunMode {
+    const mode = bot.tags['_auxRunMode'] || DEFAULT_RUN_MODE;
+    if (['run', 'none'].indexOf(mode) >= 0) {
+        return mode;
+    }
+    return DEFAULT_RUN_MODE;
 }
 
 /**

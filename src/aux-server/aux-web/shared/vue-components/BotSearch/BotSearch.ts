@@ -28,7 +28,6 @@ export default class BotSearch extends Vue {
     bots: Bot[] = [];
     recentBot: Bot = null;
     search: string = '';
-    hasSelection: boolean = false;
 
     @Prop({ default: null }) prefill: string;
 
@@ -115,7 +114,6 @@ export default class BotSearch extends Vue {
                     this.search = search;
                 }),
                 botManager.recent.onUpdated.subscribe(() => {
-                    this.hasSelection = botManager.selection.mode !== 'none';
                     this.recentBot = botManager.recent.bot;
                 })
                 // botManager.selection.userChangedSelection

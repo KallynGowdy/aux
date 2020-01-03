@@ -13,7 +13,7 @@ import {
     hasValue,
     setBotSelectionState,
 } from '@casual-simulation/aux-common';
-import { Subject, Observable } from 'rxjs';
+import { Subject, Observable, BehaviorSubject } from 'rxjs';
 import { BotPanelManager } from './BotPanelManager';
 
 /**
@@ -132,9 +132,9 @@ export default class SelectionManager {
      * @param mode The mode.
      */
     async setMode(mode: SelectionMode) {
-        const currentMode = getSelectionMode(this._helper.userBot);
+        const currentMode = this._helper.userBot.tags['_auxSelectionMode'];
         if (currentMode !== mode) {
-            return this._helper.updateBot(this._helper.userBot, {
+            await this._helper.updateBot(this._helper.userBot, {
                 tags: {
                     _auxSelectionMode: mode,
                 },

@@ -43,7 +43,7 @@ export class PlayerBotClickOperation extends BaseBotClickOperation {
     protected _performClick(calc: BotCalculationContext): void {
         const bot3D: AuxBot3D = <AuxBot3D>this._bot3D;
 
-        if (this.simulation.selection.mode !== 'none') {
+        if (this.simulation.botPanel.runMode !== 'none') {
             this._interaction.selectBot(bot3D);
         } else {
             this.faceClicked.context = bot3D.context;

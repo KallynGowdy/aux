@@ -14,16 +14,7 @@
             <md-tooltip md-direction="bottom">Run Script</md-tooltip>
         </md-button>
 
-        <div v-if="hasRealBots" class="search-count">
-            <md-button class="md-icon-button num-bots" @click="toggleOpen()">
-                <cubeSearch-icon></cubeSearch-icon>
-            </md-button>
-
-            <div class="testThis">
-                {{ botsLength || 0 }}
-            </div>
-        </div>
-        <div v-else-if="hasSelection && recentBot" class="search-count">
+        <div v-if="recentBot" class="search-count">
             <!-- Toggle open is handled by the MiniBotClickOperation -->
             <md-button class="md-icon-button num-bots">
                 <div ref="botQueue">
@@ -32,6 +23,15 @@
                     </div>
                 </div>
             </md-button>
+        </div>
+        <div v-else class="search-count">
+            <md-button class="md-icon-button num-bots" @click="toggleOpen()">
+                <cubeSearch-icon></cubeSearch-icon>
+            </md-button>
+
+            <div class="testThis">
+                {{ botsLength || 0 }}
+            </div>
         </div>
     </div>
 </template>

@@ -37,6 +37,7 @@ import {
     parseSimulationId,
     CameraType,
     newSelectionId,
+    getRunMode,
 } from '@casual-simulation/aux-common';
 import SnackbarOptions from '../../shared/SnackbarOptions';
 import { copyToClipboard, navigateToUrl } from '../../shared/SharedUtils';
@@ -48,7 +49,10 @@ import CubeIcon from '../../shared/public/icons/Cube.svg';
 import HexIcon from '../../shared/public/icons/Hexagon.svg';
 import QrcodeStream from 'vue-qrcode-reader/src/components/QrcodeStream';
 import { Simulation, AuxUser, LoginState } from '@casual-simulation/aux-vm';
-import { BrowserSimulation } from '@casual-simulation/aux-vm-browser';
+import {
+    BrowserSimulation,
+    userBotChanged,
+} from '@casual-simulation/aux-vm-browser';
 import { SidebarItem } from '../../shared/vue-components/BaseGameView';
 import { Swatches, Chrome, Compact } from 'vue-color';
 import { DeviceInfo, ADMIN_ROLE } from '@casual-simulation/causal-trees';
@@ -765,12 +769,32 @@ export default class PlayerApp extends Vue {
             simulation.consoleMessages.subscribe(m => {
                 recordMessage(m);
             }),
+
             new Subscription(async () => {
                 await this._superAction(ON_CHANNEL_UNSUBSCRIBED_ACTION_NAME, {
                     channel: simulation.parsedId.channel,
                 });
             })
         );
+
+        if (this.simulations.length === 0) {
+            subs.push(
+                userBotChanged(simulation).subscribe(async bot => {
+                    const showRunBar = getRunMode(bot) === 'run';
+
+                    if (this.showRunBar !== showRunBar) {
+                        this.showRunBar = showRunBar;
+
+                        if (!showRunBar) {
+                            await simulation.selection.clearSelection();
+                            simulation.botPanel.isOpen = false;
+                        }
+
+                        EventBus.$emit('showRunBar', showRunBar);
+                    }
+                })
+            );
+        }
 
         this._simulationSubs.set(simulation, subs);
         this.simulations.push(info);
@@ -783,19 +807,16 @@ export default class PlayerApp extends Vue {
         visible: boolean,
         prefill: string
     ) {
-        this.showRunBar = visible;
+        await simulation.helper.updateBot(simulation.helper.userBot, {
+            tags: {
+                _auxRunMode: visible ? 'run' : null,
+            },
+        });
         this.runBarPrefill = prefill;
         const searchBar = this.$refs.searchBar as BotSearch;
         if (searchBar) {
             searchBar.setPrefill(prefill);
         }
-
-        if (!visible) {
-            await simulation.selection.clearSelection();
-            simulation.botPanel.isOpen = false;
-        }
-
-        EventBus.$emit('showRunBar', visible);
     }
 
     private _showQRCode(code: string) {

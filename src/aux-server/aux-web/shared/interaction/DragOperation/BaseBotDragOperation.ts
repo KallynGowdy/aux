@@ -419,6 +419,10 @@ export abstract class BaseBotDragOperation implements IOperation {
     }
 
     protected _sendDropEnterExitEvents(other: Bot) {
+        if (this.simulation.botPanel.runMode !== 'none') {
+            return;
+        }
+
         const sim = this._simulation3D.simulation;
         const otherId = other ? other.id : null;
         const dropBotId = this._dropBot ? this._dropBot.id : null;

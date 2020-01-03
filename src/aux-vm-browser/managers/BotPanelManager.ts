@@ -15,6 +15,7 @@ import {
     isPrecalculated,
     isExistingBot,
     createPrecalculatedBot,
+    getRunMode,
 } from '@casual-simulation/aux-common';
 import { RecentBotManager } from './RecentBotManager';
 
@@ -49,6 +50,13 @@ export class BotPanelManager implements SubscriptionLike {
      */
     get search() {
         return this._search;
+    }
+
+    /**
+     * Gets the run mode for the current player.
+     */
+    get runMode() {
+        return getRunMode(this._helper.userBot);
     }
 
     /**
@@ -171,9 +179,6 @@ export class BotPanelManager implements SubscriptionLike {
                 .pipe(
                     withLatestFrom(this._botsUpdated),
                     tap(([, e]) => {
-                        if (this._selection.mode === 'none') {
-                            this.isOpen = false;
-                        }
                         if (this._selection.mode === 'single') {
                             if (e.bots.length > 0) {
                                 if (this.newDiff) {

@@ -139,6 +139,7 @@ export interface BotTags {
     ['_auxUserChannelsContext']?: string;
     ['_auxEditingBot']?: string;
     ['_auxSelectionMode']?: SelectionMode;
+    ['_auxRunMode']?: RunMode;
 
     // Admin channel bot-channel tags
     ['auxChannelConnectedSessions']?: number;
@@ -261,7 +262,12 @@ export interface WorkspaceHex {
 /**
  * Defines the possible selection modes a user can be in.
  */
-export type SelectionMode = 'single' | 'multi' | 'none';
+export type SelectionMode = 'single' | 'multi';
+
+/**
+ * Defines the possible run modes a user can be in.
+ */
+export type RunMode = 'none' | 'run';
 
 /**
  * Defines the possible shapes that a bot can appear as.
@@ -314,7 +320,12 @@ export type ContextVisualizeMode = true | false | 'surface';
 /**
  * The default selection mode.
  */
-export const DEFAULT_SELECTION_MODE: SelectionMode = 'none';
+export const DEFAULT_SELECTION_MODE: SelectionMode = 'single';
+
+/**
+ * The default run mode.
+ */
+export const DEFAULT_RUN_MODE: RunMode = 'none';
 
 /**
  * The default bot shape.
@@ -606,6 +617,7 @@ export const KNOWN_TAGS: string[] = [
     '_auxUserChannelsContext',
     '_auxEditingBot',
     '_auxSelectionMode',
+    '_auxRunMode',
     'auxConnectedSessions',
     'auxInventoryHeight',
     'auxContextInventoryColor',

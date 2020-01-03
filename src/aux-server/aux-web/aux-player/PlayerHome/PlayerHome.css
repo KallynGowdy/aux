@@ -8,7 +8,7 @@
 }
 
 .game-view.has-run-bar {
-    position: relative;
+    position: fixed;
     top: initial;
 }
 

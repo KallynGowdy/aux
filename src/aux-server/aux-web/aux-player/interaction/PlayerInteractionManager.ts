@@ -204,7 +204,7 @@ export class PlayerInteractionManager extends BaseInteractionManager {
         vrController: VRController3D | null
     ): IOperation {
         const simulation = appManager.simulationManager.primary;
-        if (simulation.selection.mode === 'none') {
+        if (simulation.botPanel.runMode === 'none') {
             return null;
         }
         const simulation3D = this._game.findPlayerSimulation3D(simulation);

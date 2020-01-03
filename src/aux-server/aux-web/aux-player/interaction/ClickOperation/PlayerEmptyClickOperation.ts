@@ -8,7 +8,7 @@ import { Physics } from '../../../shared/scene/Physics';
 import { PlayerGame } from '../../scene/PlayerGame';
 import { VRController3D, Pose } from '../../../shared/scene/vr/VRController3D';
 import { BaseEmptyClickOperation } from '../../../shared/interaction/ClickOperation/BaseEmptyClickOperation';
-import { BotCalculationContext } from '@casual-simulation/aux-common';
+import { BotCalculationContext, hideRun } from '@casual-simulation/aux-common';
 
 /**
  * Empty Click Operation handles clicking of empty space for mouse and touch input with the primary (left/first finger) interaction button.
@@ -38,7 +38,21 @@ export class PlayerEmptyClickOperation extends BaseEmptyClickOperation {
     public dispose(): void {}
 
     protected _performClick(calc: BotCalculationContext): void {
-        this._sendOnGridClickEvent(calc);
+        if (this.simulation.botPanel.runMode !== 'none') {
+            const bots = this.simulation.selection.getSelectedBotsForUser(
+                this.simulation.helper.userBot
+            );
+            if (bots.length > 0) {
+                this.simulation.botPanel.isOpen = false;
+                this.simulation.botPanel.restrictVisible(false);
+
+                this.removeSelected();
+            } else {
+                this.simulation.helper.transaction(hideRun());
+            }
+        } else {
+            this._sendOnGridClickEvent(calc);
+        }
     }
 
     private _sendOnGridClickEvent(calc: BotCalculationContext) {
@@ -96,5 +110,16 @@ export class PlayerEmptyClickOperation extends BaseEmptyClickOperation {
                 }
             }
         }
+    }
+
+    async removeSelected() {
+        appManager.simulationManager.primary.recent.clear();
+
+        appManager.simulationManager.primary.botPanel.search = '';
+
+        await appManager.simulationManager.primary.selection.clearSelection();
+        await appManager.simulationManager.primary.recent.clear();
+
+        appManager.simulationManager.primary.botPanel.restrictVisible(true);
     }
 }

@@ -61,6 +61,7 @@ import {
     parseScript,
     getBotTag,
     getSelectionMode,
+    getRunMode,
 } from './BotCalculations';
 import {
     Bot,
@@ -76,7 +77,7 @@ import { createCalculationContext } from './BotCalculationContextFactories';
 import uuid from 'uuid/v4';
 import { AuxObject, AuxBot } from '../aux-format';
 import { botCalculationContextTests } from './test/BotCalculationContextTests';
-import { BotCalculationContext } from '.';
+import { BotCalculationContext } from './BotCalculationContext';
 import { BotLookupTableHelper } from './BotLookupTableHelper';
 
 const uuidMock: jest.Mock = <any>uuid;
@@ -1195,18 +1196,18 @@ describe('BotCalculations', () => {
     });
 
     describe('getSelectionMode()', () => {
-        it('should return none when not set', () => {
+        it('should return single when not set', () => {
             const bot = createBot('test', {});
             const mode = getSelectionMode(bot);
 
-            expect(mode).toBe('none');
+            expect(mode).toBe('single');
         });
 
         const cases = [
-            ['none', 'none'],
+            ['single', 'none'],
             ['single', 'single'],
             ['multi', 'multi'],
-            ['none', 'abc'],
+            ['single', 'abc'],
         ];
 
         it.each(cases)('should return %s when set to %s', (expected, given) => {
@@ -1214,6 +1215,26 @@ describe('BotCalculations', () => {
                 ['_auxSelectionMode']: given,
             });
             const mode = getSelectionMode(bot);
+
+            expect(mode).toBe(expected);
+        });
+    });
+
+    describe('getRunMode()', () => {
+        it('should return none when not set', () => {
+            const bot = createBot('test', {});
+            const mode = getRunMode(bot);
+
+            expect(mode).toBe('none');
+        });
+
+        const cases = [['none', 'none'], ['run', 'run'], ['none', 'abc']];
+
+        it.each(cases)('should return %s when set to %s', (expected, given) => {
+            const bot = createBot('test', {
+                ['_auxRunMode']: given,
+            });
+            const mode = getRunMode(bot);
 
             expect(mode).toBe(expected);
         });
