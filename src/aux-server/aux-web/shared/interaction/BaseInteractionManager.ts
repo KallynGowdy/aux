@@ -648,6 +648,10 @@ export abstract class BaseInteractionManager implements InteractionManager {
         );
     }
 
+    shouldPerformClick() {
+        return this._game.getInput().getKeyHeld('Alt');
+    }
+
     async clearSelection() {
         await appManager.simulationManager.primary.selection.clearSelection();
         appManager.simulationManager.primary.botPanel.search = '';
