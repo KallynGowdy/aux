@@ -6,11 +6,12 @@
 
 ### Changes:
 
--   Improvements
+-   AuxPlayer Improvements
     -   Added the `player.showRun()` and `player.hideRun()` script functions.
         -   `player.showRun(prefill)` shows the "Run" bar in AuxPlayer.
             -   `prefill` is a script that should be autofilled into the run bar. (Optional)
         -   `player.hideRun()` hides the "Run" bar in AuxPlayer.
+        -   While in run mode, `@onClick` listeners are overriden to behave like in Channel Designer.
     -   Added the `player.run(script)` function to execute the given script.
         -   The given script is queued and run at the next available time.
     -   Added the `@onRun` listener that is executed when a script is run from the "Run" bar or via `player.run()`.
@@ -22,6 +23,8 @@
         -   Passing in a mod will set the selection to the mod.
         -   Passing in nothing will create a new context, and select it.
     -   Added the `player.deselect()` function that can be used to clear a player's selection.
+    -   Added the ability to hold the "Alt" key down while clicking a bot to trigger the bot's `@onClick` when in run mode.
+    -   Clicking in empty space when there is no selection will now hide the run bar instead of doing nothing.
 
 ## V0.11.19
 
