@@ -14,7 +14,7 @@
             <md-tooltip md-direction="bottom">Run Script</md-tooltip>
         </md-button>
 
-        <div v-if="recentBot" class="search-count">
+        <div v-if="placeholder === 'Run'" class="search-count">
             <!-- Toggle open is handled by the MiniBotClickOperation -->
             <md-button class="md-icon-button num-bots">
                 <div ref="botQueue">
