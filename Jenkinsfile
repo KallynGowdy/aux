@@ -68,12 +68,6 @@ pipeline {
                 PublishDocker()
             }
         }
-        stage('Build/Publish Docker ARM') {
-            steps {
-                BuildDockerArm32()
-                PublishDockerArm32()
-            }
-        }
     }
     post {
         success {
@@ -132,28 +126,8 @@ def BuildDocker() {
     /usr/local/bin/docker build -t "casualsimulation/aux:${gitTag}" -t "casualsimulation/aux:latest" .
     /usr/local/bin/docker build -t "casualsimulation/aux-proxy:${gitTag}" -t "casualsimulation/aux-proxy:latest" ./src/aux-proxy
     /usr/local/bin/docker build -t "casualsimulation/aux-redirector:${gitTag}" -t "casualsimulation/aux-redirector:latest" ./src/aux-redirector
+    /usr/local/bin/docker build --platform arm -t "${DOCKER_ARM32_TAG}:${gitTag}" -t "${DOCKER_ARM32_TAG}:latest" -f Dockerfile.arm32 .
     """
-}
-
-def BuildDockerArm32() {
-    sh """#!/bin/bash
-    set -e
-    . ~/.bashrc
-    
-    echo "Building..."
-    npm run tar
-    """
-
-    def remote = [:]
-    remote.name = RPI_HOST
-    remote.host = PI_IP
-    remote.user = RPI_USER
-    remote.allowAnyHosts = true
-    remote.identityFile = RPI_SSH_KEY_FILE
-
-    sshPut remote: remote, from: './temp/output.tar.gz', into: '/home/pi'
-    sshCommand remote: remote, command: "cd /home/pi; mkdir -p output; tar xzf ./output.tar.gz -C output; cd output; docker build -t ${DOCKER_ARM32_TAG}:${gitTag} -t ${DOCKER_ARM32_TAG}:latest -f Dockerfile.arm32 ."
-    
 }
 
 def PublishNPM() {
@@ -215,18 +189,9 @@ def PublishDocker() {
     /usr/local/bin/docker push casualsimulation/aux-proxy:latest
     /usr/local/bin/docker push casualsimulation/aux-redirector:${gitTag}
     /usr/local/bin/docker push casualsimulation/aux-redirector:latest
+    /usr/local/bin/docker push "${DOCKER_ARM32_TAG}:${gitTag}"
+    /usr/local/bin/docker push "${DOCKER_ARM32_TAG}:latest"
     """
-}
-
-def PublishDockerArm32() {
-    def remote = [:]
-    remote.name = RPI_HOST
-    remote.host = PI_IP
-    remote.user = RPI_USER
-    remote.allowAnyHosts = true
-    remote.identityFile = RPI_SSH_KEY_FILE
-
-    sshCommand remote: remote, command: "docker push ${DOCKER_ARM32_TAG}:${gitTag} && docker push ${DOCKER_ARM32_TAG}:latest"
 }
 
 def Cleanup() {
