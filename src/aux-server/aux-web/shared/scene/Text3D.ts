@@ -26,6 +26,8 @@ import {
     BotLabelAlignment,
 } from '@casual-simulation/aux-common';
 import { DebugObjectManager } from './debugobjectmanager/DebugObjectManager';
+import merge from 'lodash/merge';
+import { TinySDF } from '../public/tiny-sdf';
 
 var sdfShader = require('three-bmfont-text/shaders/sdf');
 
@@ -329,4 +331,96 @@ export class Text3D extends Object3D {
     }
 
     public dispose(): void {}
+}
+
+if (typeof window !== 'undefined') {
+    let tinysdf = new TinySDF();
+    let canvas: HTMLCanvasElement = null;
+    let ctx: CanvasRenderingContext2D = null;
+    let x = 0;
+    let y = 0;
+    let bufferSize = 2048;
+    merge(window, {
+        aux: {
+            sdf: {
+                configure,
+                draw,
+                exit,
+            },
+        },
+    });
+
+    function configure(opts: {
+        fontSize: number;
+        buffer: number;
+        radius: number;
+        cutoff: number;
+        fontFamily: string;
+        fontWeight: string;
+    }) {
+        tinysdf = new TinySDF(
+            opts.fontSize,
+            opts.buffer,
+            opts.radius,
+            opts.cutoff,
+            opts.fontFamily,
+            opts.fontWeight
+        );
+        exit();
+    }
+
+    function draw(text: string) {
+        init();
+
+        for (let i = 0; i < text.length; i++) {
+            const char = text[i];
+            const output = tinysdf.draw(char);
+
+            let imageData = ctx.createImageData(tinysdf.size, tinysdf.size);
+            let data = imageData.data;
+            for (var b = 0; b < output.length; b++) {
+                data[4 * b + 0] = output[b];
+                data[4 * b + 1] = output[b];
+                data[4 * b + 2] = output[b];
+                data[4 * b + 3] = output[b];
+            }
+
+            ctx.putImageData(imageData, x, y);
+            if (x + tinysdf.size > bufferSize) {
+                y += tinysdf.size;
+                x = 0;
+            } else {
+                x += tinysdf.size;
+            }
+        }
+    }
+
+    function exit() {
+        if (!canvas) {
+            return;
+        }
+
+        canvas.parentNode.removeChild(canvas);
+        canvas = null;
+        ctx = null;
+        x = 0;
+        y = 0;
+    }
+
+    function init() {
+        if (canvas) {
+            return;
+        }
+
+        canvas = document.createElement('canvas');
+        canvas.width = canvas.height = 2048;
+        canvas.style.position = 'absolute';
+        canvas.style.zIndex = '10000';
+        canvas.style.backgroundColor = 'rgba(0,0,0,.35)';
+        document.body.insertBefore(canvas, document.body.firstChild);
+
+        ctx = canvas.getContext('2d');
+
+        return canvas;
+    }
 }
