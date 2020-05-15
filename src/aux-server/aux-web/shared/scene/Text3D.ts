@@ -333,6 +333,170 @@ export class Text3D extends Object3D {
     public dispose(): void {}
 }
 
+/**
+ * An interface that holds information about a font in the BM font format.
+ *
+ * See:
+ * https://github.com/Jam3/load-bmfont/blob/master/json-spec.md
+ * http://www.angelcode.com/products/bmfont/doc/file_format.html
+ */
+export interface BMFontGlyphData {
+    pages: string[];
+    chars: BMFontGlyph[];
+    info: BMFontInfo;
+    common: BMFontCommon;
+}
+
+/**
+ * Describes one character in the font.
+ */
+export interface BMFontGlyph {
+    /**
+     * The ID of the character.
+     */
+    id: number;
+
+    /**
+     * The left position of the character in the texture page.
+     */
+    x: number;
+
+    /**
+     * The top position of the character in the texture page.
+     */
+    y: number;
+
+    /**
+     * The width of the character in the texture.
+     */
+    width: number;
+
+    /**
+     * The height of the character in the texture.
+     */
+    height: number;
+
+    /**
+     * How much the current position should be offset when copying the image from the texture to the screen.
+     */
+    xoffset: number;
+
+    /**
+     * How much the current position should be offset when copying the image from the texture to the screen.
+     */
+    yoffset: number;
+
+    /**
+     * How much the current position should be advanced after drawing the character.
+     */
+    xadvance: number;
+
+    /**
+     * The texture page where the character image is found.
+     */
+    page: number;
+
+    /**
+     * The texture channel where the character image is found. (1 = blue, 2 = gree, 4 = red, 8 = alpha, 15 = all channels)
+     */
+    chnl: number;
+}
+
+/**
+ * Holds information about a
+ */
+export interface BMFontInfo {
+    /**
+     * The name of the font.
+     */
+    face: string;
+
+    /**
+     * The size of the font.
+     */
+    size: number;
+
+    /**
+     * Whether the font is bold.
+     */
+    bold: number;
+
+    /**
+     * Whether the font is italic.
+     */
+    italic: number;
+
+    /**
+     * The OEM charset used (when not Unicode).
+     */
+    charset: string;
+
+    /**
+     * Whether the font is unicode.
+     */
+    unicode: number;
+
+    /**
+     * The font height stretch in percentage. 100 means no stretch.
+     */
+    stretchH: number;
+
+    /**
+     * Whether font smothing was turned on.
+     */
+    smooth: number;
+
+    /**
+     * The supersampling level used. 1 means no supersampling.
+     */
+    aa: number;
+
+    /**
+     * The padding for each character. (up, right, down, left)
+     */
+    padding: [number, number, number, number];
+
+    /**
+     * The outline thickness for the characters. (up/down, left/right)
+     */
+    spacing: [number, number];
+}
+
+/**
+ * Holds information common to all characters.
+ */
+export interface BMFontCommon {
+    /**
+     * The distance in pixels between each line of text.
+     */
+    lineHeight: number;
+
+    /**
+     * The number of pixels from the absolute top of the line to the base of the characters.
+     */
+    base: number;
+
+    /**
+     * The width of the texture, normally used to scale the X position of the character image.
+     */
+    scaleW: number;
+
+    /**
+     * The height of the texture, normally used to scale the Y position of the character image.
+     */
+    scaleH: number;
+
+    /**
+     * The number of texture pages included in the font.
+     */
+    pages: number;
+
+    /**
+     * Set to 1 if the monochrome characters have been packed into each of the texture channels.
+     */
+    packed: number;
+}
+
 if (typeof window !== 'undefined') {
     let tinysdf = new TinySDF();
     let canvas: HTMLCanvasElement = null;
