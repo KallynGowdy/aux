@@ -12,6 +12,7 @@ import {
     LinearFilter,
     Euler,
     Matrix4,
+    MeshBasicMaterial,
 } from 'three';
 
 import robotoFont from '../public/bmfonts/Roboto.json';
@@ -28,6 +29,7 @@ import {
 import { DebugObjectManager } from './debugobjectmanager/DebugObjectManager';
 import merge from 'lodash/merge';
 import { TinySDF } from '../public/tiny-sdf';
+import { CanvasText } from './CanvasText';
 
 var sdfShader = require('three-bmfont-text/shaders/sdf');
 
@@ -58,7 +60,7 @@ export class Text3D extends Object3D {
 
     // The text geometry created with 'three-bmfont-text'
     // To change text, run textGeometry.update and include the proper options.
-    private _geometry: TextGeometry;
+    // private _geometry: TextGeometry;
 
     // The text mesh that is holding onto the text geometry that gets rendered by three.
     private _mesh: Mesh;
@@ -72,7 +74,7 @@ export class Text3D extends Object3D {
     // The anchor position for the text 3d.
     private _anchor: BotLabelAnchor = 'top';
 
-    // The anchor position for the text 3d.
+    private _canvasText: CanvasText;
 
     /**
      * the text that was last set on this text3d.
@@ -96,6 +98,8 @@ export class Text3D extends Object3D {
      */
     constructor(width?: number, font?: Text3DFont) {
         super();
+
+        this._canvasText = new CanvasText();
 
         if (!font)
             font = { dataPath: robotoFont, texturePath: robotoTexturePath };
@@ -122,26 +126,27 @@ export class Text3D extends Object3D {
 
         this.currentWidth = width;
 
-        this._geometry = createBMFont({
-            font: font.dataPath,
-            text: '',
-            flipY: true,
-            align: 'center',
-            width: width,
-        });
+        // this._geometry = createBMFont({
+        //     font: font.dataPath,
+        //     text: '',
+        //     flipY: true,
+        //     align: 'center',
+        //     width: width,
+        // });
 
-        var material = new RawShaderMaterial(
-            sdfShader({
-                map: texture,
-                side: DoubleSide,
-                transparent: true,
-                // depthTest: false,
-                // depthWrite: false,
-                color: buildSRGBColor(0, 0, 0),
-            })
-        );
+        // var material = new RawShaderMaterial(
+        //     sdfShader({
+        //         map: texture,
+        //         side: DoubleSide,
+        //         transparent: true,
+        //         // depthTest: false,
+        //         // depthWrite: false,
+        //         color: buildSRGBColor(0, 0, 0),
+        //     })
+        // );
 
-        this._mesh = new Mesh(this._geometry, material);
+        // this._mesh = new Mesh(this._geometry, material);
+        this._mesh = this._canvasText.mesh;
         this.add(this._mesh);
         this.setScale(Text3D.defaultScale);
 
@@ -222,8 +227,10 @@ export class Text3D extends Object3D {
      */
     public updateBoundingBox(): void {
         this.updateMatrixWorld(true);
-        this._geometry.computeBoundingBox();
-        let box = this._geometry.boundingBox.clone();
+        // this._geometry.computeBoundingBox();
+        // let box = this._geometry.boundingBox.clone();
+        let box = new Box3();
+        box.expandByObject(this._mesh);
         box.min.z = -1;
         box.max.z = 1;
 
@@ -256,10 +263,11 @@ export class Text3D extends Object3D {
 
             // Text has value, enable the mesh and update the geometry.
             this.visible = true;
-            this._geometry.update(<any>(<Partial<TextGeometryOptions>>{
-                text: text.toString(),
-                align: alignment || 'center',
-            }));
+            // this._geometry.update(<any>(<Partial<TextGeometryOptions>>{
+            //     text: text.toString(),
+            //     align: alignment || 'center',
+            // }));
+            this._canvasText.setText(text.toString());
             this.updateBoundingBox();
         } else {
             // Disable the text's rendering.
@@ -272,8 +280,10 @@ export class Text3D extends Object3D {
      * @param color The color value either in string or THREE.Color.
      */
     public setColor(color: Color) {
-        var material = <RawShaderMaterial>this._mesh.material;
-        material.uniforms.color.value = color;
+        // var material = <RawShaderMaterial>this._mesh.material;
+        // material.uniforms.color.value = color;
+        var material = <MeshBasicMaterial>this._mesh.material;
+        material.color = color;
     }
 
     /**
@@ -281,7 +291,7 @@ export class Text3D extends Object3D {
      * @param opt The options to set on the text geometry.
      */
     public setOptions(opt: TextGeometryOptions) {
-        this._geometry.update(opt);
+        // this._geometry.update(opt);
         this._unprocessedText = opt.text;
 
         if (opt.text) {
@@ -498,12 +508,18 @@ export interface BMFontCommon {
 }
 
 if (typeof window !== 'undefined') {
-    let tinysdf = new TinySDF();
-    let canvas: HTMLCanvasElement = null;
-    let ctx: CanvasRenderingContext2D = null;
-    let x = 0;
-    let y = 0;
-    let bufferSize = 2048;
+    // let font: BMFontGlyphData = {
+    //     chars: [],
+    //     info: {},
+    //     common: {
+    //         scaleW: 2048,
+    //         scaleH: 2048,
+    //         pages: 1,
+    //         packed: 0,
+    //     }
+    // };
+
+    let canvasText: CanvasText;
     merge(window, {
         aux: {
             sdf: {
@@ -522,68 +538,44 @@ if (typeof window !== 'undefined') {
         fontFamily: string;
         fontWeight: string;
     }) {
-        tinysdf = new TinySDF(
-            opts.fontSize,
-            opts.buffer,
-            opts.radius,
-            opts.cutoff,
-            opts.fontFamily,
-            opts.fontWeight
-        );
+        // tinysdf = new TinySDF(
+        //     opts.fontSize,
+        //     opts.buffer,
+        //     opts.radius,
+        //     opts.cutoff,
+        //     opts.fontFamily,
+        //     opts.fontWeight
+        // );
         exit();
     }
 
     function draw(text: string) {
         init();
 
-        for (let i = 0; i < text.length; i++) {
-            const char = text[i];
-            const output = tinysdf.draw(char);
-
-            let imageData = ctx.createImageData(tinysdf.size, tinysdf.size);
-            let data = imageData.data;
-            for (var b = 0; b < output.length; b++) {
-                data[4 * b + 0] = output[b];
-                data[4 * b + 1] = output[b];
-                data[4 * b + 2] = output[b];
-                data[4 * b + 3] = output[b];
-            }
-
-            ctx.putImageData(imageData, x, y);
-            if (x + tinysdf.size > bufferSize) {
-                y += tinysdf.size;
-                x = 0;
-            } else {
-                x += tinysdf.size;
-            }
-        }
+        canvasText.setText(text);
     }
 
     function exit() {
-        if (!canvas) {
+        if (!canvasText) {
             return;
         }
 
+        const canvas = canvasText.canvas;
         canvas.parentNode.removeChild(canvas);
-        canvas = null;
-        ctx = null;
-        x = 0;
-        y = 0;
+        canvasText = null;
     }
 
     function init() {
-        if (canvas) {
+        if (canvasText) {
             return;
         }
 
-        canvas = document.createElement('canvas');
-        canvas.width = canvas.height = 2048;
+        canvasText = new CanvasText();
+        const canvas = canvasText.canvas;
         canvas.style.position = 'absolute';
         canvas.style.zIndex = '10000';
         canvas.style.backgroundColor = 'rgba(0,0,0,.35)';
         document.body.insertBefore(canvas, document.body.firstChild);
-
-        ctx = canvas.getContext('2d');
 
         return canvas;
     }
