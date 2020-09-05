@@ -55,6 +55,12 @@ export class MongoDBRepoStore implements CausalRepoStore {
         await this._sitelog.createIndex({ branch: 1, time: -1 });
         await this._sitelog.createIndex({ site: 1, branch: 1, time: -1 });
         await this._eventlog.createIndex({ type: 1, time: -1 });
+
+        // Index for searching for atoms by site and timestamp
+        await this._objects.createIndex({
+            'object.data.id.site': 1,
+            'object.data.id.timestamp': -1,
+        });
     }
 
     async getBranchSettings(branch: string): Promise<CausalRepoBranchSettings> {
