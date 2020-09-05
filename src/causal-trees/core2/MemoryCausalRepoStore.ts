@@ -11,6 +11,8 @@ import {
     CausalRepoSitelogType,
     CausalRepoSitelogConnectionReason,
     CausalRepoBranchSettings,
+    CausalRepoServerLog,
+    CausalRepoServerStatusLog,
 } from './CausalRepoObject';
 import sortBy from 'lodash/sortBy';
 import { getAtomHashes } from './AtomIndex';
@@ -23,6 +25,11 @@ export class MemoryCausalRepoStore implements CausalRepoStore {
     private _reflog: Map<string, CausalRepoReflog[]>;
     private _sitelog: Map<string, CausalRepoSitelog[]>;
     private _settings: Map<string, CausalRepoBranchSettings>;
+    private _events: CausalRepoServerLog[];
+
+    get events() {
+        return this._events;
+    }
 
     constructor() {
         this._map = new Map();
@@ -32,6 +39,7 @@ export class MemoryCausalRepoStore implements CausalRepoStore {
         this._sitelog = new Map();
         this._settings = new Map();
         this._branches = [];
+        this._events = [];
     }
 
     async getBranchSettings(branch: string): Promise<CausalRepoBranchSettings> {
@@ -72,6 +80,13 @@ export class MemoryCausalRepoStore implements CausalRepoStore {
         const newLog = sitelog(branch, site, type, connectionReason);
         log.unshift(newLog);
         return newLog;
+    }
+
+    async logEvent(
+        log: CausalRepoServerStatusLog
+    ): Promise<CausalRepoServerStatusLog> {
+        this._events.push(log);
+        return log;
     }
 
     async loadIndex(

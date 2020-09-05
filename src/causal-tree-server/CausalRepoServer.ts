@@ -139,6 +139,11 @@ export class CausalRepoServer {
     }
 
     private _setupServer() {
+        this._store.logEvent({
+            type: 'status',
+            time: new Date(),
+            statusType: 'startup',
+        });
         this._connectionServer.connection.subscribe(
             async (conn: CausalRepoSession) => {
                 const id = conn.device.claims[SESSION_ID_CLAIM];

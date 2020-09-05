@@ -13,6 +13,8 @@ import {
     CausalRepoSitelogType,
     CausalRepoSitelogConnectionReason,
     CausalRepoBranchSettings,
+    CausalRepoServerStatusLog,
+    CausalRepoServerStatusType,
 } from '@casual-simulation/causal-trees/core2';
 
 const MONGO_CODE_DUPLICATE_OBJECT = 11000;
@@ -26,6 +28,7 @@ export class MongoDBRepoStore implements CausalRepoStore {
     private _indexes: Collection<MongoDBIndex>;
     private _reflog: Collection<MongoDBReflog>;
     private _sitelog: Collection<MongoDBSitelog>;
+    private _eventlog: Collection<MongoDBEventlog>;
     private _settings: Collection<MongoDBBranchSettings>;
 
     constructor(
@@ -34,7 +37,8 @@ export class MongoDBRepoStore implements CausalRepoStore {
         indexesCollection: Collection<MongoDBIndex>,
         reflogCollection: Collection<MongoDBReflog>,
         sitelogCollection: Collection<MongoDBSitelog>,
-        branchSettingsCollection: Collection<MongoDBBranchSettings>
+        branchSettingsCollection: Collection<MongoDBBranchSettings>,
+        eventlogCollection: Collection<MongoDBEventlog>
     ) {
         this._objects = objectsCollection;
         this._heads = headsCollection;
@@ -42,6 +46,7 @@ export class MongoDBRepoStore implements CausalRepoStore {
         this._reflog = reflogCollection;
         this._sitelog = sitelogCollection;
         this._settings = branchSettingsCollection;
+        this._eventlog = eventlogCollection;
     }
 
     async init() {
@@ -49,6 +54,7 @@ export class MongoDBRepoStore implements CausalRepoStore {
         await this._reflog.createIndex({ branch: 1, time: -1 });
         await this._sitelog.createIndex({ branch: 1, time: -1 });
         await this._sitelog.createIndex({ site: 1, branch: 1, time: -1 });
+        await this._eventlog.createIndex({ type: 1, time: -1 });
     }
 
     async getBranchSettings(branch: string): Promise<CausalRepoBranchSettings> {
@@ -101,6 +107,15 @@ export class MongoDBRepoStore implements CausalRepoStore {
     ): Promise<CausalRepoSitelog> {
         const log = sitelog(branch, site, type, connectionReason);
         await this._sitelog.insertOne(log);
+        return log;
+    }
+
+    async logEvent(
+        log: CausalRepoServerStatusLog
+    ): Promise<CausalRepoServerStatusLog> {
+        await this._eventlog.insertOne(log, {
+            forceServerObjectId: true,
+        });
         return log;
     }
 
@@ -317,6 +332,13 @@ export interface MongoDBSitelog {
     site: string;
     time: Date;
     sitelogType?: CausalRepoSitelogType;
+}
+
+export interface MongoDBEventlog {
+    _id?: any;
+    type: string;
+    time: Date;
+    statusType?: CausalRepoServerStatusType;
 }
 
 export interface MongoDBBranchSettings {

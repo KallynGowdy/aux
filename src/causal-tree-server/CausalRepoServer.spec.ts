@@ -98,6 +98,18 @@ describe('CausalRepoServer', () => {
         server = new CausalRepoServer(connections, store, stageStore);
     });
 
+    it('should log the startup time when initialized', async () => {
+        server.init();
+
+        expect(store.events).toEqual([
+            {
+                type: 'status',
+                time: expect.any(Date),
+                statusType: 'startup',
+            },
+        ]);
+    });
+
     describe(WATCH_BRANCH, () => {
         it('should load the given branch and send the current atoms', async () => {
             server.init();

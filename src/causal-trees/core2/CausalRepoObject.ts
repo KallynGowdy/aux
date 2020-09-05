@@ -95,6 +95,37 @@ export interface CausalRepoSitelog {
 }
 
 /**
+ * Defines a server log.
+ * That is, a record that records different administrative tasks that the server takes.
+ */
+export type CausalRepoServerLog = CausalRepoServerStatusLog;
+
+/**
+ * Defines a server status log.
+ * That is, a record that records that different status events that the server runs into.
+ * Things like startup, etc.
+ */
+export interface CausalRepoServerStatusLog {
+    type: 'status';
+
+    /**
+     * The time that the event happened.
+     */
+    time: Date;
+
+    /**
+     * The status type.
+     */
+    statusType: CausalRepoServerStatusType;
+}
+
+/**
+ * The list of status types that the causal repo server can emit.
+ * - "startup" indicates that the server started at the given time.
+ */
+export type CausalRepoServerStatusType = 'startup';
+
+/**
  * Defines settings for a branch.
  * This is a separate record that is able to store arbitrary data about a branch.
  */

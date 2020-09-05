@@ -7,6 +7,8 @@ import {
     CausalRepoSitelogType,
     CausalRepoSitelogConnectionReason,
     CausalRepoBranchSettings,
+    CausalRepoServerLog,
+    CausalRepoServerStatusLog,
 } from './CausalRepoObject';
 
 /**
@@ -67,6 +69,12 @@ export interface CausalBranchStore {
         type: CausalRepoSitelogType,
         connectionReason?: CausalRepoSitelogConnectionReason
     ): Promise<CausalRepoSitelog>;
+
+    /**
+     * Logs the given server event.
+     * @param log The log to record.
+     */
+    logEvent(log: CausalRepoServerLog): Promise<CausalRepoServerLog>;
 
     /**
      * Gets the most recent settings that have been created the given branch.
@@ -145,6 +153,11 @@ export class CombinedCausalRepoStore implements CausalRepoStore {
         if (objects.storeIndex) {
             this.storeIndex = this._storeIndex;
         }
+    }
+    logEvent(
+        log: CausalRepoServerStatusLog
+    ): Promise<CausalRepoServerStatusLog> {
+        return this._branches.logEvent(log);
     }
     getBranchSettings(branch: string): Promise<CausalRepoBranchSettings> {
         return this._branches.getBranchSettings(branch);
