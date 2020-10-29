@@ -23,7 +23,7 @@ export function setupChannel(iframeWindow: Window) {
  * Listens for the init_port event from the global context.
  */
 export function listenForChannel(): Promise<MessagePort> {
-    return new Promise<MessagePort>(resolve => {
+    return new Promise<MessagePort>((resolve) => {
         let listener = (msg: MessageEvent) => {
             if (msg.data.type === 'init_port') {
                 globalThis.removeEventListener('message', listener);
@@ -35,11 +35,14 @@ export function listenForChannel(): Promise<MessagePort> {
 }
 
 export function waitForLoad(iframe: HTMLIFrameElement): Promise<void> {
-    return new Promise<void>(resolve => {
+    return new Promise<void>((resolve, reject) => {
         let listener = () => {
             iframe.removeEventListener('load', listener);
             resolve();
         };
         iframe.addEventListener('load', listener);
+        iframe.addEventListener('error', (e) => {
+            reject(e);
+        });
     });
 }

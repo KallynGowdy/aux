@@ -16,6 +16,7 @@ export default class Loading extends Vue {
     @Prop({ default: 0 }) progress: number;
     @Prop({ default: null }) error: string;
     @Prop({ default: false }) show: boolean;
+    @Prop({ default: false }) accent: boolean;
 
     showSpinner: boolean;
 
@@ -41,5 +42,9 @@ export default class Loading extends Vue {
             'circle'
         );
         this.showSpinner = circleElement instanceof SVGElement;
+    }
+
+    click() {
+        this.$emit('click');
     }
 }

@@ -107,32 +107,44 @@ export class AuxVMImpl implements AuxVM {
         let promise = waitForLoad(this._iframe);
         document.body.appendChild(this._iframe);
 
-        await promise;
+        console.warn('[AuxVMImpl] Waiting for iframe to load...');
+        try {
+            await promise;
+            console.warn('[AuxVMImpl] Loaded! Creating VM...');
 
-        this._channel = setupChannel(this._iframe.contentWindow);
+            this._channel = setupChannel(this._iframe.contentWindow);
 
-        this._connectionStateChanged.next({
-            type: 'progress',
-            message: 'Creating VM...',
-            progress: 0.2,
-        });
-        const wrapper = wrap<AuxStatic>(this._channel.port1);
-        this._proxy = await new wrapper(
-            location.origin,
-            this._initialUser,
-            processPartitions(this._config)
-        );
+            this._connectionStateChanged.next({
+                type: 'progress',
+                message: 'Creating VM...',
+                progress: 0.2,
+            });
+            const wrapper = wrap<AuxStatic>(this._channel.port1);
+            this._proxy = await new wrapper(
+                location.origin,
+                this._initialUser,
+                processPartitions(this._config)
+            );
 
-        let statusMapper = remapProgressPercent(0.2, 1);
-        return await this._proxy.init(
-            proxy(events => this._localEvents.next(events)),
-            proxy(events => this._deviceEvents.next(events)),
-            proxy(state => this._stateUpdated.next(state)),
-            proxy(state =>
-                this._connectionStateChanged.next(statusMapper(state))
-            ),
-            proxy(err => this._onError.next(err))
-        );
+            let statusMapper = remapProgressPercent(0.2, 1);
+            return await this._proxy.init(
+                proxy((events) => this._localEvents.next(events)),
+                proxy((events) => this._deviceEvents.next(events)),
+                proxy((state) => this._stateUpdated.next(state)),
+                proxy((state) =>
+                    this._connectionStateChanged.next(statusMapper(state))
+                ),
+                proxy((err) => this._onError.next(err))
+            );
+        } catch (err) {
+            console.error(err);
+            this._connectionStateChanged.next({
+                type: 'progress',
+                error: err.toString(),
+                message: 'Unable to create VM.',
+                progress: 0.2,
+            });
+        }
     }
 
     /**

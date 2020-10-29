@@ -6,6 +6,7 @@
             :md-close-on-esc="false"
             :md-backdrop="true"
             :md-active="show"
+            @click="click()"
         >
             <div v-if="!hasError" class="loading-dialog">
                 <div class="loading-text-content">
@@ -13,12 +14,17 @@
                         <md-progress-spinner
                             v-if="showSpinner"
                             md-mode="indeterminate"
+                            :class="{ 'md-accent': accent }"
                             :md-diameter="20"
                             :md-stroke="2"
                         ></md-progress-spinner>
                     </div>
                 </div>
-                <md-progress-bar md-mode="determinate" :md-value="progress"></md-progress-bar>
+                <md-progress-bar
+                    :class="{ 'md-accent': accent }"
+                    md-mode="determinate"
+                    :md-value="progress"
+                ></md-progress-bar>
                 <div class="version">{{ version }}</div>
             </div>
             <div v-else class="loading-error">

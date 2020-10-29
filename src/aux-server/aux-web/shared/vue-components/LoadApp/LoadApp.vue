@@ -1,11 +1,13 @@
 <template>
     <div>
+        <console @close="closeConsole()" :autoSelectSources="['app']"></console>
         <loading
             v-if="loadingState"
             :status="loadingState.message"
             :progress="loadingState.progress * 100"
             :error="loadingState.error ? loadingState.message : null"
             :show="loadingState && !loadingState.done"
+            :accent="clickCount > 0"
             @dismiss="dismissLoading()"
         >
         </loading>
@@ -15,4 +17,4 @@
     </div>
 </template>
 <script src="./LoadApp.ts"></script>
-<style scoped src="./LoadApp.css" />
+<style scoped src="./LoadApp.css"></style>
