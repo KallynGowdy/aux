@@ -54,6 +54,11 @@ declare module '*.woff' {
     export default url;
 }
 
+declare module '*.txt' {
+    const content: string;
+    export default content;
+}
+
 declare module 'monaco-editor/esm/vs/editor/standalone/browser/simpleServices';
 
 declare module 'downloadjs' {

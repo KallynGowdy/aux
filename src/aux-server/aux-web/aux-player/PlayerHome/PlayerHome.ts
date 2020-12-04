@@ -18,7 +18,6 @@ import {
 import PlayerGameView from '../PlayerGameView/PlayerGameView';
 import { appManager } from '../../shared/AppManager';
 import { first } from 'rxjs/operators';
-import { Dictionary } from 'vue-router/types/router';
 import {
     BrowserSimulation,
     userBotChanged,
@@ -45,7 +44,7 @@ const namesConfig: Config = {
     },
 })
 export default class PlayerHome extends Vue {
-    @Prop() query: Dictionary<string[] | string>;
+    @Prop() query: { [key: string]: string | string[] };
     @Prop() url: string;
 
     debug: boolean = false;
@@ -113,7 +112,7 @@ export default class PlayerHome extends Vue {
             if (!hasValue(story)) {
                 // Generate a random story name
                 const randomName: string = uniqueNamesGenerator(namesConfig);
-                let update: Dictionary<string> = {
+                let update: { [key: string]: string } = {
                     story: randomName,
                 };
                 if (!hasValue(this.query['pagePortal'])) {
@@ -269,7 +268,7 @@ export default class PlayerHome extends Vue {
             // Include the known portals so that they always update the URL
             [...Object.keys(this.query), ...QUERY_PORTALS]
         );
-        let changes: Dictionary<any> = {};
+        let changes: { [key: string]: any } = {};
         for (let tag of tags) {
             const oldValue = this.query[tag];
             const newValue = calculateBotValue(calc, update.bot, tag);
@@ -281,7 +280,7 @@ export default class PlayerHome extends Vue {
         this._updateQuery(changes);
     }
 
-    private _updateQuery(changes: Dictionary<any>) {
+    private _updateQuery(changes: { [key: string]: any }) {
         if (Object.keys(changes).length > 0) {
             const final = {
                 ...this.$route,

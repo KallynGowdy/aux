@@ -43,7 +43,7 @@
         "src/**/*.d.ts.map": true
     },
     "files.associations": {
-        "*.def": "typescript"
+        "*.def.txt": "typescript"
     },
     "editor.insertSpaces": true,
     "editor.tabSize": 4,
