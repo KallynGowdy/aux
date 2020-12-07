@@ -13,7 +13,7 @@ module.exports = {
                 exts: ['.txt'], // Add file extensions saying what files should be loaded as strings in your snowpack application. Default: '.txt'
             },
         ],
-        '@snowpack/plugin-vue',
+        '@casual-simulation/snowpack-plugin-vue2',
     ],
     devOptions: {
         open: 'none',
