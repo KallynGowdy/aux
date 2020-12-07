@@ -26,7 +26,27 @@
 import * as Sentry from '@sentry/browser';
 import Vue from 'vue';
 import VueRouter, { RouteConfig } from 'vue-router';
-import {
+import VueMaterialComponents from 'vue-material/dist/components';
+import 'vue-material/dist/vue-material.min.css';
+import 'vue-material/dist/theme/default.css';
+import MdImmediateInput from '../shared/public/MdImmediateInput';
+import VueClipboard from 'vue-clipboard2';
+import VueShortkey from 'vue-shortkey';
+
+import '../shared/public/fonts/MaterialIcons/MaterialIcons.css';
+import '../shared/public/fonts/Roboto/Roboto.css';
+import '../shared/public/fonts/NotoSansKR/NotoSansKR.css';
+
+import Es6Promise from 'es6-promise';
+import 'offline-plugin/runtime';
+import '../shared/SVGPolyfill';
+
+import { appManager, AppType } from '../shared/AppManager';
+import PlayerApp from './PlayerApp/PlayerApp';
+import PlayerHome from './PlayerHome/PlayerHome';
+import Loading from '../shared/vue-components/Loading/Loading';
+
+const {
     MdButton,
     MdContent,
     MdApp,
@@ -47,25 +67,9 @@ import {
     MdSwitch,
     MdBadge,
     MdDialogPrompt,
-} from 'vue-material/dist/components';
-import 'vue-material/dist/vue-material.min.css';
-import 'vue-material/dist/theme/default.css';
-import MdImmediateInput from '../shared/public/MdImmediateInput';
-import VueClipboard from 'vue-clipboard2';
-import VueShortkey from 'vue-shortkey';
+} = VueMaterialComponents;
 
-import '../shared/public/fonts/MaterialIcons/MaterialIcons.css';
-import '../shared/public/fonts/Roboto/Roboto.css';
-import '../shared/public/fonts/NotoSansKR/NotoSansKR.css';
-
-import { polyfill } from 'es6-promise';
-import 'offline-plugin/runtime';
-import '../shared/SVGPolyfill';
-
-import { appManager, AppType } from '../shared/AppManager';
-import PlayerApp from './PlayerApp/PlayerApp';
-import PlayerHome from './PlayerHome/PlayerHome';
-import Loading from '../shared/vue-components/Loading/Loading';
+const { polyfill } = Es6Promise;
 
 // Setup the Promise shim for browsers that don't support promises.
 polyfill();
@@ -103,7 +107,7 @@ const routes: RouteConfig[] = [
         path: '*',
         name: 'home',
         component: PlayerHome,
-        props: route => ({
+        props: (route) => ({
             query: route.query,
             url: route.fullPath,
         }),
@@ -117,14 +121,14 @@ const router = new VueRouter({
 
 async function start() {
     const loading = new Vue({
-        render: createEle => createEle(Loading),
+        render: (createEle) => createEle(Loading),
     }).$mount('#loading');
 
     // await appManager.initPromise;
 
     const app = new Vue({
         router,
-        render: createEle => createEle(PlayerApp),
+        render: (createEle) => createEle(PlayerApp),
     }).$mount('#app');
 }
 

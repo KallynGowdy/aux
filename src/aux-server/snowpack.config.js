@@ -3,6 +3,7 @@ const path = require('path');
 module.exports = {
     mount: {
         'aux-web': '/_dist_',
+        shared: '/_shared_',
         snowpack: '/',
     },
     plugins: [
@@ -12,31 +13,38 @@ module.exports = {
                 exts: ['.txt'], // Add file extensions saying what files should be loaded as strings in your snowpack application. Default: '.txt'
             },
         ],
+        '@snowpack/plugin-vue',
     ],
+    devOptions: {
+        open: 'none',
+    },
     installOptions: {
         installTypes: true,
     },
     alias: {
         'vue-json-tree-view': path.resolve(
             __dirname,
-            'shared/public/VueJsonTreeView/index.ts'
+            'aux-web/shared/public/VueJsonTreeView/index.ts'
         ),
         'three-legacy-gltf-loader': path.resolve(
             __dirname,
-            'shared/public/three-legacy-gltf-loader/LegacyGLTFLoader.js'
+            'aux-web/shared/public/three-legacy-gltf-loader/LegacyGLTFLoader.js'
         ),
         'three-vrcontroller-module': path.resolve(
             __dirname,
-            'shared/public/three-vrcontroller-module/VRController.js'
+            'aux-web/shared/public/three-vrcontroller-module/VRController.js'
         ),
-        callforth: path.resolve(__dirname, 'shared/public/callforth/index.js'),
+        callforth: path.resolve(
+            __dirname,
+            './aux-web/shared/public/callforth/index.js'
+        ),
         'vue-qrcode-reader': path.resolve(
             __dirname,
-            'shared/public/vue-qrcode-reader/'
+            './aux-web/shared/public/vue-qrcode-reader'
         ),
         'clipboard-polyfill': path.resolve(
             __dirname,
-            'shared/public/clipboard-polyfill/clipboard-polyfill.js'
+            'aux-web/shared/public/clipboard-polyfill/clipboard-polyfill.js'
         ),
     },
 };

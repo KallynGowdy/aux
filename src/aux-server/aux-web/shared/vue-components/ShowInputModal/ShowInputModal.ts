@@ -16,7 +16,9 @@ import {
     ShowInputAction,
     asyncResult,
 } from '@casual-simulation/aux-common';
-import { Swatches, Chrome, Compact } from 'vue-color';
+import VueColor from 'vue-color';
+
+const { Swatches, Chrome, Compact } = VueColor;
 
 @Component({
     components: {
@@ -50,12 +52,12 @@ export default class ShowInputModal extends Vue {
 
         this._sub.add(
             appManager.simulationManager.simulationAdded
-                .pipe(tap(sim => this._simulationAdded(sim)))
+                .pipe(tap((sim) => this._simulationAdded(sim)))
                 .subscribe()
         );
         this._sub.add(
             appManager.simulationManager.simulationRemoved
-                .pipe(tap(sim => this._simulationRemoved(sim)))
+                .pipe(tap((sim) => this._simulationRemoved(sim)))
                 .subscribe()
         );
     }
@@ -69,7 +71,7 @@ export default class ShowInputModal extends Vue {
         this._sub.add(sub);
 
         sub.add(
-            sim.localEvents.subscribe(e => {
+            sim.localEvents.subscribe((e) => {
                 if (e.type === 'show_input_for_tag') {
                     setTimeout(() => {
                         this._showInputForTag(sim, e);
