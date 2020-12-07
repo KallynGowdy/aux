@@ -9,7 +9,7 @@
         "watch": "npm run watch:projector",
         "watch:projector": "concurrently \"npm:watch:server\" \"npm:watch:web\" \"nodemon server/dist/main.js\"",
         "watch:player": "concurrently \"npm:watch:server\" \"npm:watch:web\" \"nodemon server/dist/main.js player\"",
-        "snowpack": "snowpack dev",
+        "snowpack": "node --max_old_space_size=4096 ../../node_modules/snowpack/index.bin.js dev",
         "build": "npm run build:web && npm run build:server",
         "build:profile": "npm run build:web:profile && npm run build:server:profile",
         "build:web": "node --max_old_space_size=4096 ../../node_modules/webpack/bin/webpack --config aux-web/webpack.prod.js",
