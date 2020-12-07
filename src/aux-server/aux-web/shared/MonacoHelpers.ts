@@ -18,11 +18,6 @@ import {
     calculateStringTagValue,
     calculateFormattedBotValue,
 } from '@casual-simulation/aux-common';
-import EditorWorker from 'worker-loader!monaco-editor/esm/vs/editor/editor.worker.js';
-import TypescriptWorker from 'worker-loader!monaco-editor/esm/vs/language/typescript/ts.worker';
-import HtmlWorker from 'worker-loader!monaco-editor/esm/vs/language/html/html.worker';
-import CssWorker from 'worker-loader!monaco-editor/esm/vs/language/css/css.worker';
-import JsonWorker from 'worker-loader!monaco-editor/esm/vs/language/json/json.worker';
 import { calculateFormulaDefinitions } from './FormulaHelpers';
 import { libFileMap } from 'monaco-editor/esm/vs/language/typescript/lib/lib.js';
 import { SimpleEditorModelResolverService } from 'monaco-editor/esm/vs/editor/standalone/browser/simpleServices';
@@ -172,15 +167,63 @@ export function setup() {
     (<any>self).MonacoEnvironment = {
         getWorker: function (moduleId: string, label: string) {
             if (label === 'typescript' || label === 'javascript') {
-                return new TypescriptWorker();
+                return new Worker(
+                    new URL(
+                        './monaco-workers/TypescriptWorker',
+                        import.meta.url
+                    ),
+                    {
+                        name: 'TypescriptWorker',
+                        type:
+                            (<any>import.meta).env.MODE === 'development'
+                                ? 'module'
+                                : 'classic',
+                    }
+                );
             } else if (label === 'html') {
-                return new HtmlWorker();
+                return new Worker(
+                    new URL('./monaco-workers/HtmlWorker.js', import.meta.url),
+                    {
+                        name: 'HtmlWorker',
+                        type:
+                            (<any>import.meta).env.MODE === 'development'
+                                ? 'module'
+                                : 'classic',
+                    }
+                );
             } else if (label === 'css') {
-                return new CssWorker();
+                return new Worker(
+                    new URL('./monaco-workers/CssWorker.js', import.meta.url),
+                    {
+                        name: 'CssWorker',
+                        type:
+                            (<any>import.meta).env.MODE === 'development'
+                                ? 'module'
+                                : 'classic',
+                    }
+                );
             } else if (label === 'json') {
-                return new JsonWorker();
+                return new Worker(
+                    new URL('./monaco-workers/JsonWorker.js', import.meta.url),
+                    {
+                        name: 'JsonWorker',
+                        type:
+                            (<any>import.meta).env.MODE === 'development'
+                                ? 'module'
+                                : 'classic',
+                    }
+                );
             }
-            return new EditorWorker();
+            return new Worker(
+                new URL('./monaco-workers/EditorWorker.js', import.meta.url),
+                {
+                    name: 'EditorWorker',
+                    type:
+                        (<any>import.meta).env.MODE === 'development'
+                            ? 'module'
+                            : 'classic',
+                }
+            );
         },
     };
 
