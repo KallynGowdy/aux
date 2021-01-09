@@ -9,7 +9,6 @@ console.log = jest.fn();
 
 jest.mock('axios');
 jest.mock('os');
-jest.useFakeTimers();
 
 describe('DirectoryClient', () => {
     let tunnel: TestClient;
@@ -93,6 +92,7 @@ describe('DirectoryClient', () => {
 
     describe('upstream', () => {
         beforeEach(async () => {
+            jest.useFakeTimers('modern');
             require('axios').__reset();
             require('os').__setInterfaces({
                 abc: [
@@ -126,10 +126,15 @@ describe('DirectoryClient', () => {
                 password: 'def',
                 key: 'test',
             });
-            await client.init();
         });
 
-        it('should send a PUT request to the upstread each time the ping interval is up', async () => {
+        afterEach(() => {
+            jest.useRealTimers();
+        });
+
+        it('should send a PUT request to the upstream each time the ping interval is up', async () => {
+            await client.init();
+
             let request = require('axios').__getLastPut();
             expect(request).toMatchInlineSnapshot(`
                 Array [
@@ -176,6 +181,8 @@ describe('DirectoryClient', () => {
                   },
                 ]
             `);
+
+            jest.clearAllTimers();
         });
     });
 
@@ -416,6 +423,7 @@ describe('DirectoryClient', () => {
 
     describe('tunnel', () => {
         beforeEach(async () => {
+            jest.useFakeTimers('modern');
             require('axios').__reset();
             require('os').__setInterfaces({
                 eth0: [
@@ -436,6 +444,10 @@ describe('DirectoryClient', () => {
             });
         });
 
+        afterEach(() => {
+            jest.useRealTimers();
+        });
+
         it('should open a tunnel after getting a token', async () => {
             require('axios').__setResponse({
                 data: {
@@ -444,7 +456,7 @@ describe('DirectoryClient', () => {
             });
 
             let requests: TestRequest[] = [];
-            tunnel.requests.subscribe(r => requests.push(r));
+            tunnel.requests.subscribe((r) => requests.push(r));
 
             await client.init();
 
@@ -455,6 +467,8 @@ describe('DirectoryClient', () => {
                 localHost: '127.0.0.1',
                 localPort: 3000,
             });
+
+            jest.clearAllTimers();
         });
 
         it('should not open a tunnel if the token is null', async () => {
@@ -465,11 +479,13 @@ describe('DirectoryClient', () => {
             });
 
             let requests: TestRequest[] = [];
-            tunnel.requests.subscribe(r => requests.push(r));
+            tunnel.requests.subscribe((r) => requests.push(r));
 
             await client.init();
 
             expect(requests).toHaveLength(0);
+
+            jest.clearAllTimers();
         });
 
         it('should not open a tunnel if one is already open', async () => {
@@ -480,7 +496,7 @@ describe('DirectoryClient', () => {
             });
 
             let requests: TestRequest[] = [];
-            tunnel.requests.subscribe(r => requests.push(r));
+            tunnel.requests.subscribe((r) => requests.push(r));
 
             await client.init();
 
@@ -498,6 +514,8 @@ describe('DirectoryClient', () => {
             jest.advanceTimersByTime(5 * 60 * 1000 + 100);
 
             expect(requests).toHaveLength(1);
+
+            jest.clearAllTimers();
         });
 
         it('should open a new tunnel after 5 seconds if the last one failed', async () => {
@@ -508,7 +526,7 @@ describe('DirectoryClient', () => {
             });
 
             let requests: TestRequest[] = [];
-            tunnel.requests.subscribe(r => requests.push(r));
+            tunnel.requests.subscribe((r) => requests.push(r));
 
             await client.init();
 
@@ -537,6 +555,8 @@ describe('DirectoryClient', () => {
                 localHost: '127.0.0.1',
                 localPort: 3000,
             });
+
+            jest.clearAllTimers();
         });
 
         it('should open a new tunnel after 5 seconds if the last one closed', async () => {
@@ -547,9 +567,11 @@ describe('DirectoryClient', () => {
             });
 
             let requests: TestRequest[] = [];
-            tunnel.requests.subscribe(r => requests.push(r));
+            tunnel.requests.subscribe((r) => requests.push(r));
 
             await client.init();
+
+            // jest.runAllTimers();
 
             expect(requests).toHaveLength(1);
             expect(requests[0].request).toEqual({
@@ -576,6 +598,8 @@ describe('DirectoryClient', () => {
                 localHost: '127.0.0.1',
                 localPort: 3000,
             });
+
+            jest.clearAllTimers();
         });
 
         it('should retry with the new token', async () => {
@@ -586,7 +610,7 @@ describe('DirectoryClient', () => {
             });
 
             let requests: TestRequest[] = [];
-            tunnel.requests.subscribe(r => requests.push(r));
+            tunnel.requests.subscribe((r) => requests.push(r));
 
             await client.init();
 
@@ -616,6 +640,8 @@ describe('DirectoryClient', () => {
                 localHost: '127.0.0.1',
                 localPort: 3000,
             });
+
+            jest.clearAllTimers();
         });
     });
 });

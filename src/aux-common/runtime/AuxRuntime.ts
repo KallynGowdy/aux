@@ -118,6 +118,7 @@ export class AuxRuntime
     private _forceSignedScripts: boolean;
     private _exemptSpaces: BotSpace[];
     private _batchPending: boolean = false;
+    private _rootZone: Zone;
 
     get forceSignedScripts() {
         return this._forceSignedScripts;
@@ -147,6 +148,7 @@ export class AuxRuntime
         forceSignedScripts: boolean = false,
         exemptSpaces: BotSpace[] = ['local', 'tempLocal']
     ) {
+        this._rootZone = Zone.current;
         this._globalContext = new MemoryGlobalContext(
             version,
             device,
@@ -163,7 +165,7 @@ export class AuxRuntime
         const cleanupSpec = new CleanupZoneSpec();
         this._sub = cleanupSpec;
 
-        const cleanupZone = Zone.current.fork(cleanupSpec);
+        const cleanupZone = this._rootZone.fork(cleanupSpec);
 
         const batchingZone = cleanupZone.fork(
             new BatchingZoneSpec(() => {

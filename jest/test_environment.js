@@ -4,6 +4,7 @@
 'use strict';
 
 const NodeEnvironment = require('jest-environment-node');
+const exportFakeTimersToSandboxGlobal = require('./jest-zone-patch-fake-timers');
 
 class TestEnvironment extends NodeEnvironment {
     constructor(config) {
@@ -16,6 +17,7 @@ class TestEnvironment extends NodeEnvironment {
                 }),
             })
         );
+        exportFakeTimersToSandboxGlobal(this);
     }
 }
 

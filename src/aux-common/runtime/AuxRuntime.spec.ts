@@ -1,5 +1,3 @@
-jest.useFakeTimers();
-
 import { MemoryPartition, createMemoryPartition } from '../partitions';
 import { AuxRuntime } from './AuxRuntime';
 import {
@@ -3585,46 +3583,71 @@ describe('AuxRuntime', () => {
             expect((<any>events[0][0]).message.value[0]).toEqual(obj);
         });
 
-        it('should dispatch events from setInterval() callbacks', async () => {
-            runtime.stateUpdated(
-                stateUpdatedEvent({
-                    test1: createBot('test1', {
-                        hello: '@setInterval(() => player.toast("abc"), 100)',
-                    }),
-                })
-            );
-            runtime.shout('hello');
+        describe('timers', () => {
+            beforeEach(() => {
+                jest.useFakeTimers('modern');
+            });
 
-            await waitAsync();
+            afterEach(() => {
+                jest.useRealTimers();
+            });
 
-            expect(events).toEqual([]);
+            it('should dispatch events from setInterval() callbacks', () => {
+                runtime.stateUpdated(
+                    stateUpdatedEvent({
+                        test1: createBot('test1', {
+                            hello:
+                                '@setInterval(() => player.toast("abc"), 100)',
+                        }),
+                    })
+                );
+                runtime.shout('hello');
 
-            jest.advanceTimersByTime(200);
+                expect(events).toEqual([]);
 
-            await waitAsync();
+                jest.advanceTimersByTime(200);
 
-            expect(events).toEqual([[toast('abc')], [toast('abc')]]);
-        });
+                expect(events).toEqual([[toast('abc')], [toast('abc')]]);
+                jest.clearAllTimers();
+            });
 
-        it('should dispatch events from setTimeout() callbacks', async () => {
-            runtime.stateUpdated(
-                stateUpdatedEvent({
-                    test1: createBot('test1', {
-                        hello: '@setTimeout(() => player.toast("abc"), 100)',
-                    }),
-                })
-            );
-            runtime.shout('hello');
+            it('should dispatch events from setTimeout() callbacks', () => {
+                runtime.stateUpdated(
+                    stateUpdatedEvent({
+                        test1: createBot('test1', {
+                            hello:
+                                '@setTimeout(() => player.toast("abc"), 100)',
+                        }),
+                    })
+                );
+                runtime.shout('hello');
 
-            await waitAsync();
+                expect(events).toEqual([]);
 
-            expect(events).toEqual([]);
+                jest.advanceTimersByTime(200);
 
-            jest.advanceTimersByTime(200);
+                expect(events).toEqual([[toast('abc')]]);
+            });
 
-            await waitAsync();
+            it('should handle a bot getting destroyed twice due to a setTimeout() callback', () => {
+                runtime.stateUpdated(
+                    stateUpdatedEvent({
+                        test1: createBot('test1', {
+                            hello: '@setTimeout(() => destroy(this), 100)',
+                            destroy: '@destroy(this)',
+                        }),
+                    })
+                );
+                const helloResult = runtime.shout('hello');
+                const destroyResult = runtime.shout('destroy');
 
-            expect(events).toEqual([[toast('abc')]]);
+                expect(destroyResult.actions).toEqual([botRemoved('test1')]);
+                expect(helloResult.actions).toEqual([]);
+
+                jest.advanceTimersByTime(200);
+
+                expect(events).toEqual([[botRemoved('test1')]]);
+            });
         });
 
         it('should dispatch events from promise callbacks', async () => {
@@ -3705,29 +3728,6 @@ describe('AuxRuntime', () => {
                     }),
                 ],
             ]);
-        });
-
-        it('should handle a bot getting destroyed twice due to a setTimeout() callback', async () => {
-            runtime.stateUpdated(
-                stateUpdatedEvent({
-                    test1: createBot('test1', {
-                        hello: '@setTimeout(() => destroy(this), 100)',
-                        destroy: '@destroy(this)',
-                    }),
-                })
-            );
-            runtime.shout('hello');
-            runtime.shout('destroy');
-
-            await waitAsync();
-
-            expect(events).toEqual([[botRemoved('test1')]]);
-
-            jest.advanceTimersByTime(200);
-
-            await waitAsync();
-
-            expect(events).toEqual([[botRemoved('test1')]]);
         });
 
         it('should handle a bot getting destroyed twice', async () => {
@@ -3851,110 +3851,110 @@ describe('AuxRuntime', () => {
                 ]);
             });
 
-            it('should preserve the current bot in callbacks', async () => {
-                uuidMock.mockReturnValueOnce('uuid1');
-                runtime.stateUpdated(
-                    stateUpdatedEvent({
-                        test1: createBot('test1', {
-                            hello:
-                                '@setTimeout(() => create({ abc: "def" }), 100)',
-                        }),
-                    })
-                );
-                runtime.shout('hello');
+            describe('timers', () => {
+                beforeEach(() => {
+                    jest.useFakeTimers('modern');
+                });
 
-                await waitAsync();
+                afterEach(() => {
+                    jest.useRealTimers();
+                });
 
-                expect(events).toEqual([]);
+                it('should preserve the current bot in callbacks', () => {
+                    uuidMock.mockReturnValueOnce('uuid1');
+                    runtime.stateUpdated(
+                        stateUpdatedEvent({
+                            test1: createBot('test1', {
+                                hello:
+                                    '@setTimeout(() => create({ abc: "def" }), 100)',
+                            }),
+                        })
+                    );
+                    runtime.shout('hello');
 
-                jest.advanceTimersByTime(100);
+                    expect(events).toEqual([]);
 
-                await waitAsync();
+                    jest.advanceTimersByTime(100);
 
-                expect(events).toEqual([
-                    [
-                        botAdded(
-                            createBot('uuid1', {
-                                creator: 'test1',
-                                abc: 'def',
-                            })
-                        ),
-                    ],
-                ]);
-            });
+                    expect(events).toEqual([
+                        [
+                            botAdded(
+                                createBot('uuid1', {
+                                    creator: 'test1',
+                                    abc: 'def',
+                                })
+                            ),
+                        ],
+                    ]);
+                });
 
-            it('should produce an event from setInterval() callbacks', async () => {
-                uuidMock
-                    .mockReturnValueOnce('uuid1')
-                    .mockReturnValueOnce('uuid2');
-                runtime.stateUpdated(
-                    stateUpdatedEvent({
-                        test1: createBot('test1', {
-                            hello:
-                                '@setInterval(() => create({ abc: "def" }), 100)',
-                        }),
-                    })
-                );
-                runtime.shout('hello');
+                it('should produce an event from setInterval() callbacks', () => {
+                    uuidMock
+                        .mockReturnValueOnce('uuid1')
+                        .mockReturnValueOnce('uuid2');
+                    runtime.stateUpdated(
+                        stateUpdatedEvent({
+                            test1: createBot('test1', {
+                                hello:
+                                    '@setInterval(() => create({ abc: "def" }), 100)',
+                            }),
+                        })
+                    );
+                    runtime.shout('hello');
 
-                await waitAsync();
+                    expect(events).toEqual([]);
 
-                expect(events).toEqual([]);
+                    jest.advanceTimersByTime(200);
 
-                jest.advanceTimersByTime(200);
+                    expect(events).toEqual([
+                        [
+                            botAdded(
+                                createBot('uuid1', {
+                                    creator: 'test1',
+                                    abc: 'def',
+                                })
+                            ),
+                        ],
+                        [
+                            botAdded(
+                                createBot('uuid2', {
+                                    creator: 'test1',
+                                    abc: 'def',
+                                })
+                            ),
+                        ],
+                    ]);
 
-                await waitAsync();
+                    jest.clearAllTimers();
+                });
 
-                expect(events).toEqual([
-                    [
-                        botAdded(
-                            createBot('uuid1', {
-                                creator: 'test1',
-                                abc: 'def',
-                            })
-                        ),
-                    ],
-                    [
-                        botAdded(
-                            createBot('uuid2', {
-                                creator: 'test1',
-                                abc: 'def',
-                            })
-                        ),
-                    ],
-                ]);
-            });
+                it('should produce an event from setTimeout() callbacks', () => {
+                    uuidMock.mockReturnValueOnce('uuid1');
+                    runtime.stateUpdated(
+                        stateUpdatedEvent({
+                            test1: createBot('test1', {
+                                hello:
+                                    '@setTimeout(() => create({ abc: "def" }), 100)',
+                            }),
+                        })
+                    );
+                    runtime.shout('hello');
 
-            it('should produce an event from setTimeout() callbacks', async () => {
-                uuidMock.mockReturnValueOnce('uuid1');
-                runtime.stateUpdated(
-                    stateUpdatedEvent({
-                        test1: createBot('test1', {
-                            hello:
-                                '@setTimeout(() => create({ abc: "def" }), 100)',
-                        }),
-                    })
-                );
-                runtime.shout('hello');
+                    expect(events).toEqual([]);
 
-                await waitAsync();
+                    jest.advanceTimersByTime(200);
 
-                expect(events).toEqual([]);
-
-                jest.advanceTimersByTime(200);
-
-                await waitAsync();
-
-                expect(events).toEqual([
-                    [
-                        botAdded(
-                            createBot('uuid1', {
-                                creator: 'test1',
-                                abc: 'def',
-                            })
-                        ),
-                    ],
-                ]);
+                    expect(events).toEqual([
+                        [
+                            botAdded(
+                                createBot('uuid1', {
+                                    creator: 'test1',
+                                    abc: 'def',
+                                })
+                            ),
+                        ],
+                    ]);
+                });
             });
 
             it('should produce an event from promise callbacks', async () => {
@@ -4117,54 +4117,59 @@ describe('AuxRuntime', () => {
                 ]);
             });
 
-            it('should delete bots from setInterval() callbacks', async () => {
-                uuidMock
-                    .mockReturnValueOnce('uuid1')
-                    .mockReturnValueOnce('uuid2');
-                runtime.stateUpdated(
-                    stateUpdatedEvent({
-                        test1: createBot('test1', {
-                            hello: '@setInterval(() => destroy("test2"), 100)',
-                        }),
-                        test2: createBot('test2'),
-                        test3: createBot('test3'),
-                    })
-                );
-                runtime.shout('hello');
+            describe('timers', () => {
+                beforeEach(() => {
+                    jest.useFakeTimers('modern');
+                });
 
-                await waitAsync();
+                afterEach(() => {
+                    jest.useRealTimers();
+                });
 
-                expect(events).toEqual([]);
+                it('should delete bots from setInterval() callbacks', () => {
+                    uuidMock
+                        .mockReturnValueOnce('uuid1')
+                        .mockReturnValueOnce('uuid2');
+                    runtime.stateUpdated(
+                        stateUpdatedEvent({
+                            test1: createBot('test1', {
+                                hello:
+                                    '@setInterval(() => destroy("test2"), 100)',
+                            }),
+                            test2: createBot('test2'),
+                            test3: createBot('test3'),
+                        })
+                    );
+                    runtime.shout('hello');
 
-                jest.advanceTimersByTime(200);
+                    expect(events).toEqual([]);
 
-                await waitAsync();
+                    jest.advanceTimersByTime(200);
 
-                expect(events).toEqual([[botRemoved('test2')]]);
-            });
+                    expect(events).toEqual([[botRemoved('test2')]]);
+                    jest.clearAllTimers();
+                });
 
-            it('should delete bots from setTimeout() callbacks', async () => {
-                uuidMock.mockReturnValueOnce('uuid1');
-                runtime.stateUpdated(
-                    stateUpdatedEvent({
-                        test1: createBot('test1', {
-                            hello: '@setTimeout(() => destroy("test2"), 100)',
-                        }),
-                        test2: createBot('test2'),
-                        test3: createBot('test3'),
-                    })
-                );
-                runtime.shout('hello');
+                it('should delete bots from setTimeout() callbacks', () => {
+                    uuidMock.mockReturnValueOnce('uuid1');
+                    runtime.stateUpdated(
+                        stateUpdatedEvent({
+                            test1: createBot('test1', {
+                                hello:
+                                    '@setTimeout(() => destroy("test2"), 100)',
+                            }),
+                            test2: createBot('test2'),
+                            test3: createBot('test3'),
+                        })
+                    );
+                    runtime.shout('hello');
 
-                await waitAsync();
+                    expect(events).toEqual([]);
 
-                expect(events).toEqual([]);
+                    jest.advanceTimersByTime(200);
 
-                jest.advanceTimersByTime(200);
-
-                await waitAsync();
-
-                expect(events).toEqual([[botRemoved('test2')]]);
+                    expect(events).toEqual([[botRemoved('test2')]]);
+                });
             });
 
             it('should delete bots from promise callbacks', async () => {
@@ -4454,74 +4459,82 @@ describe('AuxRuntime', () => {
                 ]);
             });
 
-            it('should update bots from setInterval() callbacks', async () => {
-                uuidMock
-                    .mockReturnValueOnce('uuid1')
-                    .mockReturnValueOnce('uuid2');
-                runtime.stateUpdated(
-                    stateUpdatedEvent({
-                        test1: createBot('test1', {
-                            hello: '@setInterval(() => tags.count += 1, 100)',
-                            count: 0,
-                        }),
-                    })
-                );
-                runtime.shout('hello');
+            describe('timers', () => {
+                beforeEach(() => {
+                    jest.useFakeTimers('modern');
+                });
 
-                await waitAsync();
+                afterEach(() => {
+                    jest.useRealTimers();
+                });
 
-                expect(events).toEqual([]);
+                it('should update bots from setInterval() callbacks', () => {
+                    uuidMock
+                        .mockReturnValueOnce('uuid1')
+                        .mockReturnValueOnce('uuid2');
+                    runtime.stateUpdated(
+                        stateUpdatedEvent({
+                            test1: createBot('test1', {
+                                hello:
+                                    '@setInterval(() => tags.count += 1, 100)',
+                                count: 0,
+                            }),
+                        })
+                    );
+                    runtime.shout('hello');
 
-                jest.advanceTimersByTime(200);
+                    expect(events).toEqual([]);
 
-                await waitAsync();
+                    jest.advanceTimersByTime(200);
 
-                expect(events).toEqual([
-                    [
-                        botUpdated('test1', {
-                            tags: {
-                                count: 1,
-                            },
-                        }),
-                    ],
-                    [
-                        botUpdated('test1', {
-                            tags: {
-                                count: 2,
-                            },
-                        }),
-                    ],
-                ]);
-            });
+                    expect(events).toEqual([
+                        [
+                            botUpdated('test1', {
+                                tags: {
+                                    count: 1,
+                                },
+                            }),
+                        ],
+                        [
+                            botUpdated('test1', {
+                                tags: {
+                                    count: 2,
+                                },
+                            }),
+                        ],
+                    ]);
 
-            it('should update bots from setTimeout() callbacks', async () => {
-                uuidMock.mockReturnValueOnce('uuid1');
-                runtime.stateUpdated(
-                    stateUpdatedEvent({
-                        test1: createBot('test1', {
-                            hello: '@setTimeout(() => tags.hit = true, 100)',
-                        }),
-                    })
-                );
-                runtime.shout('hello');
+                    jest.clearAllTimers();
+                });
 
-                await waitAsync();
+                it('should update bots from setTimeout() callbacks', () => {
+                    uuidMock.mockReturnValueOnce('uuid1');
+                    runtime.stateUpdated(
+                        stateUpdatedEvent({
+                            test1: createBot('test1', {
+                                hello:
+                                    '@setTimeout(() => tags.hit = true, 100)',
+                            }),
+                        })
+                    );
+                    runtime.shout('hello');
 
-                expect(events).toEqual([]);
+                    expect(events).toEqual([]);
 
-                jest.advanceTimersByTime(200);
+                    jest.advanceTimersByTime(200);
 
-                await waitAsync();
+                    expect(events).toEqual([
+                        [
+                            botUpdated('test1', {
+                                tags: {
+                                    hit: true,
+                                },
+                            }),
+                        ],
+                    ]);
 
-                expect(events).toEqual([
-                    [
-                        botUpdated('test1', {
-                            tags: {
-                                hit: true,
-                            },
-                        }),
-                    ],
-                ]);
+                    jest.clearAllTimers();
+                });
             });
 
             it('should update bots from promise callbacks', async () => {
@@ -5242,6 +5255,14 @@ describe('AuxRuntime', () => {
     });
 
     describe('unsubscribe()', () => {
+        beforeEach(() => {
+            jest.useFakeTimers('modern');
+        });
+
+        afterEach(() => {
+            jest.useRealTimers();
+        });
+
         it('should cancel any scheduled tasks', () => {
             const test = jest.fn();
             runtime = new AuxRuntime(
@@ -7138,15 +7159,15 @@ describe('original action tests', () => {
         });
 
         const ignoreCases = [
-            ['null', null],
-            ['0', 0],
-            ['1', 1],
-            ['false', false],
-            ['true', true],
-            ['undefined', undefined],
-            ['*empty string*', ''],
-            ['*filled string*', 'a'],
-            ['*array buffer*', new ArrayBuffer(255)],
+            ['null', null as any] as const,
+            ['0', 0] as const,
+            ['1', 1] as const,
+            ['false', false] as const,
+            ['true', true] as const,
+            ['undefined', undefined as any] as const,
+            ['*empty string*', ''] as const,
+            ['*filled string*', 'a'] as const,
+            ['*array buffer*', new ArrayBuffer(255)] as const,
             // ['*typed array*', new Int8Array([1, 2, 3])],
         ];
         it.each(ignoreCases)(
@@ -11222,27 +11243,39 @@ describe('original action tests', () => {
 
     describe('remote()', () => {
         const cases = [
-            ['player.toast("My Message!")', toast('My Message!')],
-            ['player.goToDimension("dimension")', goToDimension('dimension')],
-            ['player.openURL("url")', openURL('url')],
-            ['player.goToURL("url")', goToURL('url')],
-            ['player.tweenTo("id")', tweenTo('id')],
-            ['player.openURL("url")', openURL('url')],
-            ['player.openQRCodeScanner()', openQRCodeScanner(true)],
-            ['player.closeQRCodeScanner()', openQRCodeScanner(false)],
-            ['player.openBarcodeScanner()', openBarcodeScanner(true)],
-            ['player.closeBarcodeScanner()', openBarcodeScanner(false)],
-            ['player.showBarcode("code")', showBarcode(true, 'code')],
-            ['player.hideBarcode()', showBarcode(false)],
-            ['player.loadServer("channel")', loadSimulation('channel')],
-            ['player.unloadServer("channel")', unloadSimulation('channel')],
-            ['player.importAUX("aux")', importAUX('aux')],
-            ['player.showQRCode("code")', showQRCode(true, 'code')],
-            ['player.hideQRCode()', showQRCode(false)],
+            ['player.toast("My Message!")', toast('My Message!')] as const,
+            [
+                'player.goToDimension("dimension")',
+                goToDimension('dimension'),
+            ] as const,
+            ['player.openURL("url")', openURL('url')] as const,
+            ['player.goToURL("url")', goToURL('url')] as const,
+            ['player.tweenTo("id")', tweenTo('id')] as const,
+            ['player.openURL("url")', openURL('url')] as const,
+            ['player.openQRCodeScanner()', openQRCodeScanner(true)] as const,
+            ['player.closeQRCodeScanner()', openQRCodeScanner(false)] as const,
+            ['player.openBarcodeScanner()', openBarcodeScanner(true)] as const,
+            [
+                'player.closeBarcodeScanner()',
+                openBarcodeScanner(false),
+            ] as const,
+            ['player.showBarcode("code")', showBarcode(true, 'code')] as const,
+            ['player.hideBarcode()', showBarcode(false)] as const,
+            [
+                'player.loadServer("channel")',
+                loadSimulation('channel'),
+            ] as const,
+            [
+                'player.unloadServer("channel")',
+                unloadSimulation('channel'),
+            ] as const,
+            ['player.importAUX("aux")', importAUX('aux')] as const,
+            ['player.showQRCode("code")', showQRCode(true, 'code')] as const,
+            ['player.hideQRCode()', showQRCode(false)] as const,
             [
                 'player.showInputForTag(this, "abc")',
                 showInputForTag('thisBot', 'abc'),
-            ],
+            ] as const,
             [
                 `player.checkout({
                 publishableKey: 'my_key',
@@ -11258,8 +11291,8 @@ describe('original action tests', () => {
                     description: '$50.43',
                     processingServer: 'channel2',
                 }),
-            ],
-            ['player.openDevConsole()', openConsole()],
+            ] as const,
+            ['player.openDevConsole()', openConsole()] as const,
         ];
 
         it.each(cases)('should wrap %s in a remote event', (script, event) => {
