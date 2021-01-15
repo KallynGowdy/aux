@@ -131,12 +131,17 @@ export function createUserCone(
     return mesh;
 }
 
+const DEFAULT_CUBE_GEOMETRY = new BoxBufferGeometry(1, 1, 1);
+
 /**
  * Creates a new cube mesh.
  * @param size The size of the cube in meters.
  */
 export function createCube(size: number): Mesh {
-    const geometry = new BoxBufferGeometry(size, size, size);
+    const geometry =
+        size === 1
+            ? DEFAULT_CUBE_GEOMETRY
+            : new BoxBufferGeometry(size, size, size);
     let material = baseAuxMeshMaterial();
 
     const cube = new Mesh(geometry, material);
@@ -724,6 +729,9 @@ export function percentOfScreen(
  * @param parent The parent.
  */
 export function safeSetParent(obj: Object3D, parent: Object3D): boolean {
+    if (obj.parent === parent) {
+        return true;
+    }
     let grandparent = parent;
     while (grandparent) {
         if (grandparent === obj) {

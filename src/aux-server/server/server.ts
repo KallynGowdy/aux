@@ -96,7 +96,10 @@ import mime from 'mime';
 import sortBy from 'lodash/sortBy';
 import { GpioModule } from './modules/GpioModule';
 import { GpioModule2 } from './modules/GpioModule2';
+import { SerialModule } from './modules/SerialModule';
 import { MongoDBStageStore } from './mongodb/MongoDBStageStore';
+import { WebConfig } from 'shared/WebConfig';
+import compression from 'compression';
 
 const connect = pify(MongoClient.connect);
 
@@ -144,10 +147,11 @@ export class ClientServer {
         this._app.get(
             '/api/config',
             asyncMiddleware(async (req, res) => {
-                res.send({
+                const config: WebConfig = {
                     ...this._player.web,
                     version: 2,
-                });
+                };
+                res.send(config);
             })
         );
 
@@ -340,6 +344,14 @@ export class ClientServer {
         );
         */
 
+        this._app.get('/terms', (req, res) => {
+            res.sendFile(path.join(this._config.dist, 'terms-of-service.txt'));
+        });
+
+        this._app.get('/privacy-policy', (req, res) => {
+            res.sendFile(path.join(this._config.dist, 'privacy-policy.txt'));
+        });
+
         this._app.get('*', (req, res) => {
             res.sendFile(path.join(this._config.dist, this._player.index));
         });
@@ -449,8 +461,11 @@ export class Server {
 
         this._app.use(cors());
 
+        this._app.use(compression());
+
         this._mongoClient = await connect(this._config.mongodb.url, {
             useNewUrlParser: this._config.mongodb.useNewUrlParser,
+            useUnifiedTopology: !!this._config.mongodb.useUnifiedTopology,
         } as MongoClientOptions);
         if (this._config.cassandradb) {
             console.log('[Server] Using CassandraDB');
@@ -641,7 +656,7 @@ export class Server {
     }
 
     private async _handleDataPortal(req: Request, res: Response) {
-        const id = req.query.story;
+        const id = req.query.server;
         if (!id) {
             res.sendStatus(400);
             return;
@@ -726,7 +741,7 @@ export class Server {
     }
 
     private async _handleWebhook(req: Request, res: Response) {
-        const id = req.query.story;
+        const id = req.query.server;
         if (!id) {
             res.sendStatus(400);
             return;
@@ -927,33 +942,63 @@ export class Server {
         const serverUser = getServerUser();
         const serverDevice = deviceInfoFromUser(serverUser);
 
-        const {
-            connections,
-            manager,
-            webhooksClient,
-        } = this._createRepoManager(serverDevice, serverUser);
-        const fixedServer = new FixedConnectionServer(connections);
-        const multiServer = new MultiConnectionServer([
-            socketIOServer,
-            fixedServer,
-        ]);
+        if (this._config.executeLoadedStories) {
+            const {
+                connections,
+                manager,
+                webhooksClient,
+            } = this._createRepoManager(serverDevice, serverUser);
+            const fixedServer = new FixedConnectionServer(connections);
+            const multiServer = new MultiConnectionServer([
+                socketIOServer,
+                fixedServer,
+            ]);
 
-        const repoServer = new CausalRepoServer(multiServer, store, stageStore);
-        repoServer.defaultDeviceSelector = {
-            username: serverDevice.claims[USERNAME_CLAIM],
-            deviceId: serverDevice.claims[DEVICE_ID_CLAIM],
-            sessionId: serverDevice.claims[SESSION_ID_CLAIM],
-        };
+            const repoServer = new CausalRepoServer(
+                multiServer,
+                store,
+                stageStore
+            );
+            repoServer.defaultDeviceSelector = {
+                username: serverDevice.claims[USERNAME_CLAIM],
+                deviceId: serverDevice.claims[DEVICE_ID_CLAIM],
+                sessionId: serverDevice.claims[SESSION_ID_CLAIM],
+            };
 
-        this._webhooksClient = webhooksClient;
+            this._webhooksClient = webhooksClient;
 
-        repoServer.init();
+            repoServer.init();
 
-        // Wait for async operations from the repoServer to finish
-        // before starting the repo manager
-        setImmediate(() => {
-            manager.init();
-        });
+            // Wait for async operations from the repoServer to finish
+            // before starting the repo manager
+            setImmediate(() => {
+                manager.init();
+            });
+        } else {
+            const webhooks = this._createWebhooksClient();
+            const fixedServer = new FixedConnectionServer([
+                webhooks.connection,
+            ]);
+            const multiServer = new MultiConnectionServer([
+                socketIOServer,
+                fixedServer,
+            ]);
+
+            const repoServer = new CausalRepoServer(
+                multiServer,
+                store,
+                stageStore
+            );
+            repoServer.defaultDeviceSelector = {
+                username: serverDevice.claims[USERNAME_CLAIM],
+                deviceId: serverDevice.claims[DEVICE_ID_CLAIM],
+                sessionId: serverDevice.claims[SESSION_ID_CLAIM],
+            };
+
+            this._webhooksClient = webhooks.client;
+
+            repoServer.init();
+        }
     }
 
     private _createRepoManager(serverDevice: DeviceInfo, serverUser: AuxUser) {
@@ -964,7 +1009,7 @@ export class Server {
         const setupChannel = this._createSetupChannelModule();
         const webhooks = this._createWebhooksClient();
         const gpioModules = this._config.gpio
-            ? [new GpioModule(), new GpioModule2()]
+            ? [new GpioModule(), new GpioModule2(), new SerialModule()]
             : [];
         const manager = new AuxCausalRepoManager(
             serverUser,
@@ -1183,7 +1228,7 @@ function getWebhooksUser(): AuxUser {
  */
 function dataPortalMiddleware(func: express.Handler) {
     return function (req: Request, res: Response, next: NextFunction) {
-        if (hasValue(req.query.story) && hasValue(req.query[DATA_PORTAL])) {
+        if (hasValue(req.query.server) && hasValue(req.query[DATA_PORTAL])) {
             return func(req, res, next);
         } else {
             return next();

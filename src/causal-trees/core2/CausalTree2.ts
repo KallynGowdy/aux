@@ -1,4 +1,10 @@
-import { Weave, WeaveResult, addedAtom, weaveRemovedAtoms } from './Weave2';
+import {
+    Weave,
+    WeaveResult,
+    addedAtom,
+    weaveRemovedAtoms,
+    addedWeaveAtoms,
+} from './Weave2';
 import {
     SiteStatus,
     newSite,
@@ -10,11 +16,35 @@ import {
 import { Atom, AtomCardinality } from './Atom2';
 
 /**
+ * Defines an interface that represents the current version of a causal tree.
+ */
+export interface CurrentVersion {
+    /**
+     * The ID of the local site.
+     * Null if the local site does not have an ID.
+     */
+    currentSite: string | null;
+
+    /**
+     * The current version vector.
+     */
+    vector: VersionVector;
+}
+
+/**
+ * Defines an interface that represents a map of site IDs to timestamps.
+ */
+export interface VersionVector {
+    [site: string]: number;
+}
+
+/**
  * Defines an interface for a casual tree that can be operated on.
  */
 export interface CausalTree<T> {
     weave: Weave<T>;
     site: SiteStatus;
+    version: VersionVector;
 }
 
 /**
@@ -30,9 +60,24 @@ export interface TreeResult {
  * @param id The ID to use for the site.
  */
 export function tree<T>(id?: string, time?: number): CausalTree<T> {
+    const site = newSite(id, time);
     return {
         weave: new Weave(),
-        site: newSite(id, time),
+        site: site,
+        version: {
+            [site.id]: site.time,
+        },
+    };
+}
+
+/**
+ * Gets the current version for the given tree.
+ * @param tree The tree.
+ */
+export function treeVersion<T>(tree: CausalTree<T>): CurrentVersion {
+    return {
+        currentSite: tree.site.id,
+        vector: tree.version,
     };
 }
 
@@ -49,14 +94,20 @@ export function insertAtoms<T, O extends T>(
     for (let atom of atoms) {
         const result = tree.weave.insert(atom);
         results.push(result);
-        const added = addedAtom(result);
-        if (added) {
-            tree.site.time = calculateTimeFromId(
-                tree.site.id,
-                tree.site.time,
-                added.id.site,
-                added.id.timestamp
-            );
+        const addedAtoms = addedWeaveAtoms(result);
+        if (addedAtoms) {
+            for (let added of addedAtoms) {
+                tree.site.time = calculateTimeFromId(
+                    tree.site.id,
+                    tree.site.time,
+                    added.id.site,
+                    added.id.timestamp
+                );
+                tree.version[added.id.site] = Math.max(
+                    added.id.timestamp,
+                    tree.version[added.id.site] || 0
+                );
+            }
         }
     }
 
@@ -140,7 +191,10 @@ export function removeAtom<T>(tree: CausalTree<T>, hash: string): TreeResult {
  * @param first The first tree result.
  * @param second The second tree result.
  */
-export function mergeResults(first: TreeResult, second: TreeResult) {
+export function mergeResults(
+    first: TreeResult,
+    second: TreeResult
+): TreeResult {
     return {
         results: [...first.results, ...second.results],
         newSite: mergeSites(first.newSite, second.newSite),
@@ -168,9 +222,21 @@ export function applyResult<T>(
     tree: CausalTree<T>,
     result: TreeResult
 ): CausalTree<T> {
+    for (let r of result.results) {
+        const addedAtoms = addedWeaveAtoms(r);
+        if (addedAtoms) {
+            for (let added of addedAtoms) {
+                tree.version[added.id.site] = Math.max(
+                    added.id.timestamp,
+                    tree.version[added.id.site] || 0
+                );
+            }
+        }
+    }
     return {
         weave: tree.weave,
         site: result.newSite,
+        version: tree.version,
     };
 }
 
@@ -183,7 +249,11 @@ export function addedAtoms(results: WeaveResult[]): Atom<any>[] {
     for (let r of results) {
         const added = addedAtom(r);
         if (added) {
-            atoms.push(added);
+            if (Array.isArray(added)) {
+                atoms.push(...added);
+            } else {
+                atoms.push(added);
+            }
         }
     }
     return atoms;

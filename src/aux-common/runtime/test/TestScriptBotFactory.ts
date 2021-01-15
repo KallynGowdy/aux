@@ -7,6 +7,7 @@ import {
     botsFromShortIds,
     TAG_MASK_SPACE_PRIORITIES,
     RuntimeBot,
+    hasValue,
 } from '../../bots';
 import {
     createRuntimeBot,
@@ -16,6 +17,7 @@ import {
 } from '../RuntimeBot';
 import { createCompiledBot, CompiledBot } from '../CompiledBot';
 import pickBy from 'lodash/pickBy';
+import { applyEdit, isTagEdit } from '../../aux-format-2';
 
 export class TestScriptBotFactory implements RuntimeBotFactory {
     createRuntimeBot(bot: Bot): RuntimeBot {
@@ -46,7 +48,6 @@ export function createDummyRuntimeBot(
         tags,
         undefined,
         space,
-        undefined,
         functions,
         signatures
     );
@@ -55,8 +56,20 @@ export function createDummyRuntimeBot(
 
 export const testScriptBotInterface: RuntimeBotInterface = {
     updateTag(bot: PrecalculatedBot, tag: string, newValue: any) {
-        bot.tags[tag] = newValue;
-        bot.values[tag] = newValue;
+        if (isTagEdit(newValue)) {
+            bot.values[tag] = bot.tags[tag] = applyEdit(
+                bot.tags[tag],
+                newValue
+            );
+        } else {
+            if (hasValue(newValue)) {
+                bot.tags[tag] = newValue;
+                bot.values[tag] = newValue;
+            } else {
+                delete bot.tags[tag];
+                delete bot.values[tag];
+            }
+        }
         return RealtimeEditMode.Immediate;
     },
     getValue(bot: PrecalculatedBot, tag: string) {
@@ -98,8 +111,17 @@ export const testScriptBotInterface: RuntimeBotInterface = {
             if (!bot.masks[space]) {
                 bot.masks[space] = {};
             }
-            bot.masks[space][tag] = value;
+            if (isTagEdit(value)) {
+                bot.masks[space][tag] = applyEdit(bot.masks[space][tag], value);
+            } else {
+                bot.masks[space][tag] = value;
+            }
         }
         return RealtimeEditMode.Immediate;
+    },
+
+    currentVersion: {
+        localSites: {},
+        vector: {},
     },
 };

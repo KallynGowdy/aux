@@ -24,18 +24,34 @@ import {
     BotTagMasks,
     BotTags,
 } from '@casual-simulation/aux-common';
-import { StatusUpdate, Action } from '@casual-simulation/causal-trees';
+import {
+    StatusUpdate,
+    Action,
+    CurrentVersion,
+} from '@casual-simulation/causal-trees';
 import flatMap from 'lodash/flatMap';
-import { Subject, Subscription, Observable, fromEventPattern } from 'rxjs';
+import {
+    Subject,
+    Subscription,
+    Observable,
+    fromEventPattern,
+    BehaviorSubject,
+} from 'rxjs';
 import { startWith, filter, map } from 'rxjs/operators';
 import pickBy from 'lodash/pickBy';
 import union from 'lodash/union';
+import {
+    applyEdit,
+    isTagEdit,
+} from '@casual-simulation/aux-common/aux-format-2';
+import uuid from 'uuid/v4';
 
 export class LocalStoragePartitionImpl implements LocalStoragePartition {
     protected _onBotsAdded = new Subject<Bot[]>();
     protected _onBotsRemoved = new Subject<string[]>();
     protected _onBotsUpdated = new Subject<UpdatedBot[]>();
     protected _onStateUpdated = new Subject<StateUpdatedEvent>();
+    protected _onVersionUpdated: Subject<CurrentVersion>;
 
     protected _onError = new Subject<any>();
     protected _onEvents = new Subject<Action[]>();
@@ -43,6 +59,7 @@ export class LocalStoragePartitionImpl implements LocalStoragePartition {
     protected _hasRegisteredSubs = false;
     private _state: BotsState = {};
     private _sub = new Subscription();
+    private _siteId: string = uuid();
 
     get realtimeStrategy(): AuxPartitionRealtimeStrategy {
         return 'immediate';
@@ -78,6 +95,10 @@ export class LocalStoragePartitionImpl implements LocalStoragePartition {
         return this._onStatusUpdated;
     }
 
+    get onVersionUpdated(): Observable<CurrentVersion> {
+        return this._onVersionUpdated;
+    }
+
     unsubscribe() {
         return this._sub.unsubscribe();
     }
@@ -98,6 +119,10 @@ export class LocalStoragePartitionImpl implements LocalStoragePartition {
     constructor(config: LocalStoragePartitionConfig) {
         this.private = config.private || false;
         this.namespace = config.namespace;
+        this._onVersionUpdated = new BehaviorSubject<CurrentVersion>({
+            currentSite: this._siteId,
+            vector: {},
+        });
     }
 
     async applyEvents(events: BotAction[]): Promise<BotAction[]> {
@@ -181,15 +206,23 @@ export class LocalStoragePartitionImpl implements LocalStoragePartition {
         let removedBots = [] as string[];
         let updated = new Map<string, UpdatedBot>();
         let updatedState = {} as PartialBotsState;
+        // Flag to record if we have already created a new state object
+        // during the update.
+        let createdNewState = false;
         for (let event of events) {
             if (event.type === 'add_bot') {
                 let bot = {
                     ...event.bot,
                     space: this.space as BotSpace,
                 };
-                this._state = Object.assign({}, this._state, {
-                    [event.bot.id]: bot,
-                });
+                if (createdNewState) {
+                    this._state[event.bot.id] = bot;
+                } else {
+                    this._state = Object.assign({}, this._state, {
+                        [event.bot.id]: bot,
+                    });
+                    createdNewState = true;
+                }
                 updatedState[event.bot.id] = bot;
                 addedBots.set(event.bot.id, bot);
                 if (updateStorage) {
@@ -198,8 +231,13 @@ export class LocalStoragePartitionImpl implements LocalStoragePartition {
                 }
             } else if (event.type === 'remove_bot') {
                 const id = event.id;
-                let { [id]: removedBot, ...state } = this._state;
-                this._state = state;
+                if (createdNewState) {
+                    delete this._state[id];
+                } else {
+                    let { [id]: removedBot, ...state } = this._state;
+                    this._state = state;
+                    createdNewState = true;
+                }
                 if (!addedBots.delete(event.id)) {
                     removedBots.push(event.id);
                 }
@@ -228,7 +266,14 @@ export class LocalStoragePartitionImpl implements LocalStoragePartition {
                         }
 
                         if (hasValue(newVal)) {
-                            newBot.tags[tag] = newVal;
+                            if (isTagEdit(newVal)) {
+                                newBot.tags[tag] = applyEdit(
+                                    newBot.tags[tag],
+                                    newVal
+                                );
+                            } else {
+                                newBot.tags[tag] = newVal;
+                            }
                             updatedBot.tags[tag] = newVal;
                         } else {
                             delete newBot.tags[tag];
@@ -274,7 +319,11 @@ export class LocalStoragePartitionImpl implements LocalStoragePartition {
                         }
 
                         if (hasValue(newVal)) {
-                            masks[tag] = newVal;
+                            if (isTagEdit(newVal)) {
+                                masks[tag] = applyEdit(masks[tag], newVal);
+                            } else {
+                                masks[tag] = newVal;
+                            }
                         } else {
                             delete masks[tag];
                             updatedBot.masks[this.space][tag] = null;

@@ -4,10 +4,21 @@ import {
     tagsOnBot,
     isFormula,
     Transpiler,
+    replaceMacros,
     KNOWN_TAGS,
     isScript,
     hasValue,
     getTagValueForSpace,
+    calculateBotValue,
+    BotsState,
+    calculateBooleanTagValue,
+    isBotInDimension,
+    getBotShape,
+    getActiveObjects,
+    calculateNumericalTagValue,
+    calculateStringTagValue,
+    calculateFormattedBotValue,
+    DNA_TAG_PREFIX,
 } from '@casual-simulation/aux-common';
 import EditorWorker from 'worker-loader!monaco-editor/esm/vs/editor/editor.worker.js';
 import TypescriptWorker from 'worker-loader!monaco-editor/esm/vs/language/typescript/ts.worker';
@@ -17,13 +28,40 @@ import JsonWorker from 'worker-loader!monaco-editor/esm/vs/language/json/json.wo
 import { calculateFormulaDefinitions } from './FormulaHelpers';
 import { libFileMap } from 'monaco-editor/esm/vs/language/typescript/lib/lib.js';
 import { SimpleEditorModelResolverService } from 'monaco-editor/esm/vs/editor/standalone/browser/simpleServices';
-import { SubscriptionLike, Subscription } from 'rxjs';
-import { skip, flatMap, filter, first, takeWhile } from 'rxjs/operators';
+import { SubscriptionLike, Subscription, Observable, NEVER, merge } from 'rxjs';
+import {
+    skip,
+    flatMap,
+    filter,
+    first,
+    takeWhile,
+    tap,
+    switchMap,
+    map,
+    scan,
+    delay,
+    takeUntil,
+    debounceTime,
+} from 'rxjs/operators';
 import { Simulation } from '@casual-simulation/aux-vm';
 import { BrowserSimulation } from '@casual-simulation/aux-vm-browser';
 import union from 'lodash/union';
 import sortBy from 'lodash/sortBy';
 import { propertyInsertText } from './CompletionHelpers';
+import {
+    bot,
+    del,
+    edit,
+    edits,
+    insert,
+    mergeVersions,
+    preserve,
+    TagEditOp,
+} from '@casual-simulation/aux-common/aux-format-2';
+import { CurrentVersion } from '@casual-simulation/causal-trees';
+import { Color } from 'three';
+import { invertColor } from './scene/ColorUtils';
+import { getCursorColorClass, getCursorLabelClass } from './StyleHelpers';
 
 export function setup() {
     // Tell monaco how to create the web workers
@@ -104,7 +142,6 @@ interface ModelInfo {
 let subs: SubscriptionLike[] = [];
 let activeModel: monaco.editor.ITextModel = null;
 let models: Map<string, ModelInfo> = new Map();
-let transpiler = new Transpiler();
 
 /**
  * The model that should be marked as active.
@@ -118,7 +155,10 @@ export function setActiveModel(model: monaco.editor.ITextModel) {
  * Watches the given simulation for changes and updates the corresponding models.
  * @param simulation The simulation to watch.
  */
-export function watchSimulation(simulation: BrowserSimulation) {
+export function watchSimulation(
+    simulation: BrowserSimulation,
+    getEditor: () => monaco.editor.ICodeEditor
+) {
     let sub = simulation.watcher.botsDiscovered
         .pipe(flatMap((f) => f))
         .subscribe((f) => {
@@ -127,75 +167,10 @@ export function watchSimulation(simulation: BrowserSimulation) {
                     shouldKeepModelWithTagLoaded(tag) ||
                     isFormula(f.tags[tag])
                 ) {
-                    loadModel(simulation, f, tag, null);
+                    loadModel(simulation, f, tag, null, getEditor);
                 }
             }
         });
-
-    let referencesDisposable = monaco.languages.registerReferenceProvider(
-        'javascript',
-        {
-            async provideReferences(
-                model: monaco.editor.ITextModel,
-                position: monaco.Position,
-                context: monaco.languages.ReferenceContext,
-                token: monaco.CancellationToken
-            ): Promise<monaco.languages.Location[]> {
-                const line = model.getLineContent(position.lineNumber);
-                let startIndex = position.column;
-                let endIndex = position.column;
-                for (; startIndex >= 0; startIndex -= 1) {
-                    if (
-                        line[startIndex] === '"' ||
-                        line[startIndex] === "'" ||
-                        line[startIndex] === '`'
-                    ) {
-                        break;
-                    }
-                }
-                for (; endIndex < line.length; endIndex += 1) {
-                    if (
-                        line[endIndex] === '"' ||
-                        line[endIndex] === "'" ||
-                        line[endIndex] === '`'
-                    ) {
-                        break;
-                    }
-                }
-
-                const word = line.substring(startIndex + 1, endIndex);
-                if (word) {
-                    const result = await simulation.code.getReferences(word);
-                    let locations: monaco.languages.Location[] = [];
-                    for (let id in result.references) {
-                        for (let tag of result.references[id]) {
-                            const bot = simulation.helper.botsState[id];
-                            // TODO: Support references to tag masks
-                            let m = loadModel(simulation, bot, tag, null);
-                            locations.push(
-                                ...m
-                                    .findMatches(
-                                        result.tag,
-                                        true,
-                                        false,
-                                        true,
-                                        null,
-                                        false
-                                    )
-                                    .map((r) => ({
-                                        range: r.range,
-                                        uri: m.uri,
-                                    }))
-                            );
-                        }
-                    }
-                    return locations;
-                }
-
-                return [];
-            },
-        }
-    );
 
     let completionDisposable = monaco.languages.registerCompletionItemProvider(
         'javascript',
@@ -266,9 +241,225 @@ export function watchSimulation(simulation: BrowserSimulation) {
     );
 
     sub.add(() => {
-        referencesDisposable.dispose();
         completionDisposable.dispose();
     });
+
+    return sub;
+}
+
+export function watchEditor(
+    simulation: Simulation,
+    editor: monaco.editor.ICodeEditor
+): Subscription {
+    const modelChangeObservable = new Observable<
+        monaco.editor.IModelChangedEvent
+    >((sub) => {
+        return toSubscription(editor.onDidChangeModel((e) => sub.next(e)));
+    });
+
+    const decorators = modelChangeObservable.pipe(
+        delay(100),
+        filter((e) => !!e.newModelUrl),
+        map((e) => models.get(e.newModelUrl.toString())),
+        filter((info) => !!info),
+        filter((info) => !info.model.isDisposed()),
+        switchMap((info) => {
+            const dimension = `${info.botId}.${info.tag}`;
+
+            const botEvents = merge(
+                simulation.watcher.botsDiscovered.pipe(
+                    map((bots) => ({ type: 'added_or_updated', bots } as const))
+                ),
+                simulation.watcher.botsUpdated.pipe(
+                    map((bots) => ({ type: 'added_or_updated', bots } as const))
+                ),
+                simulation.watcher.botsRemoved.pipe(
+                    map((ids) => ({ type: 'removed', ids } as const))
+                )
+            );
+
+            const dimensionStates = botEvents.pipe(
+                scan((state, event) => {
+                    if (event.type === 'added_or_updated') {
+                        for (let bot of event.bots) {
+                            if (
+                                isBotInDimension(null, bot, dimension) ===
+                                    true &&
+                                getBotShape(null, bot) === 'cursor'
+                            ) {
+                                state[bot.id] = bot;
+                            } else {
+                                delete state[bot.id];
+                            }
+                        }
+                    } else {
+                        for (let id of event.ids) {
+                            delete state[id];
+                        }
+                    }
+                    return state;
+                }, {} as BotsState)
+            );
+
+            const debouncedStates = dimensionStates.pipe(debounceTime(75));
+
+            const botDecorators = debouncedStates.pipe(
+                map((state) => {
+                    let decorators = [] as monaco.editor.IModelDeltaDecoration[];
+                    let offset =
+                        info?.isScript || info?.isFormula
+                            ? DNA_TAG_PREFIX.length
+                            : 0;
+                    for (let bot of getActiveObjects(state)) {
+                        const cursorStart = calculateNumericalTagValue(
+                            null,
+                            bot,
+                            `${dimension}Start`,
+                            0
+                        );
+                        const cursorEnd = calculateNumericalTagValue(
+                            null,
+                            bot,
+                            `${dimension}End`,
+                            0
+                        );
+                        const startPosition = info.model.getPositionAt(
+                            cursorStart - offset
+                        );
+                        const endPosition = info.model.getPositionAt(
+                            cursorEnd - offset
+                        );
+                        const range = new monaco.Range(
+                            startPosition.lineNumber,
+                            startPosition.column,
+                            endPosition.lineNumber,
+                            endPosition.column
+                        );
+
+                        let beforeContentClassName: string;
+                        let afterContentClassName: string;
+
+                        const color = calculateStringTagValue(
+                            null,
+                            bot,
+                            'color',
+                            'black'
+                        );
+                        const colorClass = getCursorColorClass(
+                            'bot-cursor-color-',
+                            color,
+                            0.1
+                        );
+                        const notchColorClass = getCursorColorClass(
+                            'bot-notch-cursor-color-',
+                            color,
+                            1
+                        );
+
+                        const label = calculateFormattedBotValue(
+                            null,
+                            bot,
+                            'auxLabel'
+                        );
+
+                        const inverseColor = invertColor(
+                            new Color(color).getHexString(),
+                            true
+                        );
+                        const labelForeground = calculateStringTagValue(
+                            null,
+                            bot,
+                            'labelColor',
+                            inverseColor
+                        );
+
+                        let labelClass = '';
+                        if (hasValue(label)) {
+                            labelClass = getCursorLabelClass(
+                                'bot-notch-label',
+                                bot.id,
+                                labelForeground,
+                                color,
+                                label
+                            );
+                        }
+
+                        if (cursorStart < cursorEnd) {
+                            beforeContentClassName = null;
+                            afterContentClassName = `bot-cursor-notch ${notchColorClass} ${labelClass}`;
+                        } else {
+                            beforeContentClassName = `bot-cursor-notch ${notchColorClass} ${labelClass}`;
+                            afterContentClassName = null;
+                        }
+
+                        decorators.push({
+                            range,
+                            options: {
+                                className: `bot-cursor ${colorClass}`,
+                                beforeContentClassName,
+                                afterContentClassName,
+                                stickiness:
+                                    monaco.editor.TrackedRangeStickiness
+                                        .GrowsOnlyWhenTypingAfter,
+                            },
+                        });
+                    }
+
+                    return decorators;
+                })
+            );
+
+            const onModelWillDispose = new Observable<void>((sub) => {
+                info.model.onWillDispose(() => sub.next());
+            });
+
+            return botDecorators.pipe(takeUntil(onModelWillDispose));
+        }),
+
+        scan((ids, decorators) => {
+            return editor.getModel().deltaDecorations(ids, decorators);
+        }, [] as string[])
+    );
+
+    const sub = new Subscription();
+
+    sub.add(decorators.subscribe());
+
+    sub.add(
+        toSubscription(
+            editor.onDidChangeCursorSelection((e) => {
+                const model = editor.getModel();
+                const info = models.get(model.uri.toString());
+                const dir = e.selection.getDirection();
+                const startIndex = model.getOffsetAt(
+                    e.selection.getStartPosition()
+                );
+                const endIndex = model.getOffsetAt(
+                    e.selection.getEndPosition()
+                );
+
+                const offset =
+                    info?.isScript || info?.isFormula
+                        ? DNA_TAG_PREFIX.length
+                        : 0;
+                let finalStartIndex = offset + startIndex;
+                let finalEndIndex = offset + endIndex;
+
+                if (dir === monaco.SelectionDirection.RTL) {
+                    const temp = finalStartIndex;
+                    finalStartIndex = finalEndIndex;
+                    finalEndIndex = temp;
+                }
+
+                simulation.helper.updateBot(simulation.helper.userBot, {
+                    tags: {
+                        cursorStartIndex: finalStartIndex,
+                        cursorEndIndex: finalEndIndex,
+                    },
+                });
+            })
+        )
+    );
 
     return sub;
 }
@@ -296,7 +487,8 @@ export function loadModel(
     simulation: BrowserSimulation,
     bot: Bot,
     tag: string,
-    space: string
+    space: string,
+    getEditor: () => monaco.editor.ICodeEditor
 ) {
     const uri = getModelUri(bot, tag, space);
     let model = monaco.editor.getModel(uri);
@@ -308,15 +500,17 @@ export function loadModel(
             uri
         );
 
-        watchModel(simulation, model, bot, tag, space);
+        watchModel(simulation, model, bot, tag, space, getEditor);
     }
 
     return model;
 }
 
 function tagScriptLanguage(tag: string, script: any): string {
-    return isFormula(script) || isScript(script)
+    return isScript(script)
         ? 'javascript'
+        : isFormula(script)
+        ? 'json'
         : tag.indexOf('.') >= 0
         ? undefined
         : 'plaintext';
@@ -364,7 +558,8 @@ function watchModel(
     model: monaco.editor.ITextModel,
     bot: Bot,
     tag: string,
-    space: string
+    space: string,
+    getEditor: () => monaco.editor.ICodeEditor
 ) {
     let sub = new Subscription();
     let info: ModelInfo = {
@@ -377,47 +572,188 @@ function watchModel(
         sub: sub,
     };
 
+    // TODO: Improve to support additional partitions being added dynamically.
+    // This would require recieving an update whenever a new local site is available.
+    let lastVersion = simulation.watcher.latestVersion;
+    let applyingEdits: boolean = false;
+
     sub.add(
         simulation.watcher
-            .botTagsChanged(bot.id)
+            .botTagChanged(bot.id, tag, space)
             .pipe(
-                skip(1),
-                takeWhile((update) => update !== null)
+                takeWhile((update) => update !== null),
+                tap((update) => {
+                    lastVersion.vector = mergeVersions(
+                        lastVersion.vector,
+                        update.version
+                    );
+                }),
+                filter((update) => {
+                    // Only allow updates that are not edits
+                    // or are not from the current site.
+                    // TODO: Improve to allow edits from the current site to be mixed with
+                    // edits from other sites.
+                    return (
+                        update.type !== 'edit' ||
+                        Object.keys(lastVersion.localSites).every(
+                            (site) => !hasValue(update.version[site])
+                        )
+                    );
+                }),
+                skip(1)
             )
             .subscribe((update) => {
                 bot = update.bot;
-                if (model === activeModel || !update.tags.has(tag)) {
-                    return;
+                if (update.type === 'edit') {
+                    const userSelections = getEditor()?.getSelections() || [];
+                    const selectionPositions = userSelections.map(
+                        (s) =>
+                            [
+                                new monaco.Position(
+                                    s.startLineNumber,
+                                    s.startColumn
+                                ),
+                                new monaco.Position(
+                                    s.endLineNumber,
+                                    s.endColumn
+                                ),
+                            ] as [monaco.Position, monaco.Position]
+                    );
+
+                    for (let ops of update.operations) {
+                        let index = info.isFormula
+                            ? -DNA_TAG_PREFIX.length
+                            : info.isScript
+                            ? -1
+                            : 0;
+                        for (let op of ops) {
+                            if (op.type === 'preserve') {
+                                index += op.count;
+                            } else if (op.type === 'insert') {
+                                const pos = model.getPositionAt(index);
+                                const selection = new monaco.Selection(
+                                    pos.lineNumber,
+                                    pos.column,
+                                    pos.lineNumber,
+                                    pos.column
+                                );
+
+                                try {
+                                    applyingEdits = true;
+                                    model.pushEditOperations(
+                                        [],
+                                        [{ range: selection, text: op.text }],
+                                        () => null
+                                    );
+                                } finally {
+                                    applyingEdits = false;
+                                }
+
+                                index += op.text.length;
+
+                                const endPos = model.getPositionAt(index);
+
+                                offsetSelections(
+                                    pos,
+                                    endPos,
+                                    selectionPositions
+                                );
+                            } else if (op.type === 'delete') {
+                                const startPos = model.getPositionAt(index);
+                                const endPos = model.getPositionAt(
+                                    index + op.count
+                                );
+                                const selection = new monaco.Selection(
+                                    startPos.lineNumber,
+                                    startPos.column,
+                                    endPos.lineNumber,
+                                    endPos.column
+                                );
+                                try {
+                                    applyingEdits = true;
+                                    model.pushEditOperations(
+                                        [],
+                                        [{ range: selection, text: '' }],
+                                        () => null
+                                    );
+                                } finally {
+                                    applyingEdits = false;
+                                }
+
+                                // Start and end positions are switched
+                                // so that deltas are negative
+                                offsetSelections(
+                                    endPos,
+                                    startPos,
+                                    selectionPositions
+                                );
+                            }
+                        }
+                    }
+
+                    const finalSelections = selectionPositions.map(
+                        ([start, end]) =>
+                            new monaco.Selection(
+                                start.lineNumber,
+                                start.column,
+                                end.lineNumber,
+                                end.column
+                            )
+                    );
+                    getEditor()?.setSelections(finalSelections);
+                } else {
+                    if (model === activeModel) {
+                        return;
+                    }
+                    let script = getScript(bot, tag, space);
+                    let value = model.getValue();
+                    try {
+                        applyingEdits = true;
+                        if (script !== value) {
+                            model.setValue(script);
+                        }
+                        updateLanguage(
+                            model,
+                            tag,
+                            getTagValueForSpace(bot, tag, space)
+                        );
+                    } finally {
+                        applyingEdits = false;
+                    }
                 }
-                let script = getScript(bot, tag, space);
-                let value = model.getValue();
-                if (script !== value) {
-                    model.setValue(script);
-                }
-                updateLanguage(
-                    model,
-                    tag,
-                    getTagValueForSpace(bot, tag, space)
-                );
             })
     );
 
     sub.add(
         toSubscription(
             model.onDidChangeContent(async (e) => {
-                if (e.isFlush) {
+                const info = models.get(model.uri.toString());
+                if (applyingEdits) {
                     return;
                 }
-                let val = model.getValue();
-                if (info.isFormula) {
-                    val = '=' + val;
-                } else if (info.isScript) {
-                    if (val.indexOf('@') !== 0) {
-                        val = '@' + val;
-                    }
+                let operations = [] as TagEditOp[][];
+                let index = 0;
+                let offset = info.isFormula
+                    ? DNA_TAG_PREFIX.length
+                    : info.isScript
+                    ? 1
+                    : 0;
+                const changes = sortBy(e.changes, (c) => c.rangeOffset);
+                for (let change of changes) {
+                    operations.push([
+                        preserve(change.rangeOffset - index + offset),
+                        del(change.rangeLength),
+                        insert(change.text),
+                    ]);
+                    index += change.rangeLength;
+                    offset += change.text.length;
                 }
-                updateLanguage(model, tag, val);
-                await simulation.editBot(bot, tag, val, space);
+                await simulation.editBot(
+                    bot,
+                    tag,
+                    edits(lastVersion.vector, ...operations),
+                    space
+                );
             })
         )
     );
@@ -434,8 +770,54 @@ function watchModel(
     );
 
     models.set(model.uri.toString(), info);
-    updateDecorators(model, info, getTagValueForSpace(bot, tag, space));
+
+    // We need to wrap updateDecorators() because it might try to apply
+    // an edit to the model.
+    try {
+        applyingEdits = true;
+        updateDecorators(model, info, getTagValueForSpace(bot, tag, space));
+    } finally {
+        applyingEdits = false;
+    }
+
     subs.push(sub);
+}
+
+function offsetSelections(
+    startPos: monaco.Position,
+    endPos: monaco.Position,
+    selectionPositions: [monaco.Position, monaco.Position][]
+) {
+    for (let selections of selectionPositions) {
+        const selectionStart = selections[0];
+        const selectionEnd = selections[1];
+        const startBefore = selectionStart.isBefore(startPos);
+        const endAfter = startPos.isBefore(selectionEnd);
+
+        // Selection does not start before edit position.
+        // We should offset the selection start by how much
+        // the edit changes
+        if (!startBefore) {
+            if (selectionStart.lineNumber === startPos.lineNumber) {
+                selections[0] = selectionStart.delta(
+                    endPos.lineNumber - startPos.lineNumber,
+                    endPos.column - startPos.column
+                );
+            }
+        }
+
+        // Selection ends after edit position.
+        // We should offset the selection end by how much
+        // the edit changes
+        if (endAfter) {
+            if (selectionEnd.lineNumber === startPos.lineNumber) {
+                selections[1] = selectionEnd.delta(
+                    endPos.lineNumber - startPos.lineNumber,
+                    endPos.column - startPos.column
+                );
+            }
+        }
+    }
 }
 
 function updateLanguage(
@@ -466,12 +848,17 @@ function updateDecorators(
         info.isScript = false;
         if (!wasFormula) {
             const text = model.getValue();
-            if (text.indexOf('=') === 0) {
+            if (isFormula(text)) {
                 // Delete the first character from the model cause
                 // it is a formula marker
                 model.applyEdits([
                     {
-                        range: new monaco.Range(1, 1, 1, 2),
+                        range: new monaco.Range(
+                            1,
+                            1,
+                            1,
+                            1 + DNA_TAG_PREFIX.length
+                        ),
                         text: '',
                     },
                 ]);
@@ -494,7 +881,7 @@ function updateDecorators(
 
         if (!wasScript) {
             const text = model.getValue();
-            if (text.indexOf('@') === 0) {
+            if (isScript(text)) {
                 // Delete the first character from the model cause
                 // it is a script marker
                 model.applyEdits([
@@ -545,7 +932,7 @@ export function getScript(bot: Bot, tag: string, space: string) {
             str = JSON.stringify(val);
         }
         if (isFormula(str)) {
-            return transpiler.replaceMacros(str);
+            return replaceMacros(str);
         } else {
             return str;
         }
@@ -554,6 +941,6 @@ export function getScript(bot: Bot, tag: string, space: string) {
     }
 }
 
-function toSubscription(disposable: monaco.IDisposable) {
+export function toSubscription(disposable: monaco.IDisposable) {
     return new Subscription(() => disposable.dispose());
 }

@@ -62,8 +62,8 @@ export type ExtraActions =
     | OpenBarcodeScannerAction
     | ShowQRCodeAction
     | ShowBarcodeAction
-    | LoadStoryAction
-    | UnloadStoryAction
+    | LoadServerAction
+    | UnloadServerAction
     | SuperShoutAction
     | SendWebhookAction
     | GoToDimensionAction
@@ -109,6 +109,7 @@ export type AsyncActions =
     | LoadBotsAction
     | ClearSpaceAction
     | SendWebhookAction
+    | AnimateTagAction
     | UnlockSpaceAction
     | SetSpacePasswordAction
     | LoadFileAction
@@ -151,6 +152,17 @@ export type AsyncActions =
     | RpioSPITransferAction
     | RpioSPIWriteAction
     | RpioSPIEndAction
+    | SerialConnectAction
+    | SerialStreamAction
+    | SerialOpenAction
+    | SerialUpdateAction
+    | SerialWriteAction
+    | SerialReadAction
+    | SerialCloseAction
+    | SerialFlushAction
+    | SerialDrainAction
+    | SerialPauseAction
+    | SerialResumeAction
     | CreateCertificateAction
     | SignTagAction
     | RevokeCertificateAction
@@ -164,7 +176,8 @@ export type AsyncActions =
     | BufferSoundAction
     | CancelSoundAction
     | LocalPositionTweenAction
-    | LocalRotationTweenAction;
+    | LocalRotationTweenAction
+    | ShowUploadFilesAction;
 
 /**
  * Defines an interface for actions that represent asynchronous tasks.
@@ -461,9 +474,9 @@ export interface StartCheckoutOptions {
     description: string;
 
     /**
-     * The story that the payment processing should occur in.
+     * The server that the payment processing should occur in.
      */
-    processingStory: string;
+    processingServer: string;
 
     /**
      * Whether to request the payer's billing address.
@@ -532,7 +545,7 @@ export interface CheckoutSubmittedAction extends Action {
     /**
      * The channel that processing should happen in.
      */
-    processingStory: string;
+    processingServer: string;
 }
 
 /**
@@ -757,8 +770,8 @@ export interface ShowBarcodeAction extends Action {
 /**
  * An event that is used to load a simulation.
  */
-export interface LoadStoryAction extends Action {
-    type: 'load_story';
+export interface LoadServerAction extends Action {
+    type: 'load_server';
 
     /**
      * The ID of the simulation to load.
@@ -769,8 +782,8 @@ export interface LoadStoryAction extends Action {
 /**
  * An event that is used to unload a simulation.
  */
-export interface UnloadStoryAction extends Action {
-    type: 'unload_story';
+export interface UnloadServerAction extends Action {
+    type: 'unload_server';
 
     /**
      * The ID of the simulation to unload.
@@ -852,6 +865,59 @@ export interface WebhookOptions {
 }
 
 /**
+ * Defines an event that animates a tag on a bot over some time.
+ */
+export interface AnimateTagAction extends AsyncAction {
+    type: 'animate_tag';
+
+    /**
+     * The ID of the bot to animate.
+     */
+    botId: string;
+
+    /**
+     * The tag to animate.
+     */
+    tag: string;
+
+    /**
+     * The options to use for the animation.
+     */
+    options: AnimateTagOptions;
+}
+
+/**
+ * Defines the options that can be used to animate a tag.
+ */
+export interface AnimateTagOptions {
+    /**
+     * The value to animate from.
+     */
+    fromValue: any;
+
+    /**
+     * The value to animate to.
+     */
+    toValue: any;
+
+    /**
+     * The number of seconds that the animation executes over.
+     */
+    duration: number;
+
+    /**
+     * The easing that should be used.
+     */
+    easing: Easing;
+
+    /**
+     * The space that the tag should be animated in.
+     * If set to false, then the tag on the bot will be modified.
+     */
+    tagMaskSpace: BotSpace | false;
+}
+
+/**
  * Defines an event that is used to load a file.
  */
 export interface LoadFileAction extends AsyncAction {
@@ -922,10 +988,10 @@ export interface GetPlayerCountAction extends Action {
     type: 'get_player_count';
 
     /**
-     * The story that the player count should be retrieved for.
+     * The server that the player count should be retrieved for.
      * If omitted, then the total player count will be returned.
      */
-    story?: string;
+    server?: string;
 }
 
 /**
@@ -935,7 +1001,7 @@ export interface GetStoriesAction extends Action {
     type: 'get_stories';
 
     /**
-     * Whether to get the story statuses.
+     * Whether to get the server statuses.
      */
     includeStatuses?: boolean;
 }
@@ -1143,7 +1209,7 @@ export interface ShowInputOptions {
 /**
  * Defines the possible input types.
  */
-export type ShowInputType = 'text' | 'color';
+export type ShowInputType = 'text' | 'color' | 'secret';
 
 /**
  * Defines the possible input types.
@@ -1191,16 +1257,16 @@ export interface RejectAction {
     type: 'reject';
 
     /**
-     * The action to prevent.
+     * The actions to prevent.
      */
-    action: Action;
+    actions: Action[];
 }
 
 /**
  * Defines an event that creates a channel if it doesn't exist.
  */
 export interface SetupChannelAction extends AsyncAction {
-    type: 'setup_story';
+    type: 'setup_server';
 
     /**
      * The channel that should be created.
@@ -1728,6 +1794,145 @@ export interface RpioSPIEndAction extends AsyncAction {
     type: 'rpio_spi_end';
 }
 /**
+ * Establish the connection to the bluetooth serial device
+ */
+export interface SerialConnectAction extends AsyncAction {
+    type: 'serial_connect';
+
+    /**
+     * The device path. Example: /dev/rfcomm0
+     */
+    path: string;
+
+    /**
+     * {boolean} [autoOpen=true] Automatically opens the port on `nextTick`.
+     *
+     * {number=} [baudRate=9600] The baud rate of the port to be opened. This should match one of the commonly available baud rates, such as 110, 300, 1200, 2400, 4800, 9600, 14400, 19200, 38400, 57600, or 115200. Custom rates are supported best effort per platform. The device connected to the serial port is not guaranteed to support the requested baud rate, even if the port itself supports that baud rate.
+     *
+     * {number} [dataBits=8] Must be one of these: 8, 7, 6, or 5.
+     *
+     * {number} [highWaterMark=65536] The size of the read and write buffers defaults to 64k.
+     *
+     * {boolean} [lock=true] Prevent other processes from opening the port. Windows does not currently support `false`.
+     *
+     * {number} [stopBits=1] Must be one of these: 1 or 2.
+     *
+     * {string} [parity=none] Must be one of these: 'none', 'even', 'mark', 'odd', 'space'.
+     *
+     * {boolean} [rtscts=false] flow control setting
+     *
+     * {boolean} [xon=false] flow control setting
+     *
+     * {boolean} [xoff=false] flow control setting
+     *
+     * {boolean} [xany=false] flow control setting
+     *
+     * {object=} bindingOptions sets binding-specific options
+     *
+     * {Binding=} Binding The hardware access binding. `Bindings` are how Node-Serialport talks to the underlying system. Will default to the static property `Serialport.Binding`.
+     *
+     * {number} [bindingOptions.vmin=1] see [`man termios`](http://linux.die.net/man/3/termios) LinuxBinding and DarwinBinding
+     *
+     * {number} [bindingOptions.vtime=0] see [`man termios`](http://linux.die.net/man/3/termios) LinuxBinding and DarwinBinding
+     */
+    options?: object;
+}
+/**
+ * Parses and returns the serial stream to the event tag 'onStreamData'.
+ */
+export interface SerialStreamAction extends AsyncAction {
+    type: 'serial_stream';
+}
+/**
+ * Opens the serial connection if you set the option in serialConnect to {autoOpen: false}
+ */
+export interface SerialOpenAction extends AsyncAction {
+    type: 'serial_open';
+}
+/**
+ * Updates the SerialPort object with a new baudRate.
+ */
+export interface SerialUpdateAction extends AsyncAction {
+    type: 'serial_update';
+
+    /**
+     * {number=} [baudRate=9600] The baud rate of the port to be opened. This should match one of the commonly available baud rates, such as 110, 300, 1200, 2400, 4800, 9600, 14400, 19200, 38400, 57600, or 115200. Custom rates are supported best effort per platform. The device connected to the serial port is not guaranteed to support the requested baud rate, even if the port itself supports that baud rate.
+     */
+    options: object;
+
+    /**
+     *
+     */
+    cb?: any;
+}
+/**
+ * Writes the provided data/command to the device
+ */
+export interface SerialWriteAction extends AsyncAction {
+    type: 'serial_write';
+
+    /**
+     * The data/command to send.
+     */
+    data: string | number[];
+
+    /**
+     * The encoding, if chunk is a string. Defaults to 'utf8'. Also accepts 'utf16le', 'latin1', 'ascii', 'base64', 'binary', 'ucs2', and 'hex'
+     */
+    encoding?: string;
+
+    /**
+     *
+     */
+    cb?: any;
+}
+/**
+ * Request a number of bytes from the SerialPort.
+ */
+export interface SerialReadAction extends AsyncAction {
+    type: 'serial_read';
+
+    /**
+     * Specify how many bytes of data to return, if available
+     */
+    size?: number;
+}
+/**
+ * Closes an open connection.
+ */
+export interface SerialCloseAction extends AsyncAction {
+    type: 'serial_close';
+
+    /**
+     *
+     */
+    cb?: any;
+}
+/**
+ * Flush discards data that has been received but not read, or written but not transmitted by the operating system.
+ */
+export interface SerialFlushAction extends AsyncAction {
+    type: 'serial_flush';
+}
+/**
+ * Waits until all output data is transmitted to the serial port. After any pending write has completed, it calls `tcdrain()` or `FlushFileBuffers()` to ensure it has been written to the device.
+ */
+export interface SerialDrainAction extends AsyncAction {
+    type: 'serial_drain';
+}
+/**
+ * Causes a stream in flowing mode to stop emitting 'data' events, switching out of flowing mode. Any data that becomes available remains in the internal buffer.
+ */
+export interface SerialPauseAction extends AsyncAction {
+    type: 'serial_pause';
+}
+/**
+ * Causes an explicitly paused, Readable stream to resume emitting 'data' events, switching the stream into flowing mode.
+ */
+export interface SerialResumeAction extends AsyncAction {
+    type: 'serial_resume';
+}
+/**
  * Defines an event that sets some text on the user's clipboard.
  */
 export interface SetClipboardAction {
@@ -1759,6 +1964,11 @@ export interface ShowChatBarAction {
      * The text that the bar should have as the placeholder.
      */
     placeholder?: string;
+
+    /**
+     * The color to use for the placeholder.
+     */
+    placeholderColor?: string;
 }
 
 /**
@@ -1774,6 +1984,11 @@ export interface ShowChatOptions {
      * The text that the bar should have as the placeholder.
      */
     placeholder?: string;
+
+    /**
+     * The color to use for the placeholder.
+     */
+    placeholderColor?: string;
 }
 
 /**
@@ -1796,6 +2011,13 @@ export interface ShowUploadAuxFileAction {
 }
 
 /**
+ * Defines an event that shows the "uplaod file" dialog.
+ */
+export interface ShowUploadFilesAction extends AsyncAction {
+    type: 'show_upload_files';
+}
+
+/**
  * Defines an event that marks a specific point in history.
  */
 export interface MarkHistoryAction {
@@ -1808,7 +2030,7 @@ export interface MarkHistoryAction {
 }
 
 /**
- * Defines an event that loads the history into the story.
+ * Defines an event that loads the history into the server.
  */
 export interface BrowseHistoryAction {
     type: 'browse_history';
@@ -1826,14 +2048,14 @@ export interface RestoreHistoryMarkAction {
     mark: string;
 
     /**
-     * The story that the mark should be restored to.
-     * If not specified, then the current story will be used.
+     * The server that the mark should be restored to.
+     * If not specified, then the current server will be used.
      */
-    story?: string;
+    server?: string;
 }
 
 /**
- * Defines an event that loads a space into the story.
+ * Defines an event that loads a space into the server.
  */
 export interface LoadSpaceAction extends Partial<AsyncAction> {
     type: 'load_space';
@@ -1858,7 +2080,7 @@ export interface LoadBotsAction extends AsyncAction {
     /**
      * The space that should be searched.
      */
-    space: BotSpace;
+    space: string;
 
     /**
      * The tags that the loaded bots should have.
@@ -1894,7 +2116,7 @@ export interface ClearSpaceAction extends AsyncAction {
     /**
      * The space to clear.
      */
-    space: BotSpace;
+    space: string;
 }
 
 /**
@@ -2058,15 +2280,15 @@ export interface EnableVRAction {
 }
 
 /**
- * Defines an event that shows a QR code that is a link to a story & dimension.
+ * Defines an event that shows a QR code that is a link to a server & dimension.
  */
 export interface ShowJoinCodeAction {
     type: 'show_join_code';
 
     /**
-     * The story that should be joined.
+     * The server that should be joined.
      */
-    story?: string;
+    server?: string;
 
     /**
      * The dimension that should be joined.
@@ -2193,10 +2415,10 @@ export function action(
  * Creates a new RejectAction.
  * @param event The action to reject.
  */
-export function reject(event: Action): RejectAction {
+export function reject(...events: Action[]): RejectAction {
     return {
         type: 'reject',
-        action: event,
+        actions: events,
     };
 }
 
@@ -2413,9 +2635,9 @@ export function hideChat(): ShowChatBarAction {
  * Creates a new LoadSimulationAction.
  * @param id The ID of the simulation to load.
  */
-export function loadSimulation(id: string): LoadStoryAction {
+export function loadSimulation(id: string): LoadServerAction {
     return {
-        type: 'load_story',
+        type: 'load_server',
         id: id,
     };
 }
@@ -2424,9 +2646,9 @@ export function loadSimulation(id: string): LoadStoryAction {
  * Creates a new UnloadSimulationAction.
  * @param id The ID of the simulation to unload.
  */
-export function unloadSimulation(id: string): UnloadStoryAction {
+export function unloadSimulation(id: string): UnloadServerAction {
     return {
-        type: 'unload_story',
+        type: 'unload_server',
         id: id,
     };
 }
@@ -2674,13 +2896,13 @@ export function checkout(options: StartCheckoutOptions): StartCheckoutAction {
 export function checkoutSubmitted(
     productId: string,
     token: string,
-    processingStory: string
+    processingServer: string
 ): CheckoutSubmittedAction {
     return {
         type: 'checkout_submitted',
         productId: productId,
         token: token,
-        processingStory: processingStory,
+        processingServer: processingServer,
     };
 }
 
@@ -2729,6 +2951,28 @@ export function webhook(
 }
 
 /**
+ * Animates the given tag on the given bot using the given options.
+ * @param botId The ID of the bot.
+ * @param tag The tag to animate.
+ * @param options The options.
+ * @param taskId The ID of the task that this event represents.
+ */
+export function animateTag(
+    botId: string,
+    tag: string,
+    options: AnimateTagOptions,
+    taskId?: number | string
+): AnimateTagAction {
+    return {
+        type: 'animate_tag',
+        botId,
+        tag,
+        options,
+        taskId,
+    };
+}
+
+/**
  * Creates a new LoadFileAction.
  * @param options The options.
  * @param taskId The ID of the async task.
@@ -2762,13 +3006,13 @@ export function saveFile(
 
 /**
  * Creates a new GetPlayerCountAction.
- * @param story The story that the player count should be retrieved for.
+ * @param server The server that the player count should be retrieved for.
  */
-export function getPlayerCount(story?: string): GetPlayerCountAction {
-    if (hasValue(story)) {
+export function getPlayerCount(server?: string): GetPlayerCountAction {
+    if (hasValue(server)) {
         return {
             type: 'get_player_count',
-            story,
+            server,
         };
     } else {
         return {
@@ -2789,7 +3033,7 @@ export function getStories(): GetStoriesAction {
 /**
  * Creates a new GetStoriesAction that includes statuses.
  */
-export function getStoryStatuses(): GetStoriesAction {
+export function getServerStatuses(): GetStoriesAction {
     return {
         type: 'get_stories',
         includeStatuses: true,
@@ -2822,14 +3066,14 @@ export function replaceDragBot(bot: Bot | BotTags): ReplaceDragBotAction {
  * @param botOrMod The bot that should be cloned into the new channel.
  * @param taskId The ID of the async task.
  */
-export function setupStory(
+export function setupServer(
     channel: string,
     botOrMod?: Bot | BotTags,
     taskId?: string | number,
     playerId?: string
 ): SetupChannelAction {
     return {
-        type: 'setup_story',
+        type: 'setup_server',
         channel,
         botOrMod,
         taskId,
@@ -3581,6 +3825,230 @@ export function rpioSPIEndPin(
 }
 
 /**
+ */
+
+/**
+ * Establish the connection to the bluetooth serial device
+ * @param path The device path. Example: /dev/rfcomm0
+ * @param options
+ * {boolean} [autoOpen=true] Automatically opens the port on `nextTick`.
+ *
+ * {number=} [baudRate=9600] The baud rate of the port to be opened. This should match one of the commonly available baud rates, such as 110, 300, 1200, 2400, 4800, 9600, 14400, 19200, 38400, 57600, or 115200. Custom rates are supported best effort per platform. The device connected to the serial port is not guaranteed to support the requested baud rate, even if the port itself supports that baud rate.
+ *
+ * {number} [dataBits=8] Must be one of these: 8, 7, 6, or 5.
+ *
+ * {number} [highWaterMark=65536] The size of the read and write buffers defaults to 64k.
+ *
+ * {boolean} [lock=true] Prevent other processes from opening the port. Windows does not currently support `false`.
+ *
+ * {number} [stopBits=1] Must be one of these: 1 or 2.
+ *
+ * {string} [parity=none] Must be one of these: 'none', 'even', 'mark', 'odd', 'space'.
+ *
+ * {boolean} [rtscts=false] flow control setting
+ *
+ * {boolean} [xon=false] flow control setting
+ *
+ * {boolean} [xoff=false] flow control setting
+ *
+ * {boolean} [xany=false] flow control setting
+ *
+ * {object=} bindingOptions sets binding-specific options
+ *
+ * {Binding=} Binding The hardware access binding. `Bindings` are how Node-Serialport talks to the underlying system. Will default to the static property `Serialport.Binding`.
+ *
+ * {number} [bindingOptions.vmin=1] see [`man termios`](http://linux.die.net/man/3/termios) LinuxBinding and DarwinBinding
+ *
+ * {number} [bindingOptions.vtime=0] see [`man termios`](http://linux.die.net/man/3/termios) LinuxBinding and DarwinBinding
+ * @param taskId The ID of the async task.
+ */
+export function serialConnectPin(
+    path: string,
+    options?: object,
+    taskId?: string | number,
+    playerId?: string
+): SerialConnectAction {
+    return {
+        path,
+        options,
+        type: 'serial_connect',
+        taskId,
+        playerId,
+    };
+}
+
+/**
+ * Parses and returns the serial stream to the event tag 'onStreamData'.
+ * @param taskId The ID of the async task.
+ */
+export function serialStreamPin(
+    taskId?: string | number,
+    playerId?: string
+): SerialStreamAction {
+    return {
+        type: 'serial_stream',
+        taskId,
+        playerId,
+    };
+}
+
+/**
+ * Opens the serial connection if you set the option in serialConnect to {autoOpen: false}
+ * @param taskId The ID of the async task.
+ */
+export function serialOpenPin(
+    taskId?: string | number,
+    playerId?: string
+): SerialOpenAction {
+    return {
+        type: 'serial_open',
+        taskId,
+        playerId,
+    };
+}
+
+/**
+ * Updates the SerialPort object with a new baudRate.
+ * @param options {number=} [baudRate=9600] The baud rate of the port to be opened. This should match one of the commonly available baud rates, such as 110, 300, 1200, 2400, 4800, 9600, 14400, 19200, 38400, 57600, or 115200. Custom rates are supported best effort per platform. The device connected to the serial port is not guaranteed to support the requested baud rate, even if the port itself supports that baud rate.
+ * @param cb
+ * @param taskId The ID of the async task.
+ */
+export function serialUpdatePin(
+    options: object,
+    cb?: any,
+    taskId?: string | number,
+    playerId?: string
+): SerialUpdateAction {
+    return {
+        options,
+        cb,
+        type: 'serial_update',
+        taskId,
+        playerId,
+    };
+}
+
+/**
+ * Writes the provided data/command to the device
+ * @param data The data/command to send
+ * @param encoding The encoding, if chunk is a string. Defaults to 'utf8'. Also accepts 'utf16le', 'latin1', 'ascii', 'base64', 'binary', 'ucs2', and 'hex'
+ * @param cb
+ * @param taskId The ID of the async task.
+ */
+export function serialWritePin(
+    data: string | number[],
+    encoding?: string,
+    cb?: any,
+    taskId?: string | number,
+    playerId?: string
+): SerialWriteAction {
+    return {
+        data,
+        encoding,
+        cb,
+        type: 'serial_write',
+        taskId,
+        playerId,
+    };
+}
+
+/**
+ * Request a number of bytes from the SerialPort.
+ * @param size Specify how many bytes of data to return, if available.
+ * @param taskId The ID of the async task.
+ */
+export function serialReadPin(
+    size?: number,
+    taskId?: string | number,
+    playerId?: string
+): SerialReadAction {
+    return {
+        size,
+        type: 'serial_read',
+        taskId,
+        playerId,
+    };
+}
+
+/**
+ * Closes an open connection.
+ * @param cb
+ * @param taskId The ID of the async task.
+ */
+export function serialClosePin(
+    cb?: any,
+    taskId?: string | number,
+    playerId?: string
+): SerialCloseAction {
+    return {
+        cb,
+        type: 'serial_close',
+        taskId,
+        playerId,
+    };
+}
+
+/**
+ * Flush discards data that has been received but not read, or written but not transmitted by the operating system.
+ * @param taskId The ID of the async task.
+ */
+export function serialFlushPin(
+    taskId?: string | number,
+    playerId?: string
+): SerialFlushAction {
+    return {
+        type: 'serial_flush',
+        taskId,
+        playerId,
+    };
+}
+
+/**
+ * Waits until all output data is transmitted to the serial port. After any pending write has completed, it calls `tcdrain()` or `FlushFileBuffers()` to ensure it has been written to the device.
+ * @param taskId The ID of the async task.
+ */
+export function serialDrainPin(
+    taskId?: string | number,
+    playerId?: string
+): SerialDrainAction {
+    return {
+        type: 'serial_drain',
+        taskId,
+        playerId,
+    };
+}
+
+/**
+ * Causes a stream in flowing mode to stop emitting 'data' events, switching out of flowing mode. Any data that becomes available remains in the internal buffer.
+ * @param taskId The ID of the async task.
+ */
+export function serialPausePin(
+    taskId?: string | number,
+    playerId?: string
+): SerialPauseAction {
+    return {
+        type: 'serial_pause',
+        taskId,
+        playerId,
+    };
+}
+
+/**
+ * Causes an explicitly paused, Readable stream to resume emitting 'data' events, switching the stream into flowing mode.
+ * @param taskId The ID of the async task.
+ */
+export function serialResumePin(
+    taskId?: string | number,
+    playerId?: string
+): SerialResumeAction {
+    return {
+        type: 'serial_resume',
+        taskId,
+        playerId,
+    };
+}
+
+/**
  * Creates a SetClipboardAction.
  * @param text The text that should be set to the clipboard.
  */
@@ -3617,6 +4085,18 @@ export function showUploadAuxFile(): ShowUploadAuxFileAction {
 }
 
 /**
+ * Creates a ShowUploadFilesAction.
+ */
+export function showUploadFiles(
+    taskId: number | string
+): ShowUploadFilesAction {
+    return {
+        type: 'show_upload_files',
+        taskId,
+    };
+}
+
+/**
  * Creates a MarkHistoryAction.
  * @param options The options to use.
  */
@@ -3643,13 +4123,13 @@ export function browseHistory(): BrowseHistoryAction {
 /**
  * Creates a RestoreHistoryMarkAction.
  * @param mark The ID of the mark that history should be restored to.
- * @param story The story that the mark should be restored to. If not specified, then the current story will be used.
+ * @param server The server that the mark should be restored to. If not specified, then the current server will be used.
  */
 export function restoreHistoryMark(
     mark: string,
-    story?: string
+    server?: string
 ): RestoreHistoryMarkAction {
-    if (!story) {
+    if (!server) {
         return {
             type: 'restore_history_mark',
             mark,
@@ -3658,13 +4138,13 @@ export function restoreHistoryMark(
         return {
             type: 'restore_history_mark',
             mark,
-            story,
+            server,
         };
     }
 }
 
 /**
- * Loads a space into the story.
+ * Loads a space into the server.
  * @param space The space to load.
  * @param config The config which specifies how the space should be loaded.
  * @param taskId The ID of the async task.
@@ -3724,16 +4204,16 @@ export function disableVR(): EnableVRAction {
 
 /**
  * Creates a ShowJoinCodeAction.
- * @param story The story to link to.
+ * @param server The server to link to.
  * @param dimension The dimension to link to.
  */
 export function showJoinCode(
-    story?: string,
+    server?: string,
     dimension?: string
 ): ShowJoinCodeAction {
     return {
         type: 'show_join_code',
-        story,
+        server,
         dimension,
     };
 }
@@ -3763,7 +4243,7 @@ export function exitFullscreen(): ExitFullscreenAction {
  * @param taskId The ID of the async task for this action.
  */
 export function loadBots(
-    space: BotSpace,
+    space: string,
     tags: TagFilter[],
     taskId?: number | string
 ): LoadBotsAction {
@@ -3785,7 +4265,7 @@ export function loadBots(
  * @param taskId The ID of the async task.
  */
 export function clearSpace(
-    space: BotSpace,
+    space: string,
     taskId?: number | string
 ): ClearSpaceAction {
     return {

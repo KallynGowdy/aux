@@ -20,12 +20,18 @@ import {
     PartialBotsState,
     BotSpace,
 } from '../bots';
-import { Observable, Subject } from 'rxjs';
-import { StatusUpdate, Action } from '@casual-simulation/causal-trees';
+import { BehaviorSubject, Observable, Subject } from 'rxjs';
+import {
+    StatusUpdate,
+    Action,
+    CurrentVersion,
+} from '@casual-simulation/causal-trees';
 import { startWith } from 'rxjs/operators';
 import flatMap from 'lodash/flatMap';
 import union from 'lodash/union';
 import { merge } from '../utils';
+import { applyEdit, isTagEdit } from '../aux-format-2';
+import uuid from 'uuid/v4';
 
 /**
  * Attempts to create a MemoryPartition from the given config.
@@ -44,14 +50,16 @@ export function createMemoryPartition(
     return undefined;
 }
 
-class MemoryPartitionImpl implements MemoryPartition {
+export class MemoryPartitionImpl implements MemoryPartition {
     private _onBotsAdded = new Subject<Bot[]>();
     private _onBotsRemoved = new Subject<string[]>();
     private _onBotsUpdated = new Subject<UpdatedBot[]>();
     private _onStateUpdated = new Subject<StateUpdatedEvent>();
+    private _onVersionUpdated: Subject<CurrentVersion>;
     private _onError = new Subject<any>();
     private _onEvents = new Subject<Action[]>();
     private _onStatusUpdated = new Subject<StatusUpdate>();
+    private _siteId: string = uuid();
 
     type = 'memory' as const;
     state: BotsState;
@@ -80,6 +88,10 @@ class MemoryPartitionImpl implements MemoryPartition {
         );
     }
 
+    get onVersionUpdated(): Observable<CurrentVersion> {
+        return this._onVersionUpdated;
+    }
+
     get onError(): Observable<any> {
         return this._onError;
     }
@@ -95,6 +107,10 @@ class MemoryPartitionImpl implements MemoryPartition {
     constructor(config: MemoryPartitionStateConfig) {
         this.private = config.private || false;
         this.state = config.initialState;
+        this._onVersionUpdated = new BehaviorSubject<CurrentVersion>({
+            currentSite: this._siteId,
+            vector: {},
+        });
     }
 
     async applyEvents(events: BotAction[]): Promise<BotAction[]> {
@@ -151,6 +167,9 @@ class MemoryPartitionImpl implements MemoryPartition {
         let removed: string[] = [];
         let updated = new Map<string, UpdatedBot>();
         let updatedState = {} as PartialBotsState;
+        // Flag to record if we have already created a new state object
+        // during the update.
+        let createdNewState = false;
         for (let event of events) {
             if (event.type === 'add_bot') {
                 // console.log('[MemoryPartition] Add bot', event.bot);
@@ -158,14 +177,24 @@ class MemoryPartitionImpl implements MemoryPartition {
                     ...event.bot,
                     space: this.space as BotSpace,
                 };
-                this.state = Object.assign({}, this.state, {
-                    [event.bot.id]: bot,
-                });
+                if (createdNewState) {
+                    this.state[event.bot.id] = bot;
+                } else {
+                    this.state = Object.assign({}, this.state, {
+                        [event.bot.id]: bot,
+                    });
+                    createdNewState = true;
+                }
                 updatedState[event.bot.id] = bot;
                 added.set(event.bot.id, event.bot);
             } else if (event.type === 'remove_bot') {
-                let { [event.id]: removedBot, ...state } = this.state;
-                this.state = state;
+                if (createdNewState) {
+                    delete this.state[event.id];
+                } else {
+                    let { [event.id]: removedBot, ...state } = this.state;
+                    this.state = state;
+                    createdNewState = true;
+                }
                 if (!added.delete(event.id)) {
                     removed.push(event.id);
                 }
@@ -187,7 +216,14 @@ class MemoryPartitionImpl implements MemoryPartition {
                         }
 
                         if (hasValue(newVal)) {
-                            newBot.tags[tag] = newVal;
+                            if (isTagEdit(newVal)) {
+                                newBot.tags[tag] = applyEdit(
+                                    newBot.tags[tag],
+                                    newVal
+                                );
+                            } else {
+                                newBot.tags[tag] = newVal;
+                            }
                             updatedBot.tags[tag] = newVal;
                         } else {
                             delete newBot.tags[tag];
@@ -233,7 +269,11 @@ class MemoryPartitionImpl implements MemoryPartition {
                         }
 
                         if (hasValue(newVal)) {
-                            masks[tag] = newVal;
+                            if (isTagEdit(newVal)) {
+                                masks[tag] = applyEdit(masks[tag], newVal);
+                            } else {
+                                masks[tag] = newVal;
+                            }
                         } else {
                             delete masks[tag];
                             updatedBot.masks[this.space][tag] = null;

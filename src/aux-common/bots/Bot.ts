@@ -1,3 +1,5 @@
+import { TagEditOp } from '../aux-format-2';
+
 export type PartialBot = Partial<Bot>;
 
 export type AuxDomain = 'builder' | 'player';
@@ -24,6 +26,16 @@ export const GET_TAG_MASK_SYMBOL = Symbol('get_tag_mask');
  * Defines a symbol that is used to get all the tag masks on a runtime bot.
  */
 export const CLEAR_TAG_MASKS_SYMBOL = Symbol('clear_tag_masks');
+
+/**
+ * Defines a symbol that is used to edit a tag.
+ */
+export const EDIT_TAG_SYMBOL = Symbol('edit_tag');
+
+/**
+ * Defines a symbol that is used to edit a  tag mask.
+ */
+export const EDIT_TAG_MASK_SYMBOL = Symbol('edit_tag_mask');
 
 /**
  * Defines an interface for a bot in a script/formula.
@@ -89,6 +101,20 @@ export interface RuntimeBot {
      * @param space The space that the masks should be cleared from. If not specified then all tag masks in all spaces will be cleared.
      */
     [CLEAR_TAG_MASKS_SYMBOL]: (space?: string) => any;
+
+    /**
+     * A function that can manipulate a tag using the given edit operations.
+     */
+    [EDIT_TAG_SYMBOL]: (tag: string, ops: TagEditOp[]) => any;
+
+    /**
+     * A function that can manipulate a tag mask using the given edit operations.
+     */
+    [EDIT_TAG_MASK_SYMBOL]: (
+        tag: string,
+        ops: TagEditOp[],
+        space: string
+    ) => any;
 }
 
 /**
@@ -182,7 +208,6 @@ export interface UpdatedBot {
  * - "local" means that the bot is stored in the local storage partition.
  * - "tempLocal" means that the bot is stored in the temporary partition.
  * - "history" means that the bot represents a version of another space.
- * - "error" means that the bot represents an error.
  * - "admin" means that the bot is shared across all stories.
  * - "player" means that the bot is temporary and shared with other players.
  * - "otherPlayers" means that the bot is temporary and shared with this player from another player.
@@ -193,7 +218,6 @@ export type BotSpace =
     | 'local'
     | 'tempLocal'
     | 'history'
-    | 'error'
     | 'admin'
     | 'player'
     | 'otherPlayers'
@@ -246,7 +270,7 @@ export interface BotTags {
     // Normal bot tags
     ['color']?: unknown;
     ['draggable']?: unknown;
-    ['draggableMode']?: BotDragMode;
+    ['draggableMode']?: unknown;
     ['positioningMode']?: unknown;
     ['destroyable']?: unknown;
     ['editable']?: unknown;
@@ -287,7 +311,7 @@ export interface BotTags {
     ['auxPlayerActive']?: boolean;
     ['pagePortal']?: string | boolean;
     ['sheetPortal']?: string | boolean;
-    ['story']?: string | string[];
+    ['server']?: string | string[];
     ['inventoryPortal']?: string;
     ['menuPortal']?: string;
     ['leftWristPortal']?: string;
@@ -299,6 +323,8 @@ export interface BotTags {
     ['leftWristPortalConfigBot']?: string;
     ['rightWristPortalConfigBot']?: string;
     ['editingBot']?: string;
+    cursorStartIndex?: number;
+    cursorEndIndex?: number;
     ['pagePixelWidth']?: number;
     ['pagePixelHeight']?: number;
 
@@ -407,6 +433,8 @@ export type BotShape =
     | 'frustum'
     | 'helix'
     | 'egg'
+    | 'hex'
+    | 'cursor'
     | 'nothing';
 
 /**
@@ -462,6 +490,13 @@ export type BotLabelAlignment = 'center' | 'left' | 'right';
 export type BotLabelFontAddress = 'roboto' | 'noto-sans-kr' | string;
 
 /**
+ * Defines the possible label font sizes.
+ */
+export type BotLabelFontSize = 'auto' | number;
+
+export type BotLabelWordWrap = 'breakWords' | 'breakCharacters' | 'none';
+
+/**
  * Defines the possible bot orientation modes.
  */
 export type BotOrientationMode =
@@ -481,7 +516,7 @@ export type BotAnchorPoint =
     | 'right'
     | 'bottom'
     | 'center'
-    | [number, number, number];
+    | readonly [number, number, number];
 
 /**
  * Defines the possible meet portal anchor points.
@@ -564,6 +599,16 @@ export const DEFAULT_PORTAL_POINTER_DRAG_MODE: PortalPointerDragMode = 'world';
  * The default bot label font address.
  */
 export const DEFAULT_LABEL_FONT_ADDRESS: BotLabelFontAddress = 'rotobo';
+
+/**
+ * The default bot label font address.
+ */
+export const DEFAULT_LABEL_FONT_SIZE: BotLabelFontSize = 'auto';
+
+/**
+ * The default bot label word wrapping mode.
+ */
+export const DEFAULT_LABEL_WORD_WRAP_MODE: BotLabelWordWrap = 'breakCharacters';
 
 /**
  * Whether canvas transparency is disabled by default.
@@ -740,11 +785,6 @@ export const COOKIE_BOT_PARTITION_ID = 'local';
 export const TEMPORARY_BOT_PARTITION_ID = 'tempLocal';
 
 /**
- * The partition ID for error bots.
- */
-export const ERROR_BOT_PARTITION_ID = 'error';
-
-/**
  * The partition ID for admin bots.
  */
 export const ADMIN_PARTITION_ID = 'admin';
@@ -755,7 +795,7 @@ export const ADMIN_PARTITION_ID = 'admin';
 export const PLAYER_PARTITION_ID = 'player';
 
 /**
- * The partition ID for bots that are automatically added to the story.
+ * The partition ID for bots that are automatically added to the server.
  */
 export const BOOTSTRAP_PARTITION_ID = 'bootstrap';
 
@@ -967,7 +1007,7 @@ export const ON_SHOUT_ACTION_NAME: string = 'onListen';
 /**
  * The name of the event that is triggered before an action is executed.
  */
-export const ON_ACTION_ACTION_NAME: string = 'onStoryAction';
+export const ON_ACTION_ACTION_NAME: string = 'onServerAction';
 
 /**
  * The name of the event that is triggered when a remote whisper is executed.
@@ -977,22 +1017,23 @@ export const ON_REMOTE_WHISPER_ACTION_NAME: string = 'onRemoteWhisper';
 /**
  * The name of the event that is triggered when a channel becomes synced.
  */
-export const ON_STORY_STREAMING_ACTION_NAME: string = 'onStoryStreaming';
+export const ON_SERVER_STREAMING_ACTION_NAME: string = 'onServerStreaming';
 
 /**
  * The name of the event that is triggered when a channel has become unsynced.
  */
-export const ON_STORY_STREAM_LOST_ACTION_NAME: string = 'onStoryStreamLost';
+export const ON_SERVER_STREAM_LOST_ACTION_NAME: string = 'onServerStreamLost';
 
 /**
  * The name of the event that is triggered when a channel is loaded.
  */
-export const ON_STORY_SUBSCRIBED_ACTION_NAME: string = 'onStorySubscribed';
+export const ON_SERVER_SUBSCRIBED_ACTION_NAME: string = 'onServerSubscribed';
 
 /**
  * The name of the event that is triggered when a channel is unloaded.
  */
-export const ON_STORY_UNSUBSCRIBED_ACTION_NAME: string = 'onStoryUnsubscribed';
+export const ON_SERVER_UNSUBSCRIBED_ACTION_NAME: string =
+    'onServerUnsubscribed';
 
 /**
  * The name of the event that is triggered when portal tag is changed on the player.
@@ -1153,6 +1194,11 @@ export const ON_SHEET_BOT_ID_CLICK = 'onSheetBotIDClick';
 export const ON_SHEET_BOT_CLICK = 'onSheetBotClick';
 
 /**
+ * The tag used to set the space that the tag portal operates in.
+ */
+export const TAG_PORTAL_SPACE: string = 'tagPortalSpace';
+
+/**
  * The current bot format version for AUX Bots.
  * This number increments whenever there are any changes between AUX versions.
  * As a result, it will allow us to make breaking changes but still upgrade people's bots
@@ -1181,6 +1227,11 @@ export const DATA_PORTAL: string = 'dataPortal';
 export const SHEET_PORTAL: string = 'sheetPortal';
 
 /**
+ * The prefix for DNA Tags.
+ */
+export const DNA_TAG_PREFIX: string = '🧬';
+
+/**
  * The list of all portal tags.
  */
 export const KNOWN_PORTALS: string[] = [
@@ -1202,6 +1253,7 @@ export const QUERY_PORTALS: string[] = [
     'sheetPortal',
     MEET_PORTAL,
     TAG_PORTAL,
+    TAG_PORTAL_SPACE,
 ];
 
 /*
@@ -1211,7 +1263,7 @@ export const KNOWN_TAGS: string[] = [
     'playerActive',
     'pagePortal',
     'sheetPortal',
-    'story',
+    'server',
     'inventoryPortal',
     'menuPortal',
     'leftWristPortal',
@@ -1227,6 +1279,7 @@ export const KNOWN_TAGS: string[] = [
     `${MEET_PORTAL}ConfigBot`,
     DATA_PORTAL,
     TAG_PORTAL,
+    TAG_PORTAL_SPACE,
     `${TAG_PORTAL}ConfigBot`,
 
     'pageCameraPositionX',
@@ -1256,6 +1309,7 @@ export const KNOWN_TAGS: string[] = [
     'inventoryCameraRotationOffsetZ',
     'pagePixelWidth',
     'pagePixelHeight',
+    'pageTitle',
 
     'mousePointerPositionX',
     'mousePointerPositionY',
@@ -1292,6 +1346,8 @@ export const KNOWN_TAGS: string[] = [
 
     'editingBot',
     'editingTag',
+    'cursorStartIndex',
+    'cursorEndIndex',
 
     'portalColor',
     'portalLocked',
@@ -1346,10 +1402,12 @@ export const KNOWN_TAGS: string[] = [
     'lineColor',
     'label',
     'labelColor',
+    'labelFontSize',
     'labelSize',
     'labelSizeMode',
     'labelPosition',
     'labelAlignment',
+    'labelWordWrapMode',
     'labelFontAddress',
     'listening',
     'scale',
@@ -1437,10 +1495,10 @@ export const KNOWN_TAGS: string[] = [
     ON_ANY_POINTER_EXIT,
     'onPointerDown',
     'onPointerUp',
-    ON_STORY_STREAMING_ACTION_NAME,
-    ON_STORY_STREAM_LOST_ACTION_NAME,
-    ON_STORY_SUBSCRIBED_ACTION_NAME,
-    ON_STORY_UNSUBSCRIBED_ACTION_NAME,
+    ON_SERVER_STREAMING_ACTION_NAME,
+    ON_SERVER_STREAM_LOST_ACTION_NAME,
+    ON_SERVER_SUBSCRIBED_ACTION_NAME,
+    ON_SERVER_UNSUBSCRIBED_ACTION_NAME,
     ON_PLAYER_PORTAL_CHANGED_ACTION_NAME,
     'onKeyDown',
     'onKeyUp',
@@ -1530,27 +1588,27 @@ export function onDropArg(
     };
 }
 
-export function onStoryStreamingArg(story: string) {
+export function onServerStreamingArg(server: string) {
     return {
-        story,
+        server,
     };
 }
 
-export function onStoryStreamLostArg(story: string) {
+export function onServerStreamLostArg(server: string) {
     return {
-        story,
+        server,
     };
 }
 
-export function onStorySubscribedArg(story: string) {
+export function onServerSubscribedArg(server: string) {
     return {
-        story,
+        server,
     };
 }
 
-export function onStoryUnsubscribedArg(story: string) {
+export function onServerUnsubscribedArg(server: string) {
     return {
-        story,
+        server,
     };
 }
 

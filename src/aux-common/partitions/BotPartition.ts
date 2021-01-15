@@ -11,7 +11,7 @@ import {
     BotPartitionConfig,
     SearchPartitionClientConfig,
 } from './AuxPartitionConfig';
-import { Observable, Subject } from 'rxjs';
+import { BehaviorSubject, Observable, Subject } from 'rxjs';
 import {
     DeviceAction,
     StatusUpdate,
@@ -20,6 +20,7 @@ import {
     SESSION_ID_CLAIM,
     USER_ROLE,
     Action,
+    CurrentVersion,
 } from '@casual-simulation/causal-trees';
 import { startWith } from 'rxjs/operators';
 import flatMap from 'lodash/flatMap';
@@ -63,6 +64,10 @@ export class BotPartitionImpl implements BotPartition {
     private _onBotsRemoved = new Subject<string[]>();
     private _onBotsUpdated = new Subject<UpdatedBot[]>();
     private _onStateUpdated = new Subject<StateUpdatedEvent>();
+    private _onVersionUpdated = new BehaviorSubject<CurrentVersion>({
+        currentSite: null,
+        vector: {},
+    });
     private _onError = new Subject<any>();
     private _onEvents = new Subject<Action[]>();
     private _onStatusUpdated = new Subject<StatusUpdate>();
@@ -77,7 +82,7 @@ export class BotPartitionImpl implements BotPartition {
     }
 
     _client: BotClient;
-    _story: string;
+    _server: string;
 
     get onBotsAdded(): Observable<Bot[]> {
         return this._onBotsAdded.pipe(startWith(getActiveObjects(this.state)));
@@ -97,6 +102,10 @@ export class BotPartitionImpl implements BotPartition {
         );
     }
 
+    get onVersionUpdated(): Observable<CurrentVersion> {
+        return this._onVersionUpdated;
+    }
+
     get onError(): Observable<any> {
         return this._onError;
     }
@@ -114,7 +123,7 @@ export class BotPartitionImpl implements BotPartition {
         config: BotPartitionConfig | SearchPartitionClientConfig
     ) {
         this.private = hasValue(config.private) ? config.private : true;
-        this._story = config.story;
+        this._server = config.server;
         this._client = client;
         this.state = {};
     }
@@ -182,12 +191,12 @@ export class BotPartitionImpl implements BotPartition {
         }
 
         if (added.length > 0) {
-            this._client.addBots(this._story, added);
+            this._client.addBots(this._server, added);
         }
     }
 
     private async _loadBots(event: LoadBotsAction) {
-        const bots = await this._client.lookupBots(this._story, event.tags);
+        const bots = await this._client.lookupBots(this._server, event.tags);
         const sorted = sortBy(bots, (b) => b.id);
 
         if (bots.length > 0) {
@@ -222,7 +231,7 @@ export class BotPartitionImpl implements BotPartition {
     }
 
     private async _clearBots(event: ClearSpaceAction) {
-        await this._client.clearBots(this._story);
+        await this._client.clearBots(this._server);
 
         const ids = sortBy(values(this.state).map((b) => b.id));
         this.state = {};

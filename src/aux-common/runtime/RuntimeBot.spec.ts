@@ -12,6 +12,9 @@ import {
     SET_TAG_MASK_SYMBOL,
     CLEAR_TAG_MASKS_SYMBOL,
     isRuntimeBot,
+    EDIT_TAG_SYMBOL,
+    EDIT_TAG_MASK_SYMBOL,
+    hasValue,
 } from '../bots';
 import { AuxGlobalContext, MemoryGlobalContext } from './AuxGlobalContext';
 import {
@@ -24,6 +27,15 @@ import { TestScriptBotFactory } from './test/TestScriptBotFactory';
 import { createCompiledBot, CompiledBot } from './CompiledBot';
 import { AuxVersion } from './AuxVersion';
 import { AuxDevice } from './AuxDevice';
+import {
+    applyEdit,
+    del,
+    edit,
+    edits,
+    insert,
+    isTagEdit,
+    preserve,
+} from '../aux-format-2';
 
 describe('RuntimeBot', () => {
     let precalc: CompiledBot;
@@ -54,8 +66,20 @@ describe('RuntimeBot', () => {
         };
         updateTagMock = jest.fn();
         updateTagMock.mockImplementation((bot, tag, value) => {
-            bot.values[tag] = value;
-            bot.tags[tag] = value;
+            if (isTagEdit(value)) {
+                bot.values[tag] = bot.tags[tag] = applyEdit(
+                    bot.tags[tag],
+                    value
+                );
+            } else {
+                if (hasValue(value)) {
+                    bot.values[tag] = value;
+                    bot.tags[tag] = value;
+                } else {
+                    delete bot.values[tag];
+                    delete bot.tags[tag];
+                }
+            }
             return RealtimeEditMode.Immediate;
         });
 
@@ -68,7 +92,18 @@ describe('RuntimeBot', () => {
                 if (!bot.masks[space]) {
                     bot.masks[space] = {};
                 }
-                bot.masks[space][tag] = value;
+                if (isTagEdit(value)) {
+                    bot.masks[space][tag] = applyEdit(
+                        bot.masks[space][tag],
+                        value
+                    );
+                } else {
+                    if (hasValue(value)) {
+                        bot.masks[space][tag] = value;
+                    } else {
+                        delete bot.masks[space][tag];
+                    }
+                }
             }
             return RealtimeEditMode.Immediate;
         });
@@ -109,6 +144,14 @@ describe('RuntimeBot', () => {
             notifyChange: notifyChangeMock,
             updateTagMask: updateTagMaskMock,
             getTagMask: getTagMaskMock,
+            currentVersion: {
+                localSites: {},
+                vector: {
+                    a: 1,
+                    b: 2,
+                    c: 3,
+                },
+            },
         };
         context = new MemoryGlobalContext(
             version,
@@ -206,7 +249,7 @@ describe('RuntimeBot', () => {
 
         it('should support the delete keyword', () => {
             delete script.tags.abc;
-            expect(script.raw.abc).toEqual(null);
+            expect(script.raw.abc).toBeUndefined();
             expect(manager.updateTag).toHaveBeenCalledWith(
                 precalc,
                 'abc',
@@ -269,6 +312,27 @@ describe('RuntimeBot', () => {
                 'newTag',
                 'otherNewTag',
             ]);
+        });
+
+        it('should support Object.keys() for tags that were deleted from the bot', () => {
+            const keys1 = Object.keys(script.tags);
+            keys1.sort();
+
+            expect(keys1).toEqual(['abc', 'bool', 'different', 'ghi']);
+
+            script.tags.abc = null;
+
+            const keys2 = Object.keys(script.tags);
+            keys2.sort();
+
+            expect(keys2).toEqual(['bool', 'different', 'ghi']);
+
+            delete precalc.values.bool;
+
+            const keys3 = Object.keys(script.tags);
+            keys3.sort();
+
+            expect(keys3).toEqual(['different', 'ghi']);
         });
 
         describe('toJSON()', () => {
@@ -374,7 +438,7 @@ describe('RuntimeBot', () => {
 
         it('should support the delete keyword', () => {
             delete script.raw.abc;
-            expect(script.raw.abc).toEqual(null);
+            expect(script.raw.abc).toBeUndefined();
             expect(manager.updateTag).toHaveBeenCalledWith(
                 precalc,
                 'abc',
@@ -437,6 +501,27 @@ describe('RuntimeBot', () => {
                 'newTag',
                 'otherNewTag',
             ]);
+        });
+
+        it('should support Object.keys() for tags that were deleted from the bot', () => {
+            const keys1 = Object.keys(script.raw);
+            keys1.sort();
+
+            expect(keys1).toEqual(['abc', 'bool', 'different', 'ghi']);
+
+            script.raw.abc = null;
+
+            const keys2 = Object.keys(script.raw);
+            keys2.sort();
+
+            expect(keys2).toEqual(['bool', 'different', 'ghi']);
+
+            delete precalc.tags.bool;
+
+            const keys3 = Object.keys(script.raw);
+            keys3.sort();
+
+            expect(keys3).toEqual(['different', 'ghi']);
         });
 
         it('should get the raw value from the manager', () => {
@@ -522,6 +607,37 @@ describe('RuntimeBot', () => {
             expect(Object.keys(script.masks)).toEqual(['abc', 'ghi']);
         });
 
+        it('should support Object.keys() for tags that were deleted from the bot', () => {
+            precalc.masks = {
+                shared: {
+                    abc: 'def',
+                    different: 123,
+                },
+                tempLocal: {
+                    ghi: 'jkl',
+                    bool: true,
+                },
+            };
+            const keys1 = Object.keys(script.masks);
+            keys1.sort();
+
+            expect(keys1).toEqual(['abc', 'bool', 'different', 'ghi']);
+
+            script.masks.abc = null;
+
+            const keys2 = Object.keys(script.masks);
+            keys2.sort();
+
+            expect(keys2).toEqual(['bool', 'different', 'ghi']);
+
+            delete precalc.masks.tempLocal.bool;
+
+            const keys3 = Object.keys(script.masks);
+            keys3.sort();
+
+            expect(keys3).toEqual(['different', 'ghi']);
+        });
+
         it('should support the delete keyword', () => {
             precalc.masks = {
                 shared: {
@@ -537,7 +653,7 @@ describe('RuntimeBot', () => {
 
             delete script.masks.abc;
 
-            expect(script.masks.abc).toEqual(null);
+            expect(script.masks.abc).toBeUndefined();
             expect(script.maskChanges).toEqual({
                 shared: {
                     abc: null,
@@ -663,7 +779,7 @@ describe('RuntimeBot', () => {
                     abc: null,
                 },
             });
-            expect(script.masks.abc).toEqual(null);
+            expect(script.masks.abc).toBeUndefined();
         });
     });
 
@@ -685,8 +801,8 @@ describe('RuntimeBot', () => {
                     other: 'era',
                 },
             });
-            expect(script.masks.abc).toEqual(null);
-            expect(script.masks.value).toEqual(null);
+            expect(script.masks.abc).toBeUndefined();
+            expect(script.masks.value).toBeUndefined();
             expect(script.masks.other).toEqual('era');
         });
 
@@ -707,9 +823,9 @@ describe('RuntimeBot', () => {
                     other: null,
                 },
             });
-            expect(script.masks.abc).toEqual(null);
-            expect(script.masks.value).toEqual(null);
-            expect(script.masks.other).toEqual(null);
+            expect(script.masks.abc).toBeUndefined();
+            expect(script.masks.value).toBeUndefined();
+            expect(script.masks.other).toBeUndefined();
         });
 
         it('should work when the bot has no tag masks', () => {
@@ -717,6 +833,211 @@ describe('RuntimeBot', () => {
 
             expect(script.changes).toEqual({});
             expect(script.maskChanges).toEqual({});
+        });
+    });
+
+    describe('edit_tag', () => {
+        it('should support editing normal tags', () => {
+            script[EDIT_TAG_SYMBOL]('abc', [
+                preserve(1),
+                insert('111'),
+                del(1),
+            ]);
+
+            expect(script.tags.abc).toEqual('d111f');
+            expect(script.raw.abc).toEqual('d111f');
+            expect(script.changes.abc).toEqual(
+                edit(
+                    manager.currentVersion.vector,
+                    preserve(1),
+                    insert('111'),
+                    del(1)
+                )
+            );
+        });
+
+        it('should not overwrite tag changes with edits', () => {
+            script.tags.abc = 'fun';
+            script[EDIT_TAG_SYMBOL]('abc', [
+                preserve(1),
+                insert('111'),
+                del(1),
+            ]);
+
+            expect(script.tags.abc).toEqual('f111n');
+            expect(script.raw.abc).toEqual('f111n');
+            expect(script.changes.abc).toEqual('f111n');
+        });
+
+        it('should support multiple tag edits in a row', () => {
+            script[EDIT_TAG_SYMBOL]('abc', [
+                preserve(1),
+                insert('111'),
+                del(1),
+            ]);
+
+            script[EDIT_TAG_SYMBOL]('abc', [preserve(2), insert('2'), del(1)]);
+
+            expect(script.tags.abc).toEqual('d121f');
+            expect(script.raw.abc).toEqual('d121f');
+            expect(script.changes.abc).toEqual(
+                edits(
+                    manager.currentVersion.vector,
+                    [preserve(1), insert('111'), del(1)],
+                    [preserve(2), insert('2'), del(1)]
+                )
+            );
+        });
+    });
+
+    describe('edit_tag_mask', () => {
+        it('should support editing tag masks', () => {
+            script[SET_TAG_MASK_SYMBOL]('abc', 'def', 'local');
+            script[CLEAR_CHANGES_SYMBOL]();
+
+            script[EDIT_TAG_MASK_SYMBOL](
+                'abc',
+                [preserve(1), insert('111'), del(1)],
+                'local'
+            );
+
+            expect(script.masks.abc).toEqual('d111f');
+            expect(script.raw.abc).toEqual('def');
+            expect(script.changes).toEqual({});
+            expect(script.maskChanges).toEqual({
+                local: {
+                    abc: edit(
+                        manager.currentVersion.vector,
+                        preserve(1),
+                        insert('111'),
+                        del(1)
+                    ),
+                },
+            });
+        });
+
+        it('should not overwrite tag mask changes', () => {
+            script[SET_TAG_MASK_SYMBOL]('abc', 'def', 'local');
+
+            script[EDIT_TAG_MASK_SYMBOL](
+                'abc',
+                [preserve(1), insert('111'), del(1)],
+                'local'
+            );
+
+            expect(script.masks.abc).toEqual('d111f');
+            expect(script.raw.abc).toEqual('def');
+            expect(script.changes).toEqual({});
+            expect(script.maskChanges).toEqual({
+                local: {
+                    abc: 'd111f',
+                },
+            });
+        });
+
+        it('should support multiple tag mask edits in a row', () => {
+            script[SET_TAG_MASK_SYMBOL]('abc', 'def', 'local');
+            script[CLEAR_CHANGES_SYMBOL]();
+
+            script[EDIT_TAG_MASK_SYMBOL](
+                'abc',
+                [preserve(1), insert('111'), del(1)],
+                'local'
+            );
+
+            script[EDIT_TAG_MASK_SYMBOL](
+                'abc',
+                [preserve(2), insert('2'), del(1)],
+                'local'
+            );
+
+            expect(script.masks.abc).toEqual('d121f');
+            expect(script.raw.abc).toEqual('def');
+            expect(script.maskChanges).toEqual({
+                local: {
+                    abc: edits(
+                        manager.currentVersion.vector,
+                        [preserve(1), insert('111'), del(1)],
+                        [preserve(2), insert('2'), del(1)]
+                    ),
+                },
+            });
+        });
+
+        it('should use the default tag mask space if not specified', () => {
+            script[SET_TAG_MASK_SYMBOL]('abc', 'def');
+            script[CLEAR_CHANGES_SYMBOL]();
+
+            script[EDIT_TAG_MASK_SYMBOL](
+                'abc',
+                [preserve(1), insert('111'), del(1)],
+                null
+            );
+
+            expect(script.masks.abc).toEqual('d111f');
+            expect(script.raw.abc).toEqual('def');
+            expect(script.changes).toEqual({});
+            expect(script.maskChanges).toEqual({
+                [DEFAULT_TAG_MASK_SPACE]: {
+                    abc: edit(
+                        manager.currentVersion.vector,
+                        preserve(1),
+                        insert('111'),
+                        del(1)
+                    ),
+                },
+            });
+        });
+
+        it('should use the tag mask space that the mask is already defined in if the space is not specified', () => {
+            script[SET_TAG_MASK_SYMBOL]('abc', 'def', 'local');
+            script[CLEAR_CHANGES_SYMBOL]();
+
+            script[EDIT_TAG_MASK_SYMBOL](
+                'abc',
+                [preserve(1), insert('111'), del(1)],
+                null
+            );
+
+            expect(script.masks.abc).toEqual('d111f');
+            expect(script.raw.abc).toEqual('def');
+            expect(script.changes).toEqual({});
+            expect(script.maskChanges).toEqual({
+                local: {
+                    abc: edit(
+                        manager.currentVersion.vector,
+                        preserve(1),
+                        insert('111'),
+                        del(1)
+                    ),
+                },
+            });
+        });
+
+        it('should use the tag mask space that the highest priority if multiple masks are on the bot and the space is not specified', () => {
+            script[SET_TAG_MASK_SYMBOL]('abc', 'def', 'tempLocal');
+            script[SET_TAG_MASK_SYMBOL]('abc', 'fun', 'local');
+            script[CLEAR_CHANGES_SYMBOL]();
+
+            script[EDIT_TAG_MASK_SYMBOL](
+                'abc',
+                [preserve(1), insert('111'), del(1)],
+                null
+            );
+
+            expect(script.masks.abc).toEqual('d111f');
+            expect(script.raw.abc).toEqual('def');
+            expect(script.changes).toEqual({});
+            expect(script.maskChanges).toEqual({
+                tempLocal: {
+                    abc: edit(
+                        manager.currentVersion.vector,
+                        preserve(1),
+                        insert('111'),
+                        del(1)
+                    ),
+                },
+            });
         });
     });
 });

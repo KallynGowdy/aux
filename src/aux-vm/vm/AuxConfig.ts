@@ -2,6 +2,8 @@ import {
     AuxPartitionConfig,
     AuxDevice,
     BotsState,
+    hasValue,
+    RemoteCausalRepoProtocol,
 } from '@casual-simulation/aux-common';
 import { StoredAux } from '../StoredAux';
 
@@ -35,6 +37,16 @@ export interface AuxConfigParameters {
      * This will likely cause more verbose console output.
      */
     debug?: boolean;
+
+    /**
+     * The connection protocol that causal repo partitions should use.
+     */
+    causalRepoConnectionProtocol?: RemoteCausalRepoProtocol;
+
+    /**
+     * The URL that causal repo partitions should connect to.
+     */
+    causalRepoConnectionUrl?: string;
 }
 
 export function buildVersionNumber(config: AuxConfigParameters) {
@@ -58,15 +70,26 @@ export function parseVersionNumber(version: string) {
             major: null,
             minor: null,
             patch: null,
+            alpha: null,
         };
     }
-    const versionRegex = /^v(\d+)\.(\d+)\.(\d+)$/i;
-    const [str, major, minor, patch] = versionRegex.exec(version);
+    const versionRegex = /^v(\d+)\.(\d+)\.(\d+)(-\w+\.?\d*)?$/i;
+    const [str, major, minor, patch, prerelease] = versionRegex.exec(version);
+
+    let alpha: boolean | number = false;
+    if (hasValue(prerelease)) {
+        alpha = true;
+        const [first, number] = prerelease.split('.');
+        if (hasValue(number)) {
+            alpha = parseInt(number);
+        }
+    }
 
     return {
         version: str,
         major: parseInt(major),
         minor: parseInt(minor),
         patch: parseInt(patch),
+        alpha,
     };
 }

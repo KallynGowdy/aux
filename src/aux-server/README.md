@@ -83,6 +83,7 @@ The AUX Server Docker image can be configured using the following environment va
 
 -   `MONGO_URL`: The [MongoDB Connection String](https://docs.mongodb.com/manual/reference/connection-string/) that the server should use to connect to MongoDB for storage. (REQUIRED)
 -   `MONGO_USE_NEW_URL_PARSER` - Whether to use the [new MongoDB URL parser](https://stackoverflow.com/q/50448272/1832856). (Defaults to false)
+-   `MONGO_USE_UNIFIED_TOPOLOGY` - Whether to enable the new unified topology layer. (Defaults to false)
 -   `REDIS_HOST`: The hostname of the Redis instance that the server should connect to. (If not specified then Redis support will be disabled)
 -   `REDIS_PORT`: The port number that the server should connect to on the Redis host.
 -   `NODE_PORT`: The port number that the server should listen on.
@@ -95,6 +96,15 @@ The AUX Server Docker image can be configured using the following environment va
 -   `STAGE_TYPE`: The type of stage store that should be used for atoms that have not yet been committed. Possible options are `mongodb` and `redis`. `mongodb` uses MongoDB to store atoms while `redis` uses Redis. Note that `redis` is not persistent which makes data loss more likely. Defaults to `redis`.
 -   `GPIO`: Whether to enable GPIO support. Enabled by default on ARM. Disabled by default otherwise.
 -   `DEBUG`: Whether to enable debug mode. Setting this to `true` will enable some more debug logs, particularly for Deno.
+-   `CAUSAL_REPO_CONNECTION_PROTOCOL`: The connection protocol that should be used for causal repos. Controls which backends the causal repos can connect to. Possible options are `socket.io` and `apiary-aws`. The `socket.io` protocol works with Raspberry PIs and self-hosted servers (like in development). The `apiary-aws` protocol works with [CasualOS apiaries hosted on AWS](https://github.com/casual-simulation/casual-apiary-aws). Defaults to `socket.io`.
+-   `CAUSAL_REPO_CONNECTION_URL`: The URL that causal repos should connect to. If not specified, then the URL that the site is hosted from will be used. Useful in development to connect to a different causal repo host than the local socket.io based one.
+-   `EXECUTE_LOADED_STORIES`: Whether to let the server instantiate server-side runtimes to execute story code. Setting this to `true` will cause a sandbox to be created for every story that gets loaded. Note that for compatibility reasons this does not affect server-side execution for webhooks. The benefit of this flag is that fewer stories will be loaded when using the `none` option for `SANDBOX_TYPE` thereby making it less likely that the server will get locked up. Defaults to `true`.
+
+## Build Configuration
+
+The AUX build can be configured using the following environment variables:
+
+-   `PROXY_CORS_REQUESTS` - Whether to proxy HTTP GET requests that would trigger CORS through the proxy hosted by the server. Possible options are `true` and `false`. (Defaults to `true`)
 
 ## Security Note
 

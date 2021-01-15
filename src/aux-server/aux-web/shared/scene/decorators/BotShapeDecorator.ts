@@ -68,6 +68,7 @@ import { FrustumHelper } from '../helpers/FrustumHelper';
 import HelixUrl from '../../public/meshes/dna_form.glb';
 import EggUrl from '../../public/meshes/egg.glb';
 import { Axial, HexMesh } from '../hex';
+import { sortBy } from 'lodash';
 
 const gltfPool = getGLTFPool('main');
 
@@ -119,9 +120,7 @@ export class BotShapeDecorator
 
     constructor(bot3D: AuxBot3D, game: Game) {
         super(bot3D);
-
         this._game = game;
-        this._rebuildShape('cube', null, null, null, null);
     }
 
     frameUpdate() {
@@ -578,6 +577,8 @@ export class BotShapeDecorator
         this.scene = gltf.scene;
         this.container.add(gltf.scene);
 
+        this.mesh = findFirstMesh(this.scene);
+
         // Collider
         const collider = (this.collider = createCube(1));
         this.collider.scale.copy(size);
@@ -601,6 +602,7 @@ export class BotShapeDecorator
             this._updateAnimation(null, true);
         }
 
+        this._updateColor(null);
         this.bot3D.updateMatrixWorld(true);
     }
 
@@ -683,4 +685,20 @@ function createStroke() {
     });
 
     return new LineSegments(geo, material);
+}
+
+function findFirstMesh(obj: Object3D): Mesh {
+    const sorted = sortBy(obj.children, (c) => c.name);
+    let mesh = sorted.find((c) => c instanceof Mesh) as Mesh;
+    if (mesh) {
+        return mesh;
+    }
+    for (let child of sorted) {
+        mesh = findFirstMesh(child);
+        if (mesh) {
+            return mesh;
+        }
+    }
+
+    return null;
 }

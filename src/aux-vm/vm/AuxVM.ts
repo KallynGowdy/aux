@@ -2,7 +2,7 @@ import {
     LocalActions,
     BotAction,
     StateUpdatedEvent,
-    BotDependentInfo,
+    RuntimeStateVersion,
 } from '@casual-simulation/aux-common';
 import { StatusUpdate, DeviceAction } from '@casual-simulation/causal-trees';
 import { Observable } from 'rxjs';
@@ -35,6 +35,11 @@ export interface AuxVM extends Initable {
      * Gets the observable list of state updates from the simulation.
      */
     stateUpdated: Observable<StateUpdatedEvent>;
+
+    /**
+     * Gets the observable list of version updates from the simulation.
+     */
+    versionUpdated: Observable<RuntimeStateVersion>;
 
     /**
      * Gets an observable that resolves whenever the connection state changes.
@@ -100,12 +105,6 @@ export interface AuxVM extends Initable {
      * Exports the causal tree for the simulation.
      */
     export(): Promise<StoredAux>;
-
-    /**
-     * Gets the list of references to the given tag.
-     * @param tag The tag to look for references to.
-     */
-    getReferences(tag: string): Promise<BotDependentInfo>;
 
     /**
      * Gets the list of tags that are currently in use.

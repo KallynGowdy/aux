@@ -1,8 +1,296 @@
 # CasualOS Changelog
 
-## V1.2.20
+## V1.3.13
 
 #### Date: TBD
+
+### :rocket: Improvements
+
+-   Added the `player.showUploadFiles()` function.
+    -   Shows a dialog that can be used to upload arbitrary files.
+    -   Returns a promise that resolves with the list of files that were uploaded.
+    -   See the documentation for more info.
+
+## V1.3.12
+
+#### Date: 1/13/2021
+
+### :rocket: Improvements
+
+-   Added the Terms of Service and Privacy Policy documents.
+    -   The Terms of Service are available at `/terms` (or at `/terms-of-service.txt`).
+    -   The Privacy Policy is available at `/privacy-policy` (or at `/privacy-policy.txt`).
+-   Added the ability to keep track of the number of `setTimeout()` and `setInterval()` timers that are currently active via the `numberOfActiveTimers` property returned from `perf.getStats()`.
+-   Added the `animateTag(bot, tag, options)` and `clearAnimations(bot, tag?)` functions.
+    -   `animateTag(bot, tag, options)` - Iteratively changes a tag mask value over time based on the options you provide.
+        -   `bot` is the bot or list of bots that should be animated.
+        -   `tag` is the tag that should be animated.
+        -   `options` is an object that specifies how the tag should be animated. It has the following properties:
+            -   `fromValue` - The starting value for the animation.
+            -   `toValue` - The ending value.
+            -   `duration` - The number of seconds that it should take for the tag to go from the starting value to the ending value.
+            -   `easing` - The options for easing the animation.
+            -   `tagMaskSpace` - The space that the tag should be changed in. If set to `false` then the tag on the bot will be directly edited.
+    -   `clearAnimations(bot, tag?)` - Cancels animations on a bot.
+        -   `bot` - The bot or list of bots that should have their animations canceled.
+        -   `tag` - Is optional and is the tag that the animations should be canceled for.
+
+### :bug: Bug Fixes
+
+-   Fixed issues with `#labelFontSize = auto` when `#labelPosition != front` or when the bot is rotated.
+-   Fixed an issue where non-ASCII characters were being corrupted on download.
+
+## V1.3.11
+
+#### Date: 1/5/2021
+
+### :rocket: Improvements
+
+-   Greatly improved the default layouting behaviour of labels.
+    -   Added the `#labelFontSize` tag to control the sizing of the characters in a label. Unlike `#labelSize`, changing this value will cause the label to layout again which will affect word wrapping. Possible values are:
+        -   `auto` - Specifies that the system should try to find a font size that fits the text onto the bot. (default)
+        -   Any Number - Specifies a specific font size. (1 is previous default)
+    -   Added the `#labelWordWrapMode` tag to control the word wrapping behavior of labels. Possible values are:
+        -   `breakCharacters` - Specifies that the system should insert line breaks inside words if needed.
+        -   `breakWords` - Specifies that the system should insert line breaks between words if needed.
+        -   `none` - Specifies that the system should not insert line breaks.
+-   Added the ability to control the color of the placeholder text in the chat bar.
+    -   Use the `placeholderColor` option when calling `player.showChat()`.
+
+### :bug: Bug Fixes
+
+-   Fixed an issue where atoms that were received before their cause would be discarded.
+
+## V1.3.10
+
+#### Date: 12/29/2020
+
+### :rocket: Improvements
+
+-   Added a button to the Multiline tag editor to make it easy to turn a tag into a Mod tag.
+
+### :bug: Bug Fixes
+
+-   Fixed an issue where script compilation errors would not be handled correctly and would prevent those changes from being communicated to the multiline code editor.
+
+## V1.3.9
+
+#### Date: 12/28/2020
+
+### :boom: Breaking Changes
+
+-   Formulas have been removed and replaced with Mod tags.
+    -   Mod tags are tags that start with the DNA Emoji (🧬) and contain JSON data.
+    -   Because Mod tags are JSON data, they do not support programmatic computations.
+    -   We are making this change because while formulas are powerful, inprecise use of them can result in large slowdowns which is a bad user experience.
+    -   The tag data must be valid JSON, so that means using double-quotes `"` for strings and wrapping property names in double-quotes.
+        -   Before:
+            ```
+            =({ color: 'blue', number: 99, toggle: true })
+            ```
+            After:
+            ```
+            🧬{ "color": "blue", "number": 99, "toggle": true }
+            ```
+        -   Before:
+            ```
+            =([ 1 + 2 ])
+            ```
+            After:
+            ```
+            🧬3
+            ```
+-   Array-like values in tags are now considered strings.
+    -   Previously a value like `[1, 2, 3]` was parsed into an array automatically.
+    -   This was a little used feature and caused issues for people who simply wanted to store JSON data in a tag.
+    -   Now, a value like `[1, 2, 3]` will no longer be parsed and so will appear as the string: `"[1, 2, 3]"`.
+    -   If you want CasualOS to parse a tag value as an array, you can use the Mod tags mentioned above.
+-   Removed the `error` space.
+    -   Also removed the related functions:
+        -   `server.destroyErrors()`
+        -   `server.loadErrors()`
+
+### :rocket: Improvements
+
+-   Updated Material Icons to v4.0.0.
+-   Added `perf.getStats()` as a way to get some statistics on the performance of the server.
+-   Various performance improvements:
+    -   `getBot('id', id)` is now works in `O(1)` time.
+    -   The `tempLocal` and `local` spaces now handle new and deleted bots in a much more performant manner.
+-   Fixed an issue where deleted bots in the `shared` space would be treated like they were not deleted on initial load.
+
+### :bug: Bug Fixes
+
+-   Fixed autofocusing newly created tags in the sheetPortal.
+
+## V1.3.8
+
+#### Date: 12/17/2020
+
+### :bug: Bug Fixes
+
+-   Fixed an issue where selecting a color from a `player.showInput()` modal would not save the selected color.
+
+## V1.3.7
+
+#### Date: 12/17/2020
+
+### :boom: Breaking Changes
+
+-   "story" has been renamed to "server". Below is the list of tags, actions and listeners that have been changed:
+    -   `#story` -> `#server`.
+    -   `server.setupStory()` -> `server.setupServer()`
+    -   `server.restoreHistoryMarkToStory()` -> `server.restoreHistoryMarkToServer()`
+    -   `server.storyStatuses()` -> `server.serverStatuses()`
+    -   `server.storyPlayerCount()` -> `server.serverPlayerCount()`
+    -   `player.downloadStory()` -> `player.downloadServer()`
+    -   `player.loadStory()` -> `player.loadServer()`
+    -   `player.unloadStory()` -> `player.unloadServer()`
+    -   `player.getCurrentStory()` -> `player.getCurrentServer()`
+    -   `@onStoryAction` -> `@onServerAction`
+    -   `@onStoryStreaming` -> `@onServerStreaming`
+    -   `@onStoryStreamLost` -> `@onServerStreamLost`
+    -   `@onStorySubscribed` -> `@onServerSubscribed`
+    -   `@onStoryUnsubscribed` -> `@onServerUnsubscribed`
+
+## V1.3.6
+
+#### Date: 12/17/2020
+
+### :rocket: Improvements
+
+-   Added the ability to show a password input by using the `secret` type with `player.showInput()`.
+
+### :bug: Bug Fixes
+
+-   Fixed an issue where some bots would not be added to the page portal when created in a big batch.
+-   Fixed an issue where the `player.showInput()` dialog would appear fullscreen on mobile devices and prevent people from exiting it.
+-   Fixed an issue where `@onChatTyping` would be triggered twice for each keystroke.
+
+## V1.3.5
+
+#### Date: 12/15/2020
+
+### :rocket: Improvements
+
+-   Changed `create()` to prevent creating bots that have no tags.
+    -   If a bot would be created with zero tags then an error will be thrown.
+-   Added a favicon.
+
+### :bug: Bug Fixes
+
+-   Changed the maximum WebSocket message size to 32KB from 128KB.
+    -   This will help ensure that we keep below the [AWS API Gateway maximum frame size of 32 KB](https://docs.aws.amazon.com/apigateway/latest/developerguide/limits.html).
+-   Fixed an issue where bots that only had a tag mask would not show up in the sheetPortal.
+
+## V1.3.4
+
+#### Date: 12/10/2020
+
+### :rocket: Improvements
+
+-   Added the `EXECUTE_LOADED_STORIES` environment variable to allow reducing server load due to story scripts.
+    -   Defaults to `true`.
+    -   Setting to `false` will disable all server-side story features except for webhooks and data portals.
+        -   This means that some capabilities like `server.setupStory()` will not work when `EXECUTE_LOADED_STORIES` is false.
+-   Added gzip compression for HTML, CSS, and JavaScript returned from the server.
+-   Improved how some heavy assets are precached so that they can be loaded quickly.
+-   Made the browser tab title use the story ID by default.
+
+### :bug: Bug Fixes
+
+-   Fixed an issue where some `.png` files would not load because they were bundled incorrectly.
+
+## V1.3.3
+
+#### Date: 12/10/2020
+
+### :rocket: Improvements
+
+-   Added support for the `apiary-aws` causal repo protocol.
+    -   This enables the CasualOS frontend to communicate with instances of the [CasualOS Apiary AWS](https://github.com/casual-simulation/casual-apiary-aws) project.
+    -   Use the `CAUSAL_REPO_CONNECTION_PROTOCOL` and `CAUSAL_REPO_CONNECTION_URL` environment variables to control which protocol and URL the frontend should connect to. See the [README in `aux-server`](./src/aux-server/README.md) for more info.
+    -   Note that only the following features are supported for AWS Apiaries:
+        -   `server.setupStory()`
+        -   `server.totalPlayerCount()`
+        -   `server.storyPlayerCount()`
+        -   `server.players()`
+    -   Webhooks are different when the story is hosted on an Apiary.
+        -   They require at least one device to have the story loaded for webhooks to function correctly.
+        -   They need to be sent to the Apiary host directly. Generally, this is not the same thing as `auxplayer.com` or `casualos.com` so you may need to ask the Apiary manager for it.
+-   Added better support for static builds.
+    -   Use the `PROXY_CORS_REQUESTS` environment variable during builds to disable support for proxying HTTP requests through the server.
+    -   Use `npm run tar:client` after a build to produce a `./temp/output-client.tar.gz` containing all the client code and assets. This can be deployed to S3 or a CDN for static hosting.
+    -   Use `npm run package:config` to produce a `./temp/config.json` which can be used for the `/api/config` request that the client makes at startup. Utilizes the environment variables from [the README in `aux-server`](./src/aux-server/README.md) to build the config.
+
+### :bug: Bug Fixes
+
+-   Fixed an issue where it was not possible to change the color of GLTF meshes that did not have a mesh in the GLTF scene root.
+-   Fixed an issue where bots created by the ab1 installer would not receive the `@onStorySubscribed` shout.
+
+## V1.3.2
+
+#### Date: 11/17/2020
+
+### :rocket: Improvements
+
+-   Updated the ab-1 bootstrapper to point to AWS S3 for quick loading.
+
+## V1.3.1
+
+#### Date: 11/16/2020
+
+### :rocket: Improvements
+
+-   Added the ability to use the `color` tag on GLTF meshes to apply a color tint to the mesh.
+
+### :bug: Bug Fixes
+
+-   Fixed an issue that prevented deleting the first character of a script/formula in the multi-line editor.
+-   Fixed an issue where tag edits on bots in the tempLocal and local spaces would be applied to the multi-line editor twice.
+
+## V1.3.0
+
+#### Date: 11/11/2020
+
+### :rocket: Improvements
+
+-   Added multi-user text editing.
+    -   Work on shared bots when editing a tag value with the multi-line editor.
+-   Added the cursor bot form.
+    -   Used to add a cursor indicator to the multi-line editor.
+    -   Works by setting the `form` tag to "cursor" and placing the bot in the corresponding tag portal dimension.
+        -   For example, to put a cursor in the multi-line editor for the `test` tag on a bot you would set `{targetBot.id}.test` to true.
+    -   Supported tags are:
+        -   `color` - Specifies the color of the cursor.
+        -   `label` - Specifies a label that should appear on the cursor when the mouse is hovering over it.
+        -   `labelColor` - Specifies the color of the text in the cursor label.
+        -   `{dimension}Start` - Specifies the index at which the cursor selection starts (Mirrors `cursorStartIndex` from the player bot).
+        -   `{dimension}End` - Specifies the index at which the cursor selection ends (Mirrors `cursorEndIndex` from the player bot).
+-   Added the `pageTitle`, `cursorStartIndex`, and `cursorEndIndex` tags to the player bot.
+    -   `pageTitle` is used to set the title of the current browser tab.
+    -   `cursorStartIndex` contains the starting index of the player's text selection inside the multi-line editor.
+    -   `cursorEndIndex` contains the ending index of the player's text selection inside the multi-line editor.
+    -   Note that when `cursorStartIndex` is larger than `cursorEndIndex` it means that the player has selected text from the right to the left. This is important because text will always be inserted at `cursorEndIndex`.
+-   Added the `insertTagText()`, `deleteTagText()`, `insertTagMaskText()`, and `deleteTagMaskText()` functions to allow scripts to work with multi-user text editing.
+    -   `insertTagText(bot, tag, index, text)` inserts the given text at the index into the given tag on the given bot.
+    -   `insertTagMaskText(bot, tag, index, text, space?)` inserts the given text at the index into the tag and bot. Optionally accepts the space of the tag mask.
+    -   `deleteTagText(bot, tag, index, deleteCount)` deletes the given number of characters at the index from the tag and bot.
+    -   `deleteTagMaskText(bot, tag, index, deleteCount, space?)` deletes the given number of characters at the index from the tag and bot. Optionally accepts the space of the tag mask.
+-   Added the ability to use the `transformer` tag on the player bot to parent the player to a bot.
+-   Added the ability to edit tag masks in the tag portal by setting the `tagPortalSpace` tag on the player bot.
+
+## V1.2.21
+
+#### Date: 11/5/2020
+
+### :rocket: Improvements
+
+-   Updated the MongoDB driver to v3.6.2 and added the `MONGO_USE_UNIFIED_TOPOLOGY` environment variable to control whether the driver uses the new unified topology layer.
+
+## V1.2.20
+
+#### Date: 10/27/2020
 
 ### :rocket: Improvements
 

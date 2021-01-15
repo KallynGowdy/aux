@@ -11,6 +11,9 @@ import {
     hasValue,
     getTagValueForSpace,
     getUpdateForTagAndSpace,
+    DNA_TAG_PREFIX,
+    parseScriptSafe,
+    parseFormulaSafe,
 } from '@casual-simulation/aux-common';
 import { BrowserSimulation } from '@casual-simulation/aux-vm-browser';
 import { SubscriptionLike, Subscription } from 'rxjs';
@@ -24,6 +27,8 @@ import {
     unloadModel,
     watchSimulation,
     setActiveModel,
+    toSubscription,
+    watchEditor,
 } from '../../MonacoHelpers';
 import * as monaco from '../../MonacoLibs';
 import { filter, tap } from 'rxjs/operators';
@@ -48,14 +53,8 @@ export default class MonacoTagEditor extends Vue {
     private _simulation: BrowserSimulation;
     private _sub: Subscription;
     private _model: monaco.editor.ITextModel;
-    private _allErrors: BotError[];
-    private _errorIds: Set<string>;
-    private _requestedErrors: Set<string>;
 
-    scriptErrors: BotError[];
     signed: boolean;
-
-    showErrors: boolean;
 
     @Watch('tag')
     tagChanged() {
@@ -81,16 +80,6 @@ export default class MonacoTagEditor extends Vue {
                 tagLink
             )}`;
         }
-    }
-
-    get errorsCount() {
-        return sumBy(this.scriptErrors, (e) => e.count);
-    }
-
-    get errorsLabel() {
-        return this.errorsCount > 1
-            ? `${this.errorsCount} Errors`
-            : `${this.errorsCount} Error`;
     }
 
     get isListenTag() {
@@ -121,69 +110,24 @@ export default class MonacoTagEditor extends Vue {
         return false;
     }
 
+    get editor() {
+        return (<MonacoEditor>this.$refs?.editor).editor;
+    }
+
     constructor() {
         super();
-        this.scriptErrors = [];
-        this.showErrors = false;
     }
 
     created() {
-        this._allErrors = [];
-        this._errorIds = new Set();
-        this._requestedErrors = new Set();
-        this.showErrors = false;
         this.signed = false;
 
         this._sub = new Subscription();
         this._sub.add(
             appManager.whileLoggedIn((user, sim) => {
                 this._simulation = sim;
-                const sub = watchSimulation(sim);
+                const sub = watchSimulation(sim, () => this.editor);
 
-                const sub2 = sim.watcher.botsDiscovered
-                    .pipe(
-                        tap((bots) => {
-                            let update = false;
-                            for (let b of bots) {
-                                if (
-                                    b.space !== 'error' ||
-                                    b.values['error'] !== true
-                                ) {
-                                    continue;
-                                }
-                                if (this._errorIds.has(b.id)) {
-                                    continue;
-                                }
-
-                                let error = {
-                                    botId: b.values['errorBot'],
-                                    tag: b.values['errorTag'],
-                                    message: b.values['errorMessage'],
-                                    name: b.values['errorName'],
-                                    stack: b.values['errorStack'],
-                                } as BotError;
-
-                                this._errorIds.add(b.id);
-                                this._allErrors.push(error);
-
-                                if (
-                                    this.bot &&
-                                    this.bot.id === error.botId &&
-                                    this.tag === error.tag
-                                ) {
-                                    update = true;
-                                }
-                            }
-                            if (update) {
-                                this.$nextTick(() => {
-                                    this._updateModel();
-                                });
-                            }
-                        })
-                    )
-                    .subscribe(null, (e) => console.error(e));
                 this._sub.add(sub);
-                this._sub.add(sub2);
                 return [sub];
             })
         );
@@ -191,6 +135,10 @@ export default class MonacoTagEditor extends Vue {
 
     mounted() {
         this._updateModel();
+    }
+
+    onEditorMounted(editor: monaco.editor.IStandaloneCodeEditor) {
+        this._sub.add(watchEditor(this._simulation, editor));
     }
 
     destroyed() {
@@ -208,10 +156,6 @@ export default class MonacoTagEditor extends Vue {
         setActiveModel(null);
     }
 
-    toggleErrors() {
-        this.showErrors = !this.showErrors;
-    }
-
     makeNormalTag() {
         let currentValue = getTagValueForSpace(this.bot, this.tag, this.space);
         if (typeof currentValue === 'object') {
@@ -221,8 +165,32 @@ export default class MonacoTagEditor extends Vue {
             currentValue = '';
         }
         let final = null as string;
-        if (this.isScript || this.isFormula) {
-            final = currentValue.slice(1);
+        if (this.isFormula) {
+            final = parseFormulaSafe(currentValue);
+        } else if (this.isScript) {
+            final = parseScriptSafe(currentValue);
+        }
+        if (final !== null) {
+            this._simulation.helper.updateBot(
+                this.bot,
+                getUpdateForTagAndSpace(this.tag, final, this.space)
+            );
+        }
+    }
+
+    makeDnaTag() {
+        let currentValue = getTagValueForSpace(this.bot, this.tag, this.space);
+        if (typeof currentValue === 'object') {
+            return;
+        }
+        if (!hasValue(currentValue)) {
+            currentValue = '';
+        }
+        let final = null as string;
+        if (this.isScript) {
+            final = '🧬' + parseScriptSafe(currentValue);
+        } else if (!this.isFormula) {
+            final = '🧬' + currentValue;
         }
         if (final !== null) {
             this._simulation.helper.updateBot(
@@ -242,7 +210,7 @@ export default class MonacoTagEditor extends Vue {
         }
         let final = null as string;
         if (this.isFormula) {
-            final = '@' + currentValue.slice(1);
+            final = '@' + parseFormulaSafe(currentValue);
         } else if (!this.isScript) {
             final = '@' + currentValue;
         }
@@ -260,7 +228,13 @@ export default class MonacoTagEditor extends Vue {
         const space = this.space;
 
         const oldModel = this._model;
-        this._model = loadModel(this._simulation, bot, tag, space);
+        this._model = loadModel(
+            this._simulation,
+            bot,
+            tag,
+            space,
+            () => (<MonacoEditor>this.$refs?.editor).editor
+        );
         if (
             oldModel &&
             oldModel !== this._model &&
@@ -280,47 +254,5 @@ export default class MonacoTagEditor extends Vue {
         } else {
             this.signed = false;
         }
-
-        const scriptErrors = this._allErrors.filter(
-            (e) => e.botId === bot.id && e.tag === tag
-        );
-        const grouped = groupBy(scriptErrors, (e) => `${e.name}${e.message}`);
-        this.scriptErrors = Object.keys(grouped).map((k) => {
-            let error = grouped[k][0];
-            return {
-                ...error,
-                count: grouped[k].length,
-            };
-        });
-
-        const requestId = `${bot.id}-${tag}`;
-        if (!this._requestedErrors.has(requestId)) {
-            this._requestedErrors.add(requestId);
-            this._simulation.helper.transaction(
-                loadBots('error', [
-                    {
-                        tag: 'error',
-                        value: true,
-                    },
-                    {
-                        tag: 'errorBot',
-                        value: bot.id,
-                    },
-                    {
-                        tag: 'errorTag',
-                        value: tag,
-                    },
-                ])
-            );
-        }
     }
-}
-
-interface BotError {
-    count: number;
-    name: string;
-    message: string;
-    stack: string;
-    tag: string;
-    botId: string;
 }

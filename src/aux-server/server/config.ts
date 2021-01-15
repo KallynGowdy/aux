@@ -39,6 +39,11 @@ export interface Config {
     sandbox: SandboxType;
 
     /**
+     * Whether to let the server instantate server-side runtimes for stories that get loaded.
+     */
+    executeLoadedStories: boolean;
+
+    /**
      * Whether to enable GPIO support.
      */
     gpio: boolean;
@@ -64,6 +69,7 @@ export interface ClientConfig {
 export interface MongoDbConfig {
     url: string;
     useNewUrlParser: boolean;
+    useUnifiedTopology?: boolean;
 }
 
 export type CassandraDBConfig =
@@ -154,7 +160,7 @@ export interface MongoDBCaualReposConfig {
 export interface BotsServerConfig {
     /**
      * The name of the database that the bots should be stored in.
-     * Each story gets its own collection.
+     * Each server gets its own collection.
      */
     dbName: string;
 

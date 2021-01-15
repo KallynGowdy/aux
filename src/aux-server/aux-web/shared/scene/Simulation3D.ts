@@ -1,4 +1,4 @@
-import { Object3D, Texture, Color, Vector2 } from 'three';
+import { Object3D, Texture, Color, Vector2, Scene } from 'three';
 import { BrowserSimulation } from '@casual-simulation/aux-vm-browser';
 import {
     Bot,
@@ -34,7 +34,8 @@ import { PortalConfig } from 'aux-web/aux-player/scene/PortalConfig';
 /**
  * Defines a class that is able to render a simulation.
  */
-export abstract class Simulation3D extends Object3D
+export abstract class Simulation3D
+    extends Object3D
     implements SubscriptionLike, AuxBotVisualizerFinder {
     protected _subs: SubscriptionLike[];
 
@@ -133,6 +134,18 @@ export abstract class Simulation3D extends Object3D
     }
 
     /**
+     * Gets the scene that this simulation is attached to.
+     */
+    get scene(): Scene {
+        let parent = this.parent;
+        while (parent && !(parent instanceof Scene)) {
+            parent = parent.parent;
+        }
+
+        return parent as Scene;
+    }
+
+    /**
      * Creates a new Simulation3D object that can be used to render the given simulation.
      * @param game The game.
      * @param simulation The simulation to render.
@@ -159,7 +172,7 @@ export abstract class Simulation3D extends Object3D
         this._subs.push(
             this.simulation.localEvents
                 .pipe(
-                    tap(e => {
+                    tap((e) => {
                         if (e.type === 'tween_to') {
                             const foundBotIn3D =
                                 this.findBotsById(e.botId).length > 0;
@@ -185,30 +198,32 @@ export abstract class Simulation3D extends Object3D
 
         this._subs.push(
             this.simulation.dimensions
-                .watchDimensions(...this._getDimensionTags())
-                .pipe(tap(update => this._dimensionsUpdated(update)))
-                .subscribe(null, err => console.log(err))
+                .watchDimensions(this._getDimensionTags(), (bot) =>
+                    this._filterDimensionBot(bot)
+                )
+                .pipe(tap((update) => this._dimensionsUpdated(update)))
+                .subscribe(null, (err) => console.log(err))
         );
 
         // Subscriptions to bot events.
         this._subs.push(
             this.simulation.watcher.botsDiscovered
-                .pipe(tap(bot => this._botsAdded(bot)))
+                .pipe(tap((bot) => this._botsAdded(bot)))
                 .subscribe()
         );
         this._subs.push(
             this.simulation.watcher.botsRemoved
-                .pipe(tap(bot => this._botsRemoved(bot)))
+                .pipe(tap((bot) => this._botsRemoved(bot)))
                 .subscribe()
         );
         this._subs.push(
             this.simulation.watcher.botTagsUpdated
-                .pipe(tap(update => this._botsUpdated(update, false)))
+                .pipe(tap((update) => this._botsUpdated(update, false)))
                 .subscribe()
         );
         this._subs.push(
             this.simulation.localEvents
-                .pipe(tap(e => this._localEvent(e)))
+                .pipe(tap((e) => this._localEvent(e)))
                 .subscribe()
         );
     }
@@ -463,6 +478,15 @@ export abstract class Simulation3D extends Object3D
         return true;
     }
 
+    /**
+     * Determines if the given bot should be able to host a dimension.
+     * Defaults to true.
+     * @param bot The bot.
+     */
+    protected _filterDimensionBot(bot: Bot): boolean {
+        return true;
+    }
+
     protected _botsUpdated(updates: UpdatedBotInfo[], initialUpdate: boolean) {
         for (let bot of updates) {
             this._onBotUpdated(this._currentContext, bot);
@@ -533,9 +557,7 @@ export abstract class Simulation3D extends Object3D
         }
 
         console.log(
-            `[Simulation3D] Added ${
-                botsInDimension.length
-            } bots to ${dimension}`
+            `[Simulation3D] Added ${botsInDimension.length} bots to ${dimension}`
         );
     }
 
@@ -683,7 +705,7 @@ export abstract class Simulation3D extends Object3D
     abstract getGridScale(bot: AuxBot3D): number;
 
     unsubscribe(): void {
-        this._subs.forEach(s => s.unsubscribe());
+        this._subs.forEach((s) => s.unsubscribe());
         this.remove(...this.children);
         this.dimensions.splice(0, this.dimensions.length);
         this.closed = true;
