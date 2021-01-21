@@ -97,6 +97,9 @@ export class AuxVMImpl implements AuxVM {
 
         const bowserResult = Bowser.parse(navigator.userAgent);
 
+        console.log(navigator.userAgent);
+        console.log(bowserResult);
+
         // Safari requires the allow-same-origin option in order to load
         // web workers using a blob.
         if (
@@ -107,12 +110,20 @@ export class AuxVMImpl implements AuxVM {
             this._iframe.sandbox.add('allow-same-origin');
         }
 
-        let promise = waitForLoad(this._iframe);
+        let promise = waitForLoad(this._iframe).then(() => true);
         document.body.appendChild(this._iframe);
 
         console.warn('[AuxVMImpl] Waiting for iframe to load...');
         try {
-            await promise;
+            const timeout = new Promise((resolve) =>
+                setTimeout(resolve, 10000)
+            ).then(() => false);
+            const success = await Promise.race([promise, timeout]);
+
+            if (!success) {
+                console.warn('[AuxVMImpl] Timed out while loading iframe');
+                throw new Error('Timed out while loading AUX VM.');
+            }
             console.warn('[AuxVMImpl] Loaded! Creating VM...');
 
             this._channel = setupChannel(this._iframe.contentWindow);
