@@ -55,6 +55,26 @@ export interface ExternalModule {
 }
 
 /**
+ * Defines an interface that represents data about an injected library.
+ */
+export interface LibraryModule {
+    /**
+     * The ID that was imported.
+     */
+    id: string;
+
+    /**
+     * The source code that was imported.
+     */
+    source: string;
+
+    /**
+     * The language that this module is in.
+     */
+    language: RegisterPrefixOptions['language'];
+}
+
+/**
  * Defines an interface that represents a bundle of code.
  */
 export interface CodeBundle {
@@ -116,6 +136,12 @@ export interface PortalBundler {
         tag: string,
         prefixes: ScriptPrefix[]
     ): Promise<CodeBundle>;
+
+    /**
+     * Adds the given library source under the given name.
+     * @param module The module that should be used.
+     */
+    addLibrary(module: LibraryModule): void;
 }
 
 /**
@@ -126,11 +152,22 @@ export class ESBuildPortalBundler implements PortalBundler {
     private _esbuildService: ESBuild.Service;
     private _baseModuleUrl: string = DEFAULT_BASE_MODULE_URL;
     private _httpCache: Map<string, Promise<AxiosResponse<string>>>;
+    private _libraries: Map<string, LibraryModule>;
     private _esbuildWasmUrl: string;
 
     constructor(options: { esbuildWasmUrl?: string } = {}) {
         this._httpCache = new Map();
+        this._libraries = new Map();
+        this._libraries;
         this._esbuildWasmUrl = options.esbuildWasmUrl || null;
+    }
+
+    /**
+     * Adds the given library source under the given name.
+     * @param source The source code to use.
+     */
+    addLibrary(module: LibraryModule) {
+        this._libraries.set(module.id, module);
     }
 
     /**
@@ -338,20 +375,10 @@ export class ESBuildPortalBundler implements PortalBundler {
                                     prefix.prefix,
                                     code
                                 ),
-                                loader:
-                                    prefix.language === 'javascript'
-                                        ? 'js'
-                                        : prefix.language === 'typescript'
-                                        ? 'ts'
-                                        : prefix.language === 'json'
-                                        ? 'json'
-                                        : prefix.language === 'jsx'
-                                        ? 'jsx'
-                                        : prefix.language === 'tsx'
-                                        ? 'tsx'
-                                        : prefix.language === 'text'
-                                        ? 'text'
-                                        : DEFAULT_IMPORT_LANGUAGE,
+                                loader: this._loaderForLanguage(
+                                    prefix.language,
+                                    DEFAULT_IMPORT_LANGUAGE
+                                ),
                             };
                         }
 
@@ -373,6 +400,14 @@ export class ESBuildPortalBundler implements PortalBundler {
                 build.onResolve({ filter: /.*/ }, (args) => {
                     const importee = args.path;
                     let importer = args.importer;
+
+                    if (this._libraries.has(importee)) {
+                        return {
+                            path: importee,
+                            namespace: 'lib-ns',
+                        };
+                    }
+
                     // convert to HTTP(S) import.
                     if (importee.startsWith('/') || importee.startsWith('./')) {
                         // use importer as base URL
@@ -438,8 +473,61 @@ export class ESBuildPortalBundler implements PortalBundler {
                         }
                     }
                 );
+
+                build.onLoad(
+                    { filter: /.*/, namespace: 'lib-ns' },
+                    async (args) => {
+                        try {
+                            const module = this._libraries.get(args.path);
+                            if (module) {
+                                return {
+                                    contents: module.source,
+                                    loader: this._loaderForLanguage(
+                                        module.language,
+                                        DEFAULT_IMPORT_LANGUAGE
+                                    ),
+                                };
+                            }
+
+                            return {
+                                errors: [
+                                    {
+                                        text: `Unable to find library for ${args.path}`,
+                                    },
+                                ],
+                            };
+                        } catch (err) {
+                            return {
+                                errors: [
+                                    {
+                                        text: `${err}`,
+                                    },
+                                ],
+                            };
+                        }
+                    }
+                );
             },
         };
+    }
+
+    private _loaderForLanguage(
+        language: RegisterPrefixOptions['language'],
+        defaultLoader: ESBuild.Loader
+    ): ESBuild.Loader {
+        return language === 'javascript'
+            ? 'js'
+            : language === 'typescript'
+            ? 'ts'
+            : language === 'json'
+            ? 'json'
+            : language === 'jsx'
+            ? 'jsx'
+            : language === 'tsx'
+            ? 'tsx'
+            : language === 'text'
+            ? 'text'
+            : defaultLoader;
     }
 }
 
@@ -451,10 +539,11 @@ function handleHttpResponse(
     if (typeof response.data === 'string') {
         const script = response.data;
 
-        const declarations = response?.headers?.['x-typescript-types'];
-        if (typeof declarations === 'string') {
-            const external = values(externals).find((e) => e.url === path);
-            if (external) {
+        const external = values(externals).find((e) => e.url === path);
+
+        if (external) {
+            const declarations = response?.headers?.['x-typescript-types'];
+            if (typeof declarations === 'string') {
                 external.typescriptDefinitionsURL = new URL(
                     declarations,
                     path
