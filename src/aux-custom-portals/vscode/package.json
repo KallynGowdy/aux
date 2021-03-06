@@ -1,0 +1,45 @@
+{
+    "name": "vscode-casualos",
+    "version": "1.4.8",
+    "private": true,
+    "publisher": "casualos",
+    "description": "An extension that can be used to integrate CasualOS with VSCode.",
+    "keywords": [
+        "aux"
+    ],
+    "author": "Casual Simulation, Inc.",
+    "homepage": "https://casualsimulation.com/",
+    "license": "MIT",
+    "enableProposedApi": true,
+    "activationEvents": [
+        "onFileSystem:casualos"
+    ],
+    "browser": "./extension",
+    "engines": {
+        "vscode": "^1.48.0"
+    },
+    "contributes": {},
+    "files": [
+        "/README.md",
+        "/LICENSE.txt",
+        "**/*.js",
+        "**/*.js.map",
+        "**/*.d.ts"
+    ],
+    "bin": {
+        "build": "./bin/build.js"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/casual-simulation/casualos.git"
+    },
+    "scripts": {},
+    "publishConfig": {
+        "access": "public"
+    },
+    "bugs": {
+        "url": "https://github.com/casual-simulation/casualos/issues"
+    },
+    "dependencies": {},
+    "devDependencies": {}
+}

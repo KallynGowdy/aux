@@ -202,6 +202,48 @@ function playerConfig(latestTag) {
                         to: path.resolve(__dirname, 'dist', 'privacy-policy'),
                         toType: 'file',
                     },
+                    {
+                        from: 'node_modules/@casual-simulation/libvscode/dist',
+                        to: path.resolve(__dirname, 'dist', 'vscode'),
+                        context: path.resolve(__dirname, '..', '..', '..'),
+                    },
+                    {
+                        from: path.resolve(
+                            __dirname,
+                            '..',
+                            '..',
+                            'aux-custom-portals',
+                            'dist',
+                            'vscode'
+                        ),
+                        to: path.resolve(
+                            __dirname,
+                            'dist',
+                            'vscode',
+                            'extensions',
+                            'casualos'
+                        ),
+                        toType: 'dir',
+                    },
+                    {
+                        from: path.resolve(
+                            __dirname,
+                            '..',
+                            '..',
+                            'aux-custom-portals',
+                            'vscode',
+                            'package.json'
+                        ),
+                        to: path.resolve(
+                            __dirname,
+                            'dist',
+                            'vscode',
+                            'extensions',
+                            'casualos',
+                            'package.json'
+                        ),
+                        toType: 'file',
+                    },
                 ],
             }),
             new WebpackAssetsManifest(),

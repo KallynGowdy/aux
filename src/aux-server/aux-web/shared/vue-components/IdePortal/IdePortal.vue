@@ -1,8 +1,9 @@
 <template>
-    <div v-if="hasPortal" class="ide-portal" v-on:keydown.stop v-on:keyup.stop>
+    <div v-if="hadPortal" v-show="hasPortal" class="ide-portal" v-on:keydown.stop v-on:keyup.stop>
         <md-card ref="card" class="info-card maximized">
             <md-card-content>
-                <div class="items-list">
+                <vscode></vscode>
+                <!-- <div class="items-list">
                     <div class="items-list-header">Tags</div>
                     <div class="items-list-items">
                         <div
@@ -32,7 +33,7 @@
                         :showDesktopEditor="true"
                         :showResize="false"
                     ></tag-value-editor>
-                </div>
+                </div> -->
                 <md-button v-if="showButton" class="md-fab exit-portal" @click="exitPortal()">
                     <md-icon>{{ finalButtonIcon }}</md-icon>
                     <md-tooltip>{{ finalButtonHint }}</md-tooltip>

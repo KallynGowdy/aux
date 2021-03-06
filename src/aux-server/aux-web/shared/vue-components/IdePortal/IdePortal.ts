@@ -27,15 +27,18 @@ import { IdePortalConfig } from './IdePortalConfig';
 import { IdeNode } from '@casual-simulation/aux-vm-browser';
 import TagValueEditor from '../TagValueEditor/TagValueEditor';
 import BotTag from '../BotTag/BotTag';
+import VSCode from '../VSCode/VScode';
 
 @Component({
     components: {
         'tag-value-editor': TagValueEditor,
         'bot-tag': BotTag,
+        vscode: VSCode,
     },
 })
 export default class IdePortal extends Vue {
     items: IdeNode[] = [];
+    hadPortal: boolean = false;
     hasPortal: boolean = false;
 
     showButton: boolean = true;
@@ -74,6 +77,7 @@ export default class IdePortal extends Vue {
             this._simulation = appManager.simulationManager.primary;
             this.items = [];
             this.hasPortal = false;
+            this.hadPortal = false;
             this.currentBot = null;
             this.currentTag = null;
             this.currentSpace = null;
@@ -82,6 +86,7 @@ export default class IdePortal extends Vue {
             subs.push(
                 this._simulation.idePortal.itemsUpdated.subscribe((e) => {
                     this.items = e.items;
+                    this.hadPortal = this.hadPortal || e.hasPortal;
                     this.hasPortal = e.hasPortal;
                 })
             );
@@ -137,53 +142,6 @@ export default class IdePortal extends Vue {
             tags: tags,
         });
     }
-
-    // async botClick(bot: Bot) {
-    //     const result = await this._simulation.helper.shout(
-    //         ON_SHEET_BOT_CLICK,
-    //         null,
-    //         {
-    //             bot: bot,
-    //         }
-    //     );
-    //     if (result.results.length <= 0) {
-    //         this.exitSheet();
-    //         this._simulation.helper.transaction(
-    //             tweenTo(bot.id, undefined, undefined, undefined, 0)
-    //         );
-    //     }
-    // }
-
-    // async botIDClick(id: string) {
-    //     const result = await this._simulation.helper.shout(
-    //         ON_SHEET_BOT_ID_CLICK,
-    //         null,
-    //         {
-    //             bot: this._simulation.helper.botsState[id],
-    //         }
-    //     );
-    //     if (result.results.length <= 0) {
-    //         copyToClipboard(id);
-    //         this._simulation.helper.transaction(toast('Copied!'));
-    //     }
-    // }
-
-    // async goToTag(tag: string) {
-    //     const result = await this._simulation.helper.shout(
-    //         ON_SHEET_TAG_CLICK,
-    //         null,
-    //         {
-    //             tag: tag,
-    //         }
-    //     );
-    //     if (result.results.length <= 0) {
-    //         this._simulation.helper.updateBot(this._simulation.helper.userBot, {
-    //             tags: {
-    //                 sheetPortal: tag,
-    //             },
-    //         });
-    //     }
-    // }
 
     private _updateConfig() {
         if (this._currentConfig) {

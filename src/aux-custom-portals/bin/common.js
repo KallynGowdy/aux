@@ -46,6 +46,44 @@ module.exports = [
         },
     },
 
+    {
+        id: 'casualos-vscode',
+        type: 'esbuild',
+        options: {
+            entryPoints: [
+                path.resolve(__dirname, '../vscode/src/extension.ts'),
+            ],
+            outfile: path.resolve(__dirname, '../dist/vscode/extension.js'),
+            bundle: true,
+            format: 'cjs',
+            plugins: [
+                emptyModulePlugin('@casual-simulation/three'),
+                emptyModulePlugin('scrypt-js'),
+                emptyModulePlugin('base64-js'),
+                emptyModulePlugin('hash.js', /^hash\.js$/),
+                injectModulePlugin('tweetnacl', {
+                    randomBytes: null,
+                    secretbox: { keyLength: 0 },
+                    box: {},
+                    sign: null,
+                }),
+                emptyModulePlugin('acorn'),
+                emptyModulePlugin('lru-cache'),
+                emptyModulePlugin('estraverse'),
+                emptyModulePlugin('mime'),
+                emptyModulePlugin('fast-json-stable-stringify'),
+                emptyModulePlugin('astring'),
+                emptyModulePlugin(
+                    '@tweenjs/tween.js',
+                    /^\@tweenjs\/tween\.js$/
+                ),
+            ],
+            minifySyntax: true,
+            external: ['vscode'],
+            logLevel: 'error',
+        },
+    },
+
     // rollup is for typescript declarations
     {
         id: 'casualos',
