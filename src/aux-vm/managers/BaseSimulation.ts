@@ -128,6 +128,13 @@ export class BaseSimulation implements Simulation {
     }
 
     /**
+     * Gets the Virtual Machine that this simulation is connected to.
+     */
+    get vm() {
+        return this._vm;
+    }
+
+    /**
      * Creates a new simulation for the given user and channel ID.
      * @param user The user.
      * @param id The ID of the channel.
