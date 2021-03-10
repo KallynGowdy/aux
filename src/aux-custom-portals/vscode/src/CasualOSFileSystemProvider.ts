@@ -10,7 +10,7 @@ import * as vscode from 'vscode';
 //  casualos://232ae423-e01b-4c7e-8d7d-c36716f5ae4d/myTag.js
 // | scheme | |                id                 || tag |
 
-function parseUri(
+export function parseUri(
     uri: vscode.Uri
 ): {
     botId?: string;
@@ -22,14 +22,18 @@ function parseUri(
             tag: null,
         };
     }
-    const tagAndExtension = uri.path;
-    const lastDotIndex = tagAndExtension.lastIndexOf('.');
+    const path = uri.path;
+    const trimmedPath = path.startsWith('/') ? path.slice(1) : path;
+    const [botId, tagAndExtension] = trimmedPath.split('/');
+    const lastDotIndex = !tagAndExtension
+        ? -1
+        : tagAndExtension.lastIndexOf('.');
     const tag =
         lastDotIndex >= 0
             ? tagAndExtension.slice(0, lastDotIndex)
             : tagAndExtension;
     return {
-        botId: !uri.authority ? null : uri.authority,
+        botId: !botId ? null : botId,
         tag: !tag ? null : tag,
     };
 }
@@ -45,7 +49,7 @@ export class File implements vscode.FileStat {
     tag: string;
 
     constructor(botId: string, tag: string, options?: any) {
-        this.type = vscode.FileType.File;
+        this.type = !!tag ? vscode.FileType.File : vscode.FileType.Directory;
         this.ctime = Date.now();
         this.mtime = Date.now();
         this.botId = botId;
@@ -56,7 +60,12 @@ export class File implements vscode.FileStat {
 export class CasualOSFileSystemProvider implements vscode.FileSystemProvider {
     private _simulation: Simulation;
     private _emitter = new vscode.EventEmitter<vscode.FileChangeEvent[]>();
-    private _rootFile = new File(null, null);
+    private _rootFile: vscode.FileStat = {
+        type: vscode.FileType.Directory,
+        ctime: Date.now(),
+        mtime: Date.now(),
+        size: undefined,
+    };
     private _encoder = new TextEncoder();
 
     constructor(sim: Simulation) {
@@ -80,12 +89,20 @@ export class CasualOSFileSystemProvider implements vscode.FileSystemProvider {
         const { botId, tag } = parseUri(uri);
 
         if (!botId) {
-            // Stat-ing the root directory
-            return this._rootFile;
+            if (uri.path === '/') {
+                console.log('stat root');
+                // Stat-ing the root directory
+                return this._rootFile;
+            } else {
+                console.log('stat not root');
+                return undefined;
+            }
         } else if (!tag) {
+            console.log('stat bot', botId);
             // Stat-ing a bot
             return new File(botId, null);
         }
+        console.log('stat tag', botId, tag);
         // Stat-ing a tag
         return new File(botId, tag);
     }
@@ -96,6 +113,7 @@ export class CasualOSFileSystemProvider implements vscode.FileSystemProvider {
         console.log('readDirectory', uri);
         const { botId, tag } = parseUri(uri);
         if (!botId) {
+            console.log('readDirectory root');
             // list all bots
             const bots = this._simulation.helper.objects;
             const files = bots.map((b) => [
@@ -106,6 +124,7 @@ export class CasualOSFileSystemProvider implements vscode.FileSystemProvider {
         } else if (!tag) {
             // list all tags for the bot
             const bot = this._simulation.helper.botsState[botId];
+            console.log('readDirectory bot', bot);
             if (bot) {
                 const tags = tagsOnBot(bot);
                 const files = tags.map((t) => [t, vscode.FileType.File]) as [
@@ -115,6 +134,7 @@ export class CasualOSFileSystemProvider implements vscode.FileSystemProvider {
                 return files;
             }
         }
+        console.log('readDirectory tag', botId, tag);
         // not a directory
         return [];
     }
