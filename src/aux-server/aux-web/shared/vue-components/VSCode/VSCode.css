@@ -2,3 +2,17 @@
     height: 100%;
     width: 100%;
 }
+
+/* Fixes for Vue Material polluting VSCode css elements */
+.vscode-container * {
+    box-sizing: content-box;
+}
+
+.md-theme-default .vscode-container .monaco-workbench a:not(.md-button) {
+    color: inherit;
+    text-decoration: none;
+}
+
+.md-theme-default .vscode-container .monaco-workbench a:hover {
+    text-decoration: none;
+}
