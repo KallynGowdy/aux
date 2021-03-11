@@ -128,6 +128,7 @@ describe('IdePortalManager', () => {
                     path: '/hello/test.js',
                     botId: 'test',
                     tag: 'hello',
+                    prefix: '🔺',
                 },
             ]);
             expect(manager.items).toEqual([
@@ -136,6 +137,7 @@ describe('IdePortalManager', () => {
                     path: '/hello/test.js',
                     botId: 'test',
                     tag: 'hello',
+                    prefix: '🔺',
                 },
             ]);
         });
@@ -155,6 +157,7 @@ describe('IdePortalManager', () => {
                     path: '/hello/test.js',
                     botId: 'test',
                     tag: 'hello',
+                    prefix: '🔺',
                 },
             ]);
 
@@ -172,12 +175,14 @@ describe('IdePortalManager', () => {
                     path: '/hello/test.js',
                     botId: 'test',
                     tag: 'hello',
+                    prefix: '🔺',
                 },
                 {
                     type: 'tag',
                     path: '/abc/test.js',
                     botId: 'test',
                     tag: 'abc',
+                    prefix: '🔺',
                 },
             ]);
         });
@@ -219,12 +224,14 @@ describe('IdePortalManager', () => {
                     path: '/abc/test2.js',
                     botId: 'test2',
                     tag: 'abc',
+                    prefix: '🔺',
                 },
                 {
                     type: 'tag',
                     path: '/hello/test.js',
                     botId: 'test',
                     tag: 'hello',
+                    prefix: '🔺',
                 },
             ]);
         });
@@ -256,6 +263,7 @@ describe('IdePortalManager', () => {
                     path: '/hello/test.js',
                     botId: 'test',
                     tag: 'hello',
+                    prefix: '🔺',
                 },
             ]);
         });
@@ -275,6 +283,7 @@ describe('IdePortalManager', () => {
                     path: '/hello/test.js',
                     botId: 'test',
                     tag: 'hello',
+                    prefix: '🔺',
                 },
             ]);
 
@@ -294,6 +303,7 @@ describe('IdePortalManager', () => {
                     path: '/hello/test.js',
                     botId: 'test',
                     tag: 'hello',
+                    prefix: '🔺',
                 },
             ]);
         });
@@ -328,12 +338,14 @@ describe('IdePortalManager', () => {
                     path: '/hello/test.js',
                     botId: 'test',
                     tag: 'hello',
+                    prefix: '📖',
                 },
                 {
                     type: 'tag',
                     path: '/abc/test2.js',
                     botId: 'test2',
                     tag: 'abc',
+                    prefix: '📖',
                 },
             ]);
 
@@ -343,12 +355,14 @@ describe('IdePortalManager', () => {
                     path: '/abc/test2.js',
                     botId: 'test2',
                     tag: 'abc',
+                    prefix: '📖',
                 },
                 {
                     type: 'tag',
                     path: '/hello/test.js',
                     botId: 'test',
                     tag: 'hello',
+                    prefix: '📖',
                 },
             ]);
         });
@@ -408,6 +422,7 @@ describe('IdePortalManager', () => {
                     path: '/hello/test.js',
                     botId: 'test',
                     tag: 'hello',
+                    prefix: '🔺',
                 },
             ]);
 
@@ -417,6 +432,7 @@ describe('IdePortalManager', () => {
                     path: '/hello/test.js',
                     botId: 'test',
                     tag: 'hello',
+                    prefix: '🔺',
                 },
             ]);
         });
@@ -457,6 +473,7 @@ describe('IdePortalManager', () => {
                     path: '/hello/test.js',
                     botId: 'test',
                     tag: 'hello',
+                    prefix: '🔺',
                 },
             ]);
 
@@ -480,6 +497,7 @@ describe('IdePortalManager', () => {
                     path: '/hello/test.js',
                     botId: 'test',
                     tag: 'hello',
+                    prefix: '🔺',
                 },
             ]);
 
@@ -503,235 +521,11 @@ describe('IdePortalManager', () => {
                     path: '/hello/test.js',
                     botId: 'test',
                     tag: 'hello',
+                    prefix: '🔺',
                 },
             ]);
 
             expect(manager.items).toEqual([]);
         });
     });
-
-    // describe('itemsUpdated', () => {
-    //     it('should resolve whenever a bot with the correct prefix is added', async () => {
-    //         let newItems: IdeNode[];
-    //         let hasPortal: boolean;
-    //         manager.itemsUpdated.subscribe((e) => {
-    //             newItems = e.addedItems;
-    //             hasPortal = e.hasPortal;
-    //         });
-
-    //         await vm.sendEvents([
-    //             botAdded(
-    //                 createBot('test', {
-    //                     hello: '🔺script',
-    //                 })
-    //             ),
-    //         ]);
-
-    //         expect(newItems).toEqual([
-    //             {
-    //                 type: 'tag',
-    //                 path: '/hello',
-    //             },
-    //         ]);
-    //     });
-
-    //     it('should resolve whenever a bot with the correct prefix is updated', async () => {
-    //         let items: IdeNode[];
-    //         manager.itemsUpdated.subscribe((e) => {
-    //             items = e.items;
-    //         });
-
-    //         await vm.sendEvents([
-    //             botAdded(
-    //                 createBot('test', {
-    //                     hello: '🔺script',
-    //                 })
-    //             ),
-    //         ]);
-
-    //         expect(items).toEqual([
-    //             {
-    //                 path: '/test.js',
-    //                 type: 'tag',
-    //                 key: 'hello.test',
-    //                 botId: 'test',
-    //                 tag: 'hello',
-    //                 name: 'hello',
-    //                 prefix: '🔺',
-    //             },
-    //         ]);
-
-    //         await vm.sendEvents([
-    //             botUpdated('test', {
-    //                 tags: {
-    //                     other: '🔺a',
-    //                 },
-    //             }),
-    //         ]);
-
-    //         await waitAsync();
-
-    //         expect(items).toEqual([
-    //             {
-    //                 path: '/test.hello.js',
-    //                 type: 'tag',
-    //                 key: 'hello.test',
-    //                 name: 'hello',
-    //                 botId: 'test',
-    //                 tag: 'hello',
-    //                 prefix: '🔺',
-    //             },
-    //             {
-    //                 path: '/other.js',
-    //                 type: 'tag',
-    //                 key: 'other.test',
-    //                 name: 'other',
-    //                 botId: 'test',
-    //                 tag: 'other',
-    //                 prefix: '🔺',
-    //             },
-    //         ]);
-    //     });
-
-    //     it('should sort items by tag and then bot ID', async () => {
-    //         let items: IdeNode[];
-    //         manager.itemsUpdated.subscribe((e) => {
-    //             items = e.items;
-    //         });
-
-    //         await vm.sendEvents([
-    //             botAdded(
-    //                 createBot('test', {
-    //                     zzz: '🔺bcd',
-    //                     aaa: '🔺script',
-    //                 })
-    //             ),
-    //             botAdded(
-    //                 createBot('abc', {
-    //                     zzz: '🔺bcd',
-    //                     bbb: '🔺script',
-    //                 })
-    //             ),
-    //         ]);
-
-    //         expect(items).toEqual([
-    //             {
-    //                 type: 'tag',
-    //                 key: 'aaa.test',
-    //                 botId: 'test',
-    //                 tag: 'aaa',
-    //                 name: 'aaa',
-    //                 prefix: '🔺',
-    //             },
-    //             {
-    //                 type: 'tag',
-    //                 key: 'bbb.abc',
-    //                 botId: 'abc',
-    //                 tag: 'bbb',
-    //                 name: 'bbb',
-    //                 prefix: '🔺',
-    //             },
-    //             {
-    //                 type: 'tag',
-    //                 key: 'zzz.abc',
-    //                 botId: 'abc',
-    //                 tag: 'zzz',
-    //                 name: 'zzz',
-    //                 prefix: '🔺',
-    //             },
-    //             {
-    //                 type: 'tag',
-    //                 key: 'zzz.test',
-    //                 botId: 'test',
-    //                 tag: 'zzz',
-    //                 name: 'zzz',
-    //                 prefix: '🔺',
-    //             },
-    //         ]);
-    //     });
-
-    //     it('should indicate listen tags are such', async () => {
-    //         let items: IdeNode[];
-    //         manager.itemsUpdated.subscribe((e) => {
-    //             items = e.items;
-    //         });
-
-    //         await vm.sendEvents([
-    //             botUpdated(userId, {
-    //                 tags: {
-    //                     idePortal: '@',
-    //                 },
-    //             }),
-    //             botAdded(
-    //                 createBot('test', {
-    //                     zzz: '@bcd',
-    //                     hello: '🔺script',
-    //                 })
-    //             ),
-    //         ]);
-
-    //         expect(items).toEqual([
-    //             {
-    //                 type: 'tag',
-    //                 key: 'zzz.test',
-    //                 botId: 'test',
-    //                 tag: 'zzz',
-    //                 name: 'zzz',
-    //                 isScript: true,
-    //             },
-    //         ]);
-    //     });
-
-    //     it('should indicate DNA tags are such', async () => {
-    //         let items: IdeNode[];
-    //         manager.itemsUpdated.subscribe((e) => {
-    //             items = e.items;
-    //         });
-
-    //         await vm.sendEvents([
-    //             botUpdated(userId, {
-    //                 tags: {
-    //                     idePortal: '🧬',
-    //                 },
-    //             }),
-    //             botAdded(
-    //                 createBot('test', {
-    //                     zzz: '🧬bcd',
-    //                     hello: '🔺script',
-    //                 })
-    //             ),
-    //         ]);
-
-    //         expect(items).toEqual([
-    //             {
-    //                 type: 'tag',
-    //                 key: 'zzz.test',
-    //                 botId: 'test',
-    //                 tag: 'zzz',
-    //                 name: 'zzz',
-    //                 isFormula: true,
-    //             },
-    //         ]);
-    //     });
-
-    //     it('should not have a portal if there is no idePortal tag on the user bot', async () => {
-    //         let items: IdeNode[];
-    //         let hasPortal: boolean;
-    //         manager.itemsUpdated.subscribe((e) => {
-    //             items = e.items;
-    //             hasPortal = e.hasPortal;
-    //         });
-
-    //         await vm.sendEvents([
-    //             botUpdated(userId, {
-    //                 tags: {
-    //                     idePortal: null,
-    //                 },
-    //             }),
-    //         ]);
-
-    //         expect(hasPortal).toBe(false);
-    //         expect(items).toEqual([]);
-    //     });
-    // });
 });

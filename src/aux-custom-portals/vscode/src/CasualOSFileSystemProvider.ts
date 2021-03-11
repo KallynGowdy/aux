@@ -3,6 +3,7 @@ import {
     calculateStringTagValue,
     getTagValueForSpace,
     tagsOnBot,
+    trimPrefixedScript,
 } from '@casual-simulation/aux-common/bots/BotCalculations';
 import type { Bot } from '@casual-simulation/aux-common';
 import type { Simulation } from '@casual-simulation/aux-vm';
@@ -203,7 +204,7 @@ export class CasualOSFileSystemProvider implements vscode.FileSystemProvider {
             }
         }
 
-        return [];
+        throw vscode.FileSystemError.FileNotADirectory(uri);
     }
 
     createDirectory(uri: vscode.Uri): void | Thenable<void> {
@@ -217,20 +218,41 @@ export class CasualOSFileSystemProvider implements vscode.FileSystemProvider {
         console.log('readFile', uri);
         const { botId, tag } = parseUri(uri);
 
-        if (!botId || !tag) {
-            throw vscode.FileSystemError.FileNotFound('Tag not found');
+        if (tag) {
+            const list = this._itemsByTag.get(tag);
+            if (list) {
+                let item: IdeTagNode;
+                if (list.length === 1) {
+                    item = list[0];
+                } else if (list.length >= 2) {
+                    if (botId) {
+                        const botItem = list.find(
+                            (item) => item.botId === botId
+                        );
+                        if (botItem) {
+                            item = botItem;
+                        } else {
+                            throw vscode.FileSystemError.FileNotFound(
+                                'Bot not found'
+                            );
+                        }
+                    } else {
+                        throw vscode.FileSystemError.FileIsADirectory(uri);
+                    }
+                }
+
+                if (!item) {
+                    throw new Error('Item was null when it should not be.');
+                }
+                const bot = this._simulation.helper.botsState[item.botId];
+                const prefixedScript = getScript(bot, item.tag, null);
+                const script = trimPrefixedScript(item.prefix, prefixedScript);
+
+                return this._encoder.encode(script);
+            }
         }
 
-        const bot = this._simulation.helper.botsState[botId];
-
-        if (!bot) {
-            throw vscode.FileSystemError.FileNotFound('Bot not found.');
-        }
-
-        // TODO: Support tag masks
-        const script = getScript(bot, tag, null);
-
-        return this._encoder.encode(script);
+        throw vscode.FileSystemError.FileNotFound('Tag not found');
     }
 
     writeFile(

@@ -50,6 +50,7 @@ export interface IdeTagNode {
     path: string;
     botId: string;
     tag: string;
+    prefix: string;
 }
 
 export interface IdePortalUpdate {
@@ -325,6 +326,7 @@ export class IdePortalManager implements SubscriptionLike {
             path: `/${tag}/${bot.id}.js`,
             botId: bot.id,
             tag: tag,
+            prefix: this._currentPrefix,
         };
     }
 

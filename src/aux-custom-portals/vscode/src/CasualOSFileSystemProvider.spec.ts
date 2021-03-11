@@ -171,6 +171,53 @@ describe('CasualOSFileSystemProvider', () => {
                 ['test3.js', vscode.FileType.File],
             ]);
         });
+
+        it('should throw an error if the URI points to a tag that does not have duplicates', () => {
+            expect(() => {
+                provider.readDirectory(uri('casualos', '/script.js'));
+            }).toThrow();
+        });
+    });
+
+    describe('readFile()', () => {
+        let decoder: TextDecoder;
+
+        beforeEach(() => {
+            decoder = new TextDecoder();
+        });
+
+        it('should return the script for the value', async () => {
+            const script = await provider.readFile(
+                uri('casualos', '/script.js')
+            );
+
+            expect(script instanceof Uint8Array).toBe(true);
+            expect(decoder.decode(script)).toEqual('abc');
+        });
+
+        it('should return the script for the full tag path', async () => {
+            const script = await provider.readFile(
+                uri('casualos', '/script/test1.js')
+            );
+
+            expect(script instanceof Uint8Array).toBe(true);
+            expect(decoder.decode(script)).toEqual('abc');
+        });
+
+        it('should be able to get scripts in a list of duplicates', async () => {
+            const script = await provider.readFile(
+                uri('casualos', '/duplicate/test1.js')
+            );
+
+            expect(script instanceof Uint8Array).toBe(true);
+            expect(decoder.decode(script)).toEqual('qqq');
+        });
+
+        it('should throw an error if trying to read a tag directory', () => {
+            expect(() => {
+                provider.readFile(uri('casualos', '/duplicate'));
+            }).toThrow();
+        });
     });
 });
 

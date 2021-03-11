@@ -86,7 +86,12 @@ function playerConfig(latestTag) {
             new WorkboxPlugin.GenerateSW({
                 clientsClaim: true,
                 skipWaiting: true,
-                exclude: [/webxr-profiles/, /\.map$/, /fonts\/NotoSansKR/],
+                exclude: [
+                    /webxr-profiles/,
+                    /\.map$/,
+                    /fonts\/NotoSansKR/,
+                    /vscode/,
+                ],
                 include: [
                     /\.html$/,
                     /\.css$/,
@@ -124,19 +129,6 @@ function playerConfig(latestTag) {
                             cacheName: 'draco_decoder',
                             expiration: {
                                 maxEntries: 1,
-                            },
-                        },
-                    },
-                    {
-                        // Other WASM files should have a hash in the filename
-                        // so we can cache them and use an expiration date.
-                        handler: 'CacheFirst',
-                        urlPattern: /\.wasm$/,
-                        method: 'GET',
-                        options: {
-                            cacheName: 'wasm',
-                            expiration: {
-                                maxAgeSeconds: 604800, // 7 days in seconds
                             },
                         },
                     },
