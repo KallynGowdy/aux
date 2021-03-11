@@ -1,8 +1,19 @@
-import { parseUri } from './CasualOSFileSystemProvider';
+import {
+    CasualOSFileSystemProvider,
+    IdePortalSimulation,
+    parseUri,
+} from './CasualOSFileSystemProvider';
+import { nodeSimulationWithConfig } from '@casual-simulation/aux-vm-node';
+import { createBot } from '@casual-simulation/aux-common';
+import { IdePortalManager } from '@casual-simulation/aux-vm-browser/managers/IdePortalManager';
+import { waitForSync } from '@casual-simulation/aux-vm';
+import * as vscode from 'vscode';
+
+const logMock = (console.log = jest.fn());
 
 describe('parseUri()', () => {
     it('should return a null bot ID and tag when the URI has the wrong scheme', () => {
-        const { botId, tag } = parseUri(uri('wrong', '/uuid/tag'));
+        const { botId, tag } = parseUri(uri('wrong', '/tag/uuid.js'));
 
         expect(botId).toBe(null);
         expect(tag).toBe(null);
@@ -16,17 +27,150 @@ describe('parseUri()', () => {
     });
 
     it('should return a the bot ID in the URI', () => {
-        const { botId, tag } = parseUri(uri('casualos', '/uuid'));
+        const { botId, tag } = parseUri(uri('casualos', '/tag.js'));
 
-        expect(botId).toBe('uuid');
-        expect(tag).toBe(null);
+        expect(tag).toBe('tag');
+        expect(botId).toBe(null);
     });
 
     it('should return a the bot ID and tag in the URI', () => {
-        const { botId, tag } = parseUri(uri('casualos', '/uuid/tag'));
+        const { botId, tag } = parseUri(uri('casualos', '/tag/uuid.js'));
 
-        expect(botId).toBe('uuid');
         expect(tag).toBe('tag');
+        expect(botId).toBe('uuid');
+    });
+});
+
+describe('CasualOSFileSystemProvider', () => {
+    let simulation: IdePortalSimulation;
+    let provider: CasualOSFileSystemProvider;
+
+    beforeEach(async () => {
+        simulation = <IdePortalSimulation>(<unknown>nodeSimulationWithConfig(
+            {
+                id: 'user',
+                name: 'user',
+                token: 'token',
+                username: 'username',
+            },
+            'test-server',
+            {
+                config: {
+                    version: 'v1.0.0',
+                    versionHash: 'hash',
+                },
+                partitions: {
+                    shared: {
+                        type: 'memory',
+                        initialState: {
+                            test1: createBot('test1', {
+                                script: '🔺abc',
+                                notScript: '123',
+                                duplicate: '🔺qqq',
+                            }),
+                            test2: createBot('test2', {
+                                script2: '🔺def',
+                                notScript2: '456',
+                                duplicate: '🔺eee',
+                            }),
+                            test3: createBot('test3', {
+                                script3: '🔺ghi',
+                                notScript3: '789',
+                                duplicate: '🔺fff',
+                            }),
+                            user: createBot('user', {
+                                idePortal: '🔺',
+                            }),
+                        },
+                    },
+                },
+            }
+        ));
+        simulation.helper.userId = 'user';
+
+        await simulation.init();
+        await waitForSync(simulation);
+
+        simulation.idePortal = new IdePortalManager(
+            simulation.watcher,
+            simulation.helper,
+            false
+        );
+
+        provider = new CasualOSFileSystemProvider(simulation);
+    });
+
+    afterEach(() => {
+        simulation.unsubscribe();
+    });
+
+    describe('stat()', () => {
+        it('should return a directory for the root file', () => {
+            const file = provider.stat(uri('casualos', '/'));
+
+            expect(file).toEqual({
+                type: vscode.FileType.Directory,
+                mtime: expect.any(Number),
+                ctime: expect.any(Number),
+                size: undefined,
+            });
+        });
+
+        it('should return a file for full tag paths', () => {
+            const file = provider.stat(uri('casualos', '/script/test1.js'));
+
+            expect(file).toEqual({
+                type: vscode.FileType.File,
+                mtime: expect.any(Number),
+                ctime: expect.any(Number),
+                size: simulation.helper.botsState['test1'].tags.script.length,
+            });
+        });
+
+        it('should return a file for unique tags', () => {
+            const file = provider.stat(uri('casualos', '/script.js'));
+
+            expect(file).toEqual({
+                type: vscode.FileType.File,
+                mtime: expect.any(Number),
+                ctime: expect.any(Number),
+                size: simulation.helper.botsState['test1'].tags.script.length,
+            });
+        });
+
+        it('should return a directory for non unique tags', () => {
+            const file = provider.stat(uri('casualos', '/duplicate'));
+
+            expect(file).toEqual({
+                type: vscode.FileType.Directory,
+                mtime: expect.any(Number),
+                ctime: expect.any(Number),
+                size: undefined,
+            });
+        });
+    });
+
+    describe('readDirectory()', () => {
+        it('should return the list of unique and non unique tags for the root directory', () => {
+            const list = provider.readDirectory(uri('casualos', '/'));
+
+            expect(list).toEqual([
+                ['duplicate', vscode.FileType.Directory],
+                ['script.js', vscode.FileType.File],
+                ['script2.js', vscode.FileType.File],
+                ['script3.js', vscode.FileType.File],
+            ]);
+        });
+
+        it('should return the list of bot IDs for a tag directory', () => {
+            const list = provider.readDirectory(uri('casualos', '/duplicate'));
+
+            expect(list).toEqual([
+                ['test1.js', vscode.FileType.File],
+                ['test2.js', vscode.FileType.File],
+                ['test3.js', vscode.FileType.File],
+            ]);
+        });
     });
 });
 

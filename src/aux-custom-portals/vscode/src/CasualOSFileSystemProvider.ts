@@ -1,10 +1,17 @@
 import {
+    calculateBotValue,
+    calculateStringTagValue,
     getTagValueForSpace,
     tagsOnBot,
 } from '@casual-simulation/aux-common/bots/BotCalculations';
 import type { Bot } from '@casual-simulation/aux-common';
 import type { Simulation } from '@casual-simulation/aux-vm';
 import * as vscode from 'vscode';
+import { flatMap } from 'lodash';
+import {
+    IdePortalManager,
+    IdeTagNode,
+} from '@casual-simulation/aux-vm-browser/managers/IdePortalManager';
 
 // Aux URIs have a pretty simple format:
 //  casualos://232ae423-e01b-4c7e-8d7d-c36716f5ae4d/myTag.js
@@ -23,15 +30,11 @@ export function parseUri(
         };
     }
     const path = uri.path;
-    const trimmedPath = path.startsWith('/') ? path.slice(1) : path;
-    const [botId, tagAndExtension] = trimmedPath.split('/');
-    const lastDotIndex = !tagAndExtension
-        ? -1
-        : tagAndExtension.lastIndexOf('.');
-    const tag =
-        lastDotIndex >= 0
-            ? tagAndExtension.slice(0, lastDotIndex)
-            : tagAndExtension;
+    const extensionIndex = path.lastIndexOf('.');
+    const trimmedPath = path.startsWith('/')
+        ? path.slice(1, extensionIndex < 0 ? undefined : extensionIndex)
+        : path;
+    const [tag, botId] = trimmedPath.split('/');
     return {
         botId: !botId ? null : botId,
         tag: !tag ? null : tag,
@@ -57,8 +60,12 @@ export class File implements vscode.FileStat {
     }
 }
 
+export type IdePortalSimulation = Simulation & {
+    idePortal: IdePortalManager;
+};
+
 export class CasualOSFileSystemProvider implements vscode.FileSystemProvider {
-    private _simulation: Simulation;
+    private _simulation: IdePortalSimulation;
     private _emitter = new vscode.EventEmitter<vscode.FileChangeEvent[]>();
     private _rootFile: vscode.FileStat = {
         type: vscode.FileType.Directory,
@@ -66,10 +73,44 @@ export class CasualOSFileSystemProvider implements vscode.FileSystemProvider {
         mtime: Date.now(),
         size: undefined,
     };
+    private _fileStats = new Map<string, vscode.FileStat>();
+    private _itemsByTag = new Map<string, IdeTagNode[]>();
+    private _tagStats = new Map<string, vscode.FileStat>();
     private _encoder = new TextEncoder();
 
-    constructor(sim: Simulation) {
+    constructor(sim: IdePortalSimulation) {
         this._simulation = sim;
+
+        this._simulation.idePortal.itemsAdded.subscribe((items) => {
+            for (let item of items) {
+                if (item.type === 'tag') {
+                    const bot = this._simulation.helper.botsState[item.botId];
+                    this._fileStats.set(item.path, this._getItemStat(item));
+
+                    let list = this._itemsByTag.get(item.tag);
+                    if (!list) {
+                        list = [];
+                        this._itemsByTag.set(item.tag, list);
+                    }
+                    list.push(item);
+                }
+            }
+        });
+        this._simulation.idePortal.itemsUpdated.subscribe((items) => {});
+        this._simulation.idePortal.itemsRemoved.subscribe((items) => {
+            for (let item of items) {
+                if (item.type === 'tag') {
+                    this._fileStats.delete(item.path);
+                    let list = this._itemsByTag.get(item.tag);
+                    if (list) {
+                        const index = list.indexOf(item);
+                        if (index >= 0) {
+                            list.splice(index, 1);
+                        }
+                    }
+                }
+            }
+        });
     }
 
     get onDidChangeFile(): vscode.Event<vscode.FileChangeEvent[]> {
@@ -86,56 +127,82 @@ export class CasualOSFileSystemProvider implements vscode.FileSystemProvider {
 
     stat(uri: vscode.Uri): vscode.FileStat | Thenable<vscode.FileStat> {
         console.log('stat', uri);
-        const { botId, tag } = parseUri(uri);
 
-        if (!botId) {
-            if (uri.path === '/') {
-                console.log('stat root');
-                // Stat-ing the root directory
-                return this._rootFile;
-            } else {
-                console.log('stat not root');
-                return undefined;
-            }
-        } else if (!tag) {
-            console.log('stat bot', botId);
-            // Stat-ing a bot
-            return new File(botId, null);
+        if (uri.path === '/') {
+            return this._rootFile;
         }
-        console.log('stat tag', botId, tag);
-        // Stat-ing a tag
-        return new File(botId, tag);
+
+        const fileStat = this._fileStats.get(uri.path);
+
+        if (fileStat) {
+            return fileStat;
+        }
+
+        const { tag, botId } = parseUri(uri);
+
+        if (tag) {
+            const list = this._itemsByTag.get(tag);
+            if (list) {
+                let lastStat = this._tagStats.get(tag);
+                let nextStat: vscode.FileStat;
+                if (list.length === 0) {
+                    // no tags
+                    this._tagStats.delete(tag);
+                } else if (list.length === 1) {
+                    // only one tag - we can shortcut it to be a file
+                    nextStat = this._getItemStat(list[0], lastStat);
+                } else {
+                    // multiple tags, need a directory
+                    nextStat = {
+                        ...(lastStat ?? { ctime: Date.now() }),
+                        type: vscode.FileType.Directory,
+                        mtime: Date.now(),
+                        size: undefined,
+                    };
+                }
+
+                if (nextStat) {
+                    this._tagStats.set(tag, nextStat);
+                    return nextStat;
+                }
+            }
+        }
+        return undefined;
     }
 
     readDirectory(
         uri: vscode.Uri
     ): [string, vscode.FileType][] | Thenable<[string, vscode.FileType][]> {
         console.log('readDirectory', uri);
-        const { botId, tag } = parseUri(uri);
-        if (!botId) {
-            console.log('readDirectory root');
-            // list all bots
-            const bots = this._simulation.helper.objects;
-            const files = bots.map((b) => [
-                b.id,
-                vscode.FileType.Directory,
-            ]) as [string, vscode.FileType][];
-            return files;
-        } else if (!tag) {
-            // list all tags for the bot
-            const bot = this._simulation.helper.botsState[botId];
-            console.log('readDirectory bot', bot);
-            if (bot) {
-                const tags = tagsOnBot(bot);
-                const files = tags.map((t) => [t, vscode.FileType.File]) as [
-                    string,
-                    vscode.FileType
-                ][];
-                return files;
+
+        if (uri.path === '/') {
+            // list all items
+            let result = [] as [string, vscode.FileType][];
+            for (let [tag, list] of this._itemsByTag) {
+                if (list.length === 1) {
+                    result.push([`${tag}.js`, vscode.FileType.File]);
+                } else if (list.length >= 2) {
+                    result.push([tag, vscode.FileType.Directory]);
+                }
+            }
+
+            return result;
+        }
+
+        const { tag } = parseUri(uri);
+
+        if (tag) {
+            // list bots for  tag
+            let result = [] as [string, vscode.FileType][];
+            const list = this._itemsByTag.get(tag);
+            if (list && list.length >= 2) {
+                for (let item of list) {
+                    result.push([`${item.botId}.js`, vscode.FileType.File]);
+                }
+                return result;
             }
         }
-        console.log('readDirectory tag', botId, tag);
-        // not a directory
+
         return [];
     }
 
@@ -222,6 +289,19 @@ export class CasualOSFileSystemProvider implements vscode.FileSystemProvider {
     //     console.log('write', fd, pos, data, offset, length);
     //     throw new Error('Method not implemented.');
     // }
+
+    private _getItemStat(
+        item: IdeTagNode,
+        oldStat: { ctime: number } = { ctime: Date.now() }
+    ): vscode.FileStat {
+        const bot = this._simulation.helper.botsState[item.botId];
+        return {
+            ...oldStat,
+            type: vscode.FileType.File,
+            mtime: Date.now(),
+            size: calculateStringTagValue(null, bot, item.tag, '').length,
+        };
+    }
 }
 
 function getScript(bot: Bot, tag: string, space: string) {
