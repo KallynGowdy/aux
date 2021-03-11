@@ -37,7 +37,6 @@ import VSCode from '../VSCode/VScode';
     },
 })
 export default class IdePortal extends Vue {
-    items: IdeNode[] = [];
     hadPortal: boolean = false;
     hasPortal: boolean = false;
 
@@ -75,7 +74,6 @@ export default class IdePortal extends Vue {
         appManager.whileLoggedIn((user, botManager) => {
             let subs: SubscriptionLike[] = [];
             this._simulation = appManager.simulationManager.primary;
-            this.items = [];
             this.hasPortal = false;
             this.hadPortal = false;
             this.currentBot = null;
@@ -84,8 +82,7 @@ export default class IdePortal extends Vue {
             this.selectedItem = null;
 
             subs.push(
-                this._simulation.idePortal.itemsUpdated.subscribe((e) => {
-                    this.items = e.items;
+                this._simulation.idePortal.portalUpdated.subscribe((e) => {
                     this.hadPortal = this.hadPortal || e.hasPortal;
                     this.hasPortal = e.hasPortal;
                 })
