@@ -29,6 +29,11 @@ export class ConnectableAuxVM implements AuxVM {
     private _proxy: Remote<AuxChannel>;
     private _port: MessagePort;
     private _sub: Subscription;
+    private _user: AuxUser;
+
+    get user() {
+        return this._user;
+    }
 
     constructor(id: string, port: MessagePort) {
         this.id = id;
@@ -64,6 +69,7 @@ export class ConnectableAuxVM implements AuxVM {
             proxy((state) => this._connectionStateChanged.next(state)),
             proxy((err) => this._onError.next(err))
         );
+        this._user = await this._proxy.getUser();
     }
 
     unsubscribe(): void {

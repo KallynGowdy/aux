@@ -35,6 +35,7 @@ export class HostedSimulation extends BaseSimulation implements Simulation {
 
     protected _initManagers() {
         super._initManagers();
+        this._helper.userId = (this.vm as ConnectableAuxVM).user?.id;
         this._idePortal = new IdePortalManager(
             this._watcher,
             this._helper,

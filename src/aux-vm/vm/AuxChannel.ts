@@ -120,6 +120,11 @@ export interface AuxChannel extends SubscriptionLike {
     setUser(user: AuxUser): Promise<void>;
 
     /**
+     * Gets the user that the channel is using.
+     */
+    getUser(): Promise<AuxUser>;
+
+    /**
      * Sets the grant that the channel should use to authenticate the user.
      * @param grant The grant to use.
      */

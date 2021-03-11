@@ -337,6 +337,11 @@ export abstract class BaseAuxChannel implements AuxChannel, SubscriptionLike {
         }
     }
 
+    async getUser(): Promise<AuxUser> {
+        console.log('get user');
+        return this._user;
+    }
+
     async sendEvents(events: BotAction[]): Promise<void> {
         if (this._hasInitialState) {
             await this._helper.transaction(...events);
